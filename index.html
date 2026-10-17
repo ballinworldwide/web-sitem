@@ -346,13 +346,46 @@
             </div>
             <div class="mb-4"><label class="block text-xs mb-1" style="color:var(--mute)">Beden Stokları (Örn: S:2, M:0, L:3)</label><input type="text" id="adminProdSizeStock" class="w-full" /></div>
             <div class="mb-4"><label class="block text-xs mb-1" style="color:var(--mute)">Açıklama</label><textarea id="adminProdDesc" rows="2" class="w-full"></textarea></div>
-            <div class="mb-4">
-                <label class="block text-xs mb-2" style="color:var(--mute)">Görsel URL Linkleri</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="text" id="adminProdImg1" placeholder="URL 1" class="w-full" /> 
-                    <input type="text" id="adminProdImg2" placeholder="URL 2" class="w-full" />
+            
+            <!-- YENİ VE TAM KAPSAMLI GÖRSEL EKLEME ALANI -->
+            <div class="mb-4 p-4 rounded-lg" style="background:var(--panel2); border:1px solid var(--line);">
+                <label class="block text-xs mb-3 font-bold" style="color:var(--mute)">Ürün Fotoğrafları (Cihazdan Yükle)</label>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+                    <!-- Slot 1 -->
+                    <div class="p-3 text-center rounded flex flex-col items-center justify-center relative min-h-[100px]" style="border: 2px dashed var(--line); background:var(--panel);">
+                        <span style="font-size:10px; color:var(--mute); margin-bottom:4px;">1. Görsel</span>
+                        <input type="file" id="fileSlot_1" accept="image/*" class="w-full text-[10px]" onchange="previewImageSlot(this, 0)" style="color:var(--mute)">
+                        <img id="previewSlot_0" class="w-full h-16 object-cover rounded mt-2 hidden border" style="border-color:var(--line)" />
+                    </div>
+                    <!-- Slot 2 -->
+                    <div class="p-3 text-center rounded flex flex-col items-center justify-center relative min-h-[100px]" style="border: 2px dashed var(--line); background:var(--panel);">
+                        <span style="font-size:10px; color:var(--mute); margin-bottom:4px;">2. Görsel</span>
+                        <input type="file" id="fileSlot_2" accept="image/*" class="w-full text-[10px]" onchange="previewImageSlot(this, 1)" style="color:var(--mute)">
+                        <img id="previewSlot_1" class="w-full h-16 object-cover rounded mt-2 hidden border" style="border-color:var(--line)" />
+                    </div>
+                    <!-- Slot 3 -->
+                    <div class="p-3 text-center rounded flex flex-col items-center justify-center relative min-h-[100px]" style="border: 2px dashed var(--line); background:var(--panel);">
+                        <span style="font-size:10px; color:var(--mute); margin-bottom:4px;">3. Görsel</span>
+                        <input type="file" id="fileSlot_3" accept="image/*" class="w-full text-[10px]" onchange="previewImageSlot(this, 2)" style="color:var(--mute)">
+                        <img id="previewSlot_2" class="w-full h-16 object-cover rounded mt-2 hidden border" style="border-color:var(--line)" />
+                    </div>
+                    <!-- Slot 4 -->
+                    <div class="p-3 text-center rounded flex flex-col items-center justify-center relative min-h-[100px]" style="border: 2px dashed var(--line); background:var(--panel);">
+                        <span style="font-size:10px; color:var(--mute); margin-bottom:4px;">4. Görsel</span>
+                        <input type="file" id="fileSlot_4" accept="image/*" class="w-full text-[10px]" onchange="previewImageSlot(this, 3)" style="color:var(--mute)">
+                        <img id="previewSlot_3" class="w-full h-16 object-cover rounded mt-2 hidden border" style="border-color:var(--line)" />
+                    </div>
+                </div>
+                
+                <label class="block text-xs mb-2 font-bold" style="color:var(--mute)">Veya Harici Görsel URL Linkleri Girin</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input type="text" id="adminProdImg1" placeholder="URL 1" class="w-full" style="background:var(--panel); border:1px solid var(--line); color:var(--txt); padding:8px; border-radius:4px; font-size:12px;" /> 
+                    <input type="text" id="adminProdImg2" placeholder="URL 2" class="w-full" style="background:var(--panel); border:1px solid var(--line); color:var(--txt); padding:8px; border-radius:4px; font-size:12px;" />
+                    <input type="text" id="adminProdImg3" placeholder="URL 3" class="w-full" style="background:var(--panel); border:1px solid var(--line); color:var(--txt); padding:8px; border-radius:4px; font-size:12px;" />
+                    <input type="text" id="adminProdImg4" placeholder="URL 4" class="w-full" style="background:var(--panel); border:1px solid var(--line); color:var(--txt); padding:8px; border-radius:4px; font-size:12px;" />
                 </div>
             </div>
+            
             <button id="btnUploadProduct" onclick="addNewProduct()" class="btn-primary w-full">Kataloğa Ekle</button>
         </div>
         

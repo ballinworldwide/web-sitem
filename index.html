@@ -17,7 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
         (function(){
-            emailjs.init("tG4TZHBkv4doXbiY9");
+            emailjs.init("mJSA9JIvhcULV5-yQ");
         })();
     </script>
 
@@ -36,7 +36,7 @@
 <body class="bg-white text-brand-900 font-sans antialiased overflow-x-hidden flex flex-col min-h-screen">
 <div class="bg-brand-900 text-white text-xs py-2 overflow-hidden whitespace-nowrap relative z-10" id="topAnnouncementContainer">
     <div class="inline-block animate-marquee tracking-widest uppercase font-light">
-        <span class="mx-6">3.000 TL ÜZERİ ÜCRETSİZ KARGO &amp; KOLAY İADE - TÜM SİPARİŞLERDE</span> 
+        <span class="mx-6" id="marqueeShippingText">3.000 TL ÜZERİ ÜCRETSİZ KARGO &amp; KOLAY İADE - TÜM SİPARİŞLERDE</span> 
         <span class="mx-6 text-amber-400">•</span> 
         <span class="mx-6">HIZLI TESLİMAT &amp; %100 GÜVENLİ ALIŞVERİŞ</span> 
         <span class="mx-6 text-amber-400">•</span> 
@@ -52,11 +52,10 @@
                     <svg class="h-6 w-6" fill="none" viewbox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path> </svg> 
                 </button>
             </div>
-            <nav class="hidden lg:flex space-x-8 relative z-30">
-                <a href="#home" onclick="switchPage('home');" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Anasayfa</a> 
+<nav class="hidden lg:flex space-x-8 relative z-30">
+                <a href="#home" onclick="switchPage('home');" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Ana Sayfa</a> 
                 <a href="#collection" onclick="switchPage('collection');" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Koleksiyon</a> 
                 <a href="#new" onclick="switchPage('new');" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Yeni Gelenler</a> 
-                <a href="#about" onclick="switchPage('about');" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Hakkımızda</a>
             </nav>
             <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20" onclick="switchPage('home')">
                 <img src="images/ballin.png" alt="BALLIN" class="w-32 sm:w-44 md:w-56 h-auto max-h-14 object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300 drop-shadow-md" />
@@ -269,10 +268,11 @@
 
     <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accCoupons')"><span><i class="fa-solid fa-ticket mr-2"></i> İndirim Kuponları</span> <i class="fa-solid fa-plus" id="icon_accCoupons"></i></div>
     <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accCoupons">
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
             <div><label class="block text-xs font-bold mb-1">Kupon Kodu</label><input type="text" id="adminCouponCode" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
             <div><label class="block text-xs font-bold mb-1">İndirim (%)</label><input type="number" id="adminCouponDiscount" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
             <div><label class="block text-xs font-bold mb-1">Kişi Sınırı</label><input type="number" id="adminCouponLimit" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+            <div><label class="block text-xs font-bold mb-1">Son Kullanma (Opsiyonel)</label><input type="date" id="adminCouponExpiry" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>
         </div>
         <button onclick="addNewCoupon()" class="bg-amber-500 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-amber-600 mb-4">Kupon Oluştur</button>
         <div id="adminCouponsList"></div>

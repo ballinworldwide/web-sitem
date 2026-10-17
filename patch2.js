@@ -13,19 +13,15 @@
   const st = document.createElement('style');
   st.textContent = 'body table{min-width:0}#page-admin table{min-width:560px}#page-admin{overflow-y:auto}' +
     '#aiChatBox,button[onclick="toggleAI()"]{display:none!important}' +
+    '.toast-notification{z-index:20000!important}div:has(>.compare-checkbox),.compare-checkbox,.compare-bar{display:none!important}' +
     '@media(max-width:820px){.admin-layout{flex-direction:column;height:auto;min-height:100vh}' +
     '.admin-sidebar{width:100%;flex-direction:row;overflow-x:auto;padding:10px;border-right:0;border-bottom:1px solid var(--line)}' +
     '.admin-main{padding:16px;overflow:visible}.kpis{grid-template-columns:repeat(2,1fr)}.grid-2{grid-template-columns:1fr}' +
     '.admin-main table{display:block;overflow-x:auto}}';
   document.head.appendChild(st);
 
-  /* ---------- Karşılaştırma çubuğu (HTML'de yoktu) ---------- */
-  if (!$('compareBar')) {
-    const bar = document.createElement('div'); bar.id = 'compareBar'; bar.className = 'compare-bar';
-    const b = 'style="background:#fff;color:#000;border:0;padding:8px 14px;border-radius:8px;margin-left:8px;cursor:pointer;font-weight:600"';
-    bar.innerHTML = '<span><b id="compareCount">0</b> ürün seçildi</span><span><button ' + b + ' onclick="clearCompareSelection()">Temizle</button><button ' + b + ' onclick="goToComparePage()">Karşılaştır</button></span>';
-    document.body.appendChild(bar);
-  }
+  /* Karşılaştırma özelliği kaldırıldı */
+  window.toggleCompare = function (id, e) { if (e) e.stopPropagation(); };
 
   /* ---------- Geri tuşu ve doğrudan sayfa linkleri ---------- */
   function route() {
@@ -38,15 +34,17 @@
   window.addEventListener('load', () => { if (/^#[a-z-]+$/.test(location.hash)) setTimeout(route, 400); });
 
   /* ---------- Görsel: küçült (WebP, 1200px) + R2'ye yükle ---------- */
-  async function toWebp(src) {
+  async function toWebp(src, max = 1200) {
     const url = typeof src === 'string' ? src : URL.createObjectURL(src);
     const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Görsel okunamadı.')); i.src = url; });
-    const r = Math.min(1, 1200 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+    const r = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas');
     c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
     c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
     return new Promise(res => c.toBlob(res, 'image/webp', 0.82));
   }
+  const NO_WORKER = UPLOAD_URL.includes('BURAYA');
   async function upload(src) {
+    if (NO_WORKER) { const bl = await toWebp(src, 800); return new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(bl); }); }
     const blob = await toWebp(src), tok = await currentUser.getIdToken();
     const r = await fetch(UPLOAD_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': blob.type }, body: blob });
     if (!r.ok) throw new Error('Görsel yüklenemedi (' + r.status + '). Worker adresini ve ayarlarını kontrol edin.');
@@ -56,7 +54,7 @@
 
   /* ---------- Yeni ürün ---------- */
   window.addNewProduct = async function () {
-    if (!isAdm()) return;
+    if (!isAdm()) return showToast('Yönetici hesabıyla (doğrulanmış e-posta) giriş yapmalısınız.', 'error');
     const g = id => $(id) ? $(id).value.trim() : '';
     const name = g('adminProdName'), price = parseFloat(g('adminProdPrice')), sizeStock = g('adminProdSizeStock'), sizes = parseSS(sizeStock);
     if (sizeStock && !Object.keys(sizes).length) return showToast('Beden formatı: S:5, M:3', 'error');
@@ -111,6 +109,7 @@
 
   /* ---------- Tek seferlik: eski base64 görselleri R2'ye taşı ---------- */
   async function migrate(btn) {
+    if (NO_WORKER) return showToast('Önce patch2.js içindeki UPLOAD_URL satırına Worker adresini yazın.', 'error');
     btn.disabled = true; let n = 0;
     try {
       const snap = await db.collection('products').get();

@@ -1944,6 +1944,8 @@ setOrderFilter = function(status, btnEl) {
     if(btnEl) { btnEl.style.borderColor = 'var(--txt)'; btnEl.style.color = 'var(--txt)'; }
 };
 
+
+
 function sendAIMessage() {
     const input = document.getElementById('aiInput'); 
     if(!input) return;
@@ -1963,3 +1965,41 @@ window.addEventListener('DOMContentLoaded', () => {
     loadCategories();
     loadProducts();
 });
+
+// --- KAYAN YAZI (MARQUEE) DİNAMİK KARGO LİMİTİ GÜNCELLEMESİ ---
+(function() {
+    function updateMarquee(limit) {
+        if (!limit || limit === '0') return;
+        const formattedLimit = Number(limit).toLocaleString('tr-TR');
+        const newText = `${formattedLimit} TL ÜZERİ ÜCRETSİZ KARGO & KOLAY İADE - TÜM SİPARİŞLERDE`;
+        
+        // 1. Orijinal kayan yazı elemanı
+        const mainSpan = document.getElementById('marqueeShippingText');
+        if (mainSpan) mainSpan.innerText = newText;
+        
+        // 2. Kesintisiz döngü için oluşturduğumuz klon eleman
+        const cloneSpan = document.querySelector('.ntui-marquee-track div[aria-hidden="true"] span:first-child');
+        if (cloneSpan) cloneSpan.innerText = newText;
+    }
+
+    // Sayfa ilk açıldığında veritabanından gelen değeri yakala
+    let checkCount = 0;
+    const checkInterval = setInterval(() => {
+        const inputEl = document.getElementById('cmsFreeShippingLimit');
+        if (inputEl && inputEl.value && inputEl.value !== "") {
+            updateMarquee(inputEl.value);
+            clearInterval(checkInterval); // Değeri bulduğunda dinlemeyi bırak
+        }
+        if (++checkCount > 20) clearInterval(checkInterval); // 10 sn sonra pes et
+    }, 500);
+
+    // Admin panelinde "Ayarları Güncelle" butonuna basıldığında anında yakala
+    if (typeof saveCMSBanner === 'function') {
+        const originalSave = saveCMSBanner;
+        saveCMSBanner = async function() {
+            await originalSave(); // Sizin mevcut kaydetme kodunuzu çalıştırır
+            const currentLimit = document.getElementById('cmsFreeShippingLimit').value;
+            updateMarquee(currentLimit);
+        };
+    }
+})();

@@ -1860,6 +1860,90 @@ function toggleAI() {
     if(box) box.classList.toggle('hidden'); 
 }
 
+// --- YENİ ADMIN PANEL TAB SİSTEMİ ---
+function switchAdminTab(tabId, el) {
+    // Tüm sekmeleri gizle
+    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + tabId).classList.add('active');
+    
+    // Menü aktif durumlarını ayarla
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if(el) el.classList.add('active');
+    
+    // Başlığı güncelle
+    const titles = {
+        'dashboard': 'Genel Bakış', 'orders': 'Siparişler', 'products': 'Ürün Yönetimi', 
+        'customers': 'Müşteriler & Terk', 'coupons': 'Kupon Yönetimi', 'settings': 'Vitrin & Ayarlar'
+    };
+    if(document.getElementById('adminPageTitle')) document.getElementById('adminPageTitle').innerText = titles[tabId];
+
+    // Sekmeye özel verileri tetikle
+    if(tabId === 'orders') loadAdminOrders();
+    if(tabId === 'customers') { loadCustomersCRM(); loadAbandonedCarts(); }
+    if(tabId === 'products') renderBulkTable();
+    if(tabId === 'coupons') loadCouponsAdmin();
+}
+
+// updateDashboardStats fonksiyonunu YENİ UI elemanlarını dolduracak şekilde yakalıyoruz
+const originalUpdateDashboardStats = updateDashboardStats;
+updateDashboardStats = function() {
+    originalUpdateDashboardStats(); // Eski hesaplamaları çalıştır (Ciro vb. hesaplar)
+    
+    // YENİ KPI'LARI GÜNCELLE
+    let pendingCount = 0; let returnCount = 0;
+    allOrders.forEach(o => { 
+        if(o.status === 'Hazırlanıyor') pendingCount++; 
+        if(o.status === 'İade Talebi Alındı') returnCount++;
+    });
+    
+    let totalRev = document.getElementById('statTotalRevenue') ? document.getElementById('statTotalRevenue').innerText : "0 TL";
+    let totalOrders = document.getElementById('statTotalOrders') ? document.getElementById('statTotalOrders').innerText : "0";
+    let critStock = document.getElementById('statCriticalStock') ? document.getElementById('statCriticalStock').innerText : "0";
+
+    if(document.getElementById('kpiRevenue')) document.getElementById('kpiRevenue').innerText = '₺' + totalRev.replace(' TL', '');
+    if(document.getElementById('kpiOrders')) document.getElementById('kpiOrders').innerText = totalOrders;
+    if(document.getElementById('kpiPending')) document.getElementById('kpiPending').innerText = pendingCount;
+    if(document.getElementById('kpiLowStock')) document.getElementById('kpiLowStock').innerText = critStock;
+    
+    if(document.getElementById('navBadgeOrders')) document.getElementById('navBadgeOrders').innerText = pendingCount;
+    
+    // SON 5 SİPARİŞİ YENİ TABLOYA YAZ
+    const tbody = document.getElementById('ordersTable');
+    if(tbody) {
+         let html = '';
+         allOrders.slice(0, 5).forEach(o => {
+             let sClass = o.status === 'Hazırlanıyor' ? 's-hazir' : (o.status === 'Kargoya Verildi' ? 's-kargo' : (o.status === 'Tamamlandı' ? 's-bitti' : (o.status.includes('İade') ? 's-iade' : 's-yeni')));
+             let tutar = (o.totalAmount || 0).toLocaleString('tr-TR');
+             html += `<tr><td>#${o.id.slice(0,6).toUpperCase()}</td><td>${o.shippingInfo?.name || 'Misafir'}</td><td>₺${tutar}</td><td><span class="status ${sClass}">${o.status}</span></td><td><button class="btn-ghost" onclick="switchAdminTab('orders', document.querySelectorAll('.nav-item')[1]); setOrderFilter('all', document.getElementById('adminOrderFilters').children[0])">Detay</button></td></tr>`;
+         });
+         if(html === '') html = '<tr><td colspan="5" style="color:var(--mute)">Sipariş bulunamadı.</td></tr>';
+         tbody.innerHTML = html;
+    }
+
+    // STOK UYARISI LİSTESİ (En düşük 3 ürün)
+    const stockContainer = document.getElementById('lowStockListHTML');
+    if(stockContainer) {
+        let lowProducts = allProducts.filter(p => p.stock <= 5).sort((a,b) => a.stock - b.stock).slice(0,3);
+        let sHtml = '';
+        lowProducts.forEach(p => {
+            sHtml += `<div class="row"><span>${p.name}</span><b style="color:var(--accent)">${p.stock} adet</b></div>`;
+        });
+        if(sHtml === '') sHtml = '<p style="color:var(--mute)">Stok sorunu yok.</p>';
+        stockContainer.innerHTML = sHtml;
+    }
+};
+
+// Eski setOrderFilter fonksiyonundaki buton renklerini dark temaya uydurma
+const originalSetOrderFilter = setOrderFilter;
+setOrderFilter = function(status, btnEl) {
+    originalSetOrderFilter(status, btnEl);
+    // Dark temaya uygun buton aktif/pasif state
+    document.querySelectorAll('#adminOrderFilters button').forEach(b => { 
+        b.style.borderColor = 'var(--line)'; b.style.color = 'var(--txt)'; 
+    });
+    if(btnEl) { btnEl.style.borderColor = 'var(--txt)'; btnEl.style.color = 'var(--txt)'; }
+};
+
 function sendAIMessage() {
     const input = document.getElementById('aiInput'); 
     if(!input) return;

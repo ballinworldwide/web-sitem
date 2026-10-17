@@ -1,5 +1,5 @@
 const firebaseConfig = { apiKey: "AIzaSyA3n5nXEk_oGQvM2VQW1YP1xiDeN4CdR94", authDomain: "ballin-c8851.firebaseapp.com", projectId: "ballin-c8851", storageBucket: "ballin-c8851.firebasestorage.app", messagingSenderId: "432000140119", appId: "1:432000140119:web:74be527efa522936e27412" };
-const ADMIN_EMAIL = "veltyf2@gmail.com"; 
+const ADMIN_EMAIL = "ballinworldw@gmail.com"; 
 
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.firestore();

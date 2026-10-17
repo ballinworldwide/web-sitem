@@ -1,0 +1,68 @@
+.hidden { display: none !important; }
+.text-metallic { background: linear-gradient(to right, #6b7280 0%, #d1d5db 50%, #6b7280 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: transparent; background-size: 200% auto; animation: shine 3s linear infinite; }
+@keyframes shine { to { background-position: 200% center; } }
+html { scroll-behavior: smooth; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+.compare-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #212529; color: #fff; border-top: 1px solid #495057; padding: 15px 30px; z-index: 4500; display: none; justify-content: space-between; align-items: center; box-shadow: 0 -10px 30px rgba(0,0,0,0.5); }
+.compare-bar.show { display: flex; }
+
+/* Gelişmiş Dinamik Toast (Hata / Başarı) */
+.toast-notification {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    padding: 14px 24px;
+    border-radius: 12px;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.3);
+    z-index: 6000;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-size: 13px;
+    font-weight: 500;
+}
+.toast-notification.show { transform: translateY(0); opacity: 1; }
+.toast-success { background: #1e293b; color: #ffffff; border: 1px solid #334155; }
+.toast-success i { color: #10b981; }
+.toast-error { background: #7f1d1d; color: #fee2e2; border: 1px solid #b91c1c; }
+.toast-error i { color: #ef4444; }
+
+.shipping-progress-bg { width: 100%; height: 6px; background: #e9ecef; border-radius: 10px; overflow: hidden; margin-top: 8px; }
+.shipping-progress-bar { height: 100%; background: #2ecc71; width: 0%; transition: width 0.5s ease; }
+
+.zoom-img-container { overflow: hidden; position: relative; }
+.zoom-img-container img { transition: transform 0.4s ease-out; transform-origin: center center; }
+.zoom-img-container:hover img { transform: scale(1.35); }
+
+@keyframes badgePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+}
+.badge-anim { animation: badgePulse 0.4s ease-in-out; }
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 25s linear infinite;
+}
+
+/* Mouse ile üzerine gelince kaymanın durması için */
+.animate-marquee:hover {
+  animation-play-state: paused;
+}

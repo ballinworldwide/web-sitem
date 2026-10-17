@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#212529">
+    <title>BALLIN | Luxury Streetwear & Metallic Aesthetic</title>
+	<link rel="icon" type="image/png" href="images/ballin.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        (function(){
+            emailjs.init("tG4TZHBkv4doXbiY9");
+        })();
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], serif: ['Playfair Display', 'serif'] },
+                    colors: { brand: { 50: '#f8f9fa', 100: '#f1f3f5', 200: '#e9ecef', 300: '#dee2e6', 400: '#ced4da', 500: '#adb5bd', 600: '#868e96', 700: '#495057', 800: '#343a40', 900: '#212529' } }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-white text-brand-900 font-sans antialiased overflow-x-hidden flex flex-col min-h-screen">
+<div class="bg-brand-900 text-white text-xs py-2 overflow-hidden whitespace-nowrap relative z-10" id="topAnnouncementContainer">
+    <div class="inline-block animate-marquee tracking-widest uppercase font-light">
+        <span class="mx-6">3.000 TL ÜZERİ ÜCRETSİZ KARGO &amp; KOLAY İADE - TÜM SİPARİŞLERDE</span> 
+        <span class="mx-6 text-amber-400">•</span> 
+        <span class="mx-6">HIZLI TESLİMAT &amp; %100 GÜVENLİ ALIŞVERİŞ</span> 
+        <span class="mx-6 text-amber-400">•</span> 
+        <span class="mx-6">BALLIN CLUB İLE HER SİPARİŞTE PARA-PUAN KAZAN</span> 
+        <span class="mx-6 text-amber-400">•</span>
+    </div>
+</div>
+<header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-brand-200 transition-all duration-300" id="header">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-20 relative">
+            <div class="flex items-center lg:flex-1 relative z-30"> 
+                <button type="button" class="text-brand-600 hover:text-brand-900 focus:outline-none lg:hidden" onclick="toggleMobileMenu()"> 
+                    <svg class="h-6 w-6" fill="none" viewbox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path> </svg> 
+                </button>
+            </div>
+            <nav class="hidden lg:flex space-x-8 relative z-30">
+                <a href="#home" onclick="switchPage('home');" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Anasayfa</a> 
+                <a href="#collection" onclick="switchPage('collection');" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Koleksiyon</a> 
+                <a href="#new" onclick="switchPage('new');" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Yeni Gelenler</a> 
+                <a href="#about" onclick="switchPage('about');" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Hakkımızda</a>
+            </nav>
+            <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20" onclick="switchPage('home')">
+                <img src="images/ballin.png" alt="BALLIN" class="w-32 sm:w-44 md:w-56 h-auto max-h-14 object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300 drop-shadow-md" />
+            </div>
+            <div class="flex items-center justify-end space-x-4 sm:space-x-6 lg:flex-1 relative z-30">
+                <button onclick="switchPage('wishlist')" class="text-brand-600 hover:text-brand-900 transition-colors relative flex items-center" title="Favoriler"> 
+                    <i class="fa-solid fa-heart text-xl"></i> <span id="wishlistBadge" class="absolute -top-2 -right-2.5 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center hidden">0</span> 
+                </button> 
+                <button onclick="toggleCart()" class="text-brand-600 hover:text-brand-900 transition-colors relative flex items-center" title="Sepetim"> 
+                    <i class="fa-solid fa-bag-shopping text-xl"></i> <span id="cartBadge" class="absolute -top-2 -right-2.5 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center hidden shadow-md">0</span> 
+                </button> 
+                <button id="adminButton" style="display: none;" onclick="openAdminPanel()" class="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-full font-medium hover:bg-amber-600 transition-colors"> 
+                    <i class="fa-solid fa-lock mr-1"></i> Admin 
+                </button> 
+                <button onclick="handleAccountClick()" class="text-brand-600 hover:text-brand-900 transition-colors relative flex items-center gap-1.5"> 
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg> 
+                    <span id="account-status-text" class="text-xs font-semibold hidden sm:inline">Giriş Yap</span> 
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="mobile-menu" class="hidden bg-white border-t border-brand-100 absolute w-full shadow-lg z-40">
+        <div class="px-4 pt-2 pb-6 space-y-1">
+            <a href="#home" onclick="toggleMobileMenu(); switchPage('home');" class="block px-3 py-3 text-base font-medium text-brand-800 border-b border-brand-50">Anasayfa</a> 
+            <a href="#collection" onclick="toggleMobileMenu(); switchPage('collection');" class="block px-3 py-3 text-base font-medium text-brand-800 border-b border-brand-50">Koleksiyon</a> 
+            <a href="#new" onclick="toggleMobileMenu(); switchPage('new');" class="block px-3 py-3 text-base font-medium text-brand-800 border-b border-brand-50">Yeni Gelenler</a> 
+            <a href="#wishlist" onclick="toggleMobileMenu(); switchPage('wishlist');" class="block px-3 py-3 text-base font-medium text-brand-800 border-b border-brand-50">Favorilerim</a> 
+            <a href="#about" onclick="toggleMobileMenu(); switchPage('about');" class="block px-3 py-3 text-base font-medium text-brand-800">Hakkımızda</a>
+        </div>
+    </div>
+</header>
+<main class="flex-1">
+
+<section id="page-home" class="page-section active animate-fade-in">
+    <div class="relative bg-brand-50 min-h-[80vh] flex items-center justify-center overflow-hidden py-20 px-4">
+        <div class="absolute inset-0 bg-gradient-to-br from-white via-brand-100 to-brand-300 opacity-50"></div>
+        <div class="relative z-10 max-w-7xl mx-auto text-center flex flex-col items-center">
+            <h1 id="homeHeroTitle" class="font-serif text-4xl md:text-6xl lg:text-7xl tracking-tight text-brand-900 mb-6">LÜKSÜN YENİ TANIMI</h1>
+            <p id="homeHeroDesc" class="mt-4 max-w-2xl text-lg md:text-xl text-brand-600 font-light mb-10">Zarafetin ve metalik estetiğin fütüristik çizgilerle buluştuğu nokta.</p>
+            <button onclick="switchPage('collection')" class="inline-flex items-center justify-center px-8 py-4 text-sm font-medium tracking-widest text-white uppercase bg-brand-900 rounded-full shadow-xl hover:bg-brand-800 transition-all">Koleksiyonu Keşfet</button>
+        </div>
+    </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <h2 class="font-serif text-3xl md:text-4xl text-brand-900 mb-12 text-center">Öne Çıkanlar</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" id="mainProductGrid">
+            <p class="text-center text-brand-500 col-span-full">Ürünler yükleniyor...</p>
+        </div>
+    </div>
+</section>
+
+<!-- COLLECTION PAGE -->
+<section id="page-collection" class="page-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <h1 class="font-serif text-4xl md:text-5xl text-brand-900 mb-4 text-center">Tüm Koleksiyon</h1>
+    <p class="text-center text-brand-500 text-sm mb-8">Ürünleri karşılaştırmak için sol üstlerindeki kutucuğu işaretleyin.</p>
+
+    <!-- YENİ ARAMA VE FİLTRELEME ÇUBUĞU -->
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-10">
+        <div class="relative w-full md:w-1/3">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-brand-400"></i>
+            <input type="text" id="productSearchInput" placeholder="Ara..." class="w-full bg-brand-50 border border-brand-200 rounded-full px-12 py-3 text-sm outline-none focus:border-brand-900" oninput="filterAndSortProducts()">
+        </div>
+        
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <span class="text-xs font-bold text-brand-900 uppercase tracking-wider hidden md:block">
+                <i class="fa-solid fa-filter mr-1"></i> Filtrele:
+            </span>
+            <select id="filterSize" onchange="filterAndSortProducts()" class="bg-brand-50 border border-brand-200 rounded-full px-4 py-3 text-sm outline-none focus:border-brand-900 flex-1 md:flex-none">
+                <option value="all">Tüm Bedenler</option>
+                <option value="S">S Beden</option>
+                <option value="M">M Beden</option>
+                <option value="L">L Beden</option>
+                <option value="XL">XL Beden</option>
+            </select>
+            <select id="filterPriceRange" onchange="filterAndSortProducts()" class="bg-brand-50 border border-brand-200 rounded-full px-4 py-3 text-sm outline-none focus:border-brand-900 flex-1 md:flex-none">
+                <option value="all">Tüm Fiyatlar</option>
+                <option value="0-1000">0 - 1.000 TL</option>
+                <option value="1000-3000">1.000 - 3.000 TL</option>
+                <option value="3000+">3.000 TL+</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="flex justify-center gap-3 mb-12 flex-wrap" id="categoryFilterContainer">
+        <button class="cat-btn bg-brand-900 text-white px-6 py-2 rounded-full text-sm font-medium transition-all active" onclick="setCategoryFilter('Tümü', this)">Tümü</button>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" id="collectionProductGrid">
+        <p class="text-center text-brand-500 col-span-full">Yükleniyor...</p>
+    </div>
+    
+    <!-- YENİ SAYFALAMA BUTONU -->
+    <div class="flex justify-center mt-12 mb-8">
+        <button id="loadMoreBtn" onclick="loadProducts(true)" style="display: none;" class="px-8 py-3 bg-white border border-brand-300 text-brand-900 rounded-full font-bold text-sm hover:bg-brand-50 transition-colors shadow-sm">
+            <i class="fa-solid fa-rotate mr-2"></i> Daha Fazla Ürün Yükle
+        </button>
+    </div>
+</section>
+
+<section id="page-wishlist" class="page-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <h1 class="font-serif text-4xl text-brand-900 mb-10 text-center">Favori Ürünlerim</h1>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" id="wishlistProductGrid">
+        <p class="text-center text-brand-500 col-span-full">Favori listeniz boş.</p>
+    </div>
+</section>
+
+<section id="page-compare" class="page-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <h1 class="font-serif text-4xl text-brand-900 mb-10 text-center">Ürün Karşılaştırma</h1>
+    <div id="compareContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+    <div class="text-center mt-10"><button onclick="clearCompare()" class="px-6 py-3 border border-brand-300 rounded-full text-sm font-medium hover:bg-brand-50">Karşılaştırmayı Temizle</button></div>
+</section>
+
+<section id="page-product-detail" class="page-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <button onclick="switchPage('collection')" class="mb-8 inline-flex items-center gap-2 text-sm text-brand-600 hover:text-brand-900"><i class="fa-solid fa-arrow-left"></i> Koleksiyona Dön</button>
+    <div id="productDetailContainer"></div>
+</section>
+
+<section id="page-new" class="page-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <h1 class="font-serif text-4xl text-brand-900 mb-10 text-center">Yeni Gelenler</h1>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" id="newProductGrid"></div>
+</section>
+
+<!-- ABOUT & YASAL SAYFALAR -->
+<section id="page-about" class="page-section hidden max-w-4xl mx-auto px-4 py-16">
+    <h1 class="font-serif text-4xl text-brand-900 mb-6 text-center">Hakkımızda &amp; Vizyonumuz</h1>
+    <div class="prose text-brand-600 leading-relaxed font-light space-y-4 text-justify">
+        <p>BALLIN, modern sokak estetiğini endüstriyel fütürizm ve zarafet ile harmanlayan yenilikçi bir tasarım stüdyosudur.</p>
+        <p>Bursa merkezli atölyemizde yerel üretimin kalitesini küresel sokak modası trendleriyle bir araya getiriyoruz.</p>
+    </div>
+</section>
+
+<section id="page-kargo-teslimat" class="page-section hidden max-w-4xl mx-auto px-4 py-16">
+    <h1 class="font-serif text-3xl text-brand-900 mb-6 border-b pb-3">Teslimat ve Kargo Politikası</h1>
+    <div class="text-sm text-brand-600 leading-relaxed space-y-4">
+        <p><strong>1. Teslimat Süreci:</strong> Siparişleriniz 1-3 iş günü içerisinde kargo firmasına teslim edilir.</p>
+        <p><strong>2. Kargo Ücretleri:</strong> 3.000 TL ve üzeri siparişlerde kargo tamamen ücretsizdir.</p>
+    </div>
+</section>
+<section id="page-iade-sartlari" class="page-section hidden max-w-4xl mx-auto px-4 py-16">
+    <h1 class="font-serif text-3xl text-brand-900 mb-6 border-b pb-3">İptal, Değişim ve İade Şartları</h1>
+    <div class="text-sm text-brand-600 leading-relaxed space-y-4">
+        <p><strong>1. Cayma Hakkı:</strong> Ürünü teslim aldığınız tarihten itibaren 14 gün içinde iade edebilirsiniz.</p>
+    </div>
+</section>
+<section id="page-gizlilik-politikasi" class="page-section hidden max-w-4xl mx-auto px-4 py-16">
+    <h1 class="font-serif text-3xl text-brand-900 mb-6 border-b pb-3">KVKK &amp; Gizlilik Politikası</h1>
+    <div class="text-sm text-brand-600 leading-relaxed space-y-4">
+        <p>Kişisel verileriniz en üst düzey güvenlik standartlarında muhafaza edilmektedir.</p>
+    </div>
+</section>
+<section id="page-destek-merkezi" class="page-section hidden max-w-4xl mx-auto px-4 py-16">
+    <h1 class="font-serif text-3xl text-brand-900 mb-6 border-b pb-3">İletişim &amp; Şirket Bilgileri (Künye)</h1>
+    <div class="text-sm text-brand-600 leading-relaxed space-y-3">
+        <p><strong>Ticari Unvan:</strong> BALLIN Tasarım ve Tekstil San. Tic. Ltd. Şti.</p>
+        <p><strong>E-posta Destek:</strong> destek@ballin.com</p>
+    </div>
+</section>
+
+<!-- ADMIN PANEL -->
+<section id="page-admin" class="page-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <h1 class="font-serif text-4xl text-amber-600 mb-8"><i class="fa-solid fa-screwdriver-wrench mr-2"></i> Yönetici Paneli &amp; ERP</h1>
+    
+    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accCms')"><span><i class="fa-solid fa-image mr-2"></i> Ana Sayfa Banner Yönetimi (CMS)</span> <i class="fa-solid fa-plus" id="icon_accCms"></i></div>
+    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accCms">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div><label class="block text-xs font-bold mb-1">Manşet Başlığı</label> <input type="text" id="cmsHeroTitle" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+            <div><label class="block text-xs font-bold mb-1">Manşet Sloganı</label> <input type="text" id="cmsHeroDesc" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pt-3 border-t border-brand-200">
+            <div><label class="block text-xs font-bold mb-1">Ücretsiz Kargo Limiti (TL)</label> <input type="number" id="cmsFreeShippingLimit" placeholder="3000" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+            <div><label class="block text-xs font-bold mb-1">Sabit Kargo Ücreti (TL)</label> <input type="number" id="cmsShippingCost" placeholder="99" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+        </div>
+        <button onclick="saveCMSBanner()" class="bg-amber-500 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors">Ayarları Güncelle</button>
+    </div>
+
+    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accCategories')"><span><i class="fa-solid fa-tags mr-2"></i> Kategori Yönetimi</span> <i class="fa-solid fa-plus" id="icon_accCategories"></i></div>
+    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accCategories">
+        <div class="flex gap-2 mb-4"><input type="text" id="newCategoryInput" placeholder="Yeni Kategori Adı" class="flex-1 bg-white border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /> <button onclick="addCategory()" class="bg-amber-500 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-amber-600">Ekle</button></div>
+        <div id="adminCategoriesList" class="flex flex-wrap gap-2">Yükleniyor...</div>
+    </div>
+
+    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accAnalytics')"><span><i class="fa-solid fa-chart-line mr-2"></i> Gelişmiş Analitik &amp; Ciro Raporu</span> <i class="fa-solid fa-plus" id="icon_accAnalytics"></i></div>
+    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accAnalytics">
+        <div class="flex gap-2 mb-6 flex-wrap">
+            <button class="px-4 py-1.5 bg-brand-900 text-white rounded-full text-xs font-medium active" onclick="setDashboardPeriod('all', this)">Tüm Zamanlar</button> 
+            <button class="px-4 py-1.5 bg-brand-200 text-brand-800 rounded-full text-xs font-medium" onclick="setDashboardPeriod('1month', this)">Son 1 Ay</button> 
+            <button class="px-4 py-1.5 bg-brand-200 text-brand-800 rounded-full text-xs font-medium" onclick="setDashboardPeriod('3months', this)">Son 3 Ay</button>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-xl border border-brand-200 text-center"><h4 class="text-[10px] text-brand-400 uppercase font-bold">Toplam Sipariş</h4><div class="text-xl font-bold font-serif text-brand-900 mt-1" id="statTotalOrders">0</div></div>
+            <div class="bg-white p-4 rounded-xl border border-brand-200 text-center"><h4 class="text-[10px] text-amber-600 uppercase font-bold">Hazırlanıyor</h4><div class="text-xl font-bold font-serif text-amber-600 mt-1" id="statPreparingOrders">0</div></div>
+            <div class="bg-white p-4 rounded-xl border border-brand-200 text-center"><h4 class="text-[10px] text-blue-600 uppercase font-bold">Kargoda</h4><div class="text-xl font-bold font-serif text-blue-600 mt-1" id="statShippedOrders">0</div></div>
+            <div class="bg-white p-4 rounded-xl border border-brand-200 text-center"><h4 class="text-[10px] text-emerald-600 uppercase font-bold">Tamamlandı</h4><div class="text-xl font-bold font-serif text-emerald-600 mt-1" id="statCompletedOrders">0</div></div>
+            <div class="bg-white p-4 rounded-xl border border-brand-200 text-center"><h4 class="text-[10px] text-brand-400 uppercase font-bold">Net Dönem Cirosu</h4><div class="text-xl font-bold font-serif text-brand-900 mt-1" id="statTotalRevenue">0 TL</div></div>
+            <div class="bg-white p-4 rounded-xl border border-brand-200 text-center"><h4 class="text-[10px] text-red-600 uppercase font-bold">Kritik Stok</h4><div class="text-xl font-bold font-serif text-red-600 mt-1" id="statCriticalStock">0</div></div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-brand-200"><h4 class="font-serif font-bold text-brand-900 mb-3">En Çok Satanlar</h4><div id="topProductsContainer" class="text-sm text-brand-600">Veriler yükleniyor...</div></div>
+    </div>
+
+    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accCsvTools')"><span><i class="fa-solid fa-file-excel mr-2"></i> Excel / CSV Toplu İçe &amp; Dışa Aktarma</span> <i class="fa-solid fa-plus" id="icon_accCsvTools"></i></div>
+    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accCsvTools">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white p-5 rounded-xl border border-brand-200"><h4 class="font-bold text-sm mb-2 text-brand-900"><i class="fa-solid fa-download mr-1"></i> Ürünleri Dışa Aktar (CSV)</h4><button onclick="exportProductsToCSV()" class="bg-brand-900 text-white px-5 py-2.5 rounded-lg text-xs font-bold hover:bg-brand-800">CSV İndir</button></div>
+            <div class="bg-white p-5 rounded-xl border border-brand-200"><h4 class="font-bold text-sm mb-2 text-brand-900"><i class="fa-solid fa-upload mr-1"></i> Toplu Ürün Yükle (CSV)</h4><input type="file" id="csvFileInput" accept=".csv" class="text-xs mb-3 block w-full text-brand-500" /> <button onclick="importProductsFromCSV()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-lg text-xs font-bold hover:bg-emerald-700">Dosyayı Yükle</button></div>
+        </div>
+    </div>
+
+    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accAbandoned')"><span><i class="fa-solid fa-cart-arrow-down mr-2"></i> Sepeti Terk Edenler</span> <i class="fa-solid fa-plus" id="icon_accAbandoned"></i></div>
+    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accAbandoned">
+        <div id="adminAbandonedContainer" class="space-y-2">Veriler yükleniyor...</div>
+    </div>
+
+    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accCoupons')"><span><i class="fa-solid fa-ticket mr-2"></i> İndirim Kuponları</span> <i class="fa-solid fa-plus" id="icon_accCoupons"></i></div>
+    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accCoupons">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div><label class="block text-xs font-bold mb-1">Kupon Kodu</label><input type="text" id="adminCouponCode" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+            <div><label class="block text-xs font-bold mb-1">İndirim (%)</label><input type="number" id="adminCouponDiscount" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+            <div><label class="block text-xs font-bold mb-1">Kişi Sınırı</label><input type="number" id="adminCouponLimit" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+        </div>
+        <button onclick="addNewCoupon()" class="bg-amber-500 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-amber-600 mb-4">Kupon Oluştur</button>
+        <div id="adminCouponsList"></div>
+    </div>
+
+    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accBulkProducts')"><span><i class="fa-solid fa-table mr-2"></i> Toplu Ürün Yönetimi &amp; Stok Güncelleme</span> <i class="fa-solid fa-plus" id="icon_accBulkProducts"></i></div>
+    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accBulkProducts">
+        <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+            <span class="text-xs font-bold text-brand-600 uppercase">Seçili Ürün Aksiyonları</span>
+            <div class="flex gap-2">
+                <select id="bulkTargetCategory" class="bg-white border border-brand-200 rounded-lg px-3 py-1.5 text-xs"><option value="Giyim">Giyim</option></select>
+                <button onclick="bulkMoveCategory()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium">Kategori Değiştir</button> 
+                <button onclick="bulkDeleteProducts()" class="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium">Seçilenleri Sil</button>
+            </div>
+        </div>
+        <div class="overflow-x-auto bg-white rounded-xl border border-brand-200 p-4">
+            <table class="w-full text-left text-sm">
+                <thead><tr class="border-b border-brand-100"><th class="pb-3"><input type="checkbox" onclick="toggleSelectAll(this)" /></th><th class="pb-3">Ürün</th><th class="pb-3">Kategori</th><th class="pb-3">Fiyat (TL)</th><th class="pb-3">Toplam Stok</th><th class="pb-3">Beden Stokları</th><th class="pb-3">İşlem</th></tr></thead>
+                <tbody id="bulkTableBody"><tr><td colspan="7" class="text-center py-4 text-brand-400">Yükleniyor...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accAddProduct')"><span><i class="fa-solid fa-plus mr-2"></i> Yeni Ürün Ekle</span> <i class="fa-solid fa-plus" id="icon_accAddProduct"></i></div>
+    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accAddProduct">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div><label class="block text-xs font-bold mb-1">Ürün Adı</label><input type="text" id="adminProdName" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+            <div><label class="block text-xs font-bold mb-1">Fiyat (TL)</label><input type="number" id="adminProdPrice" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+            <div><label class="block text-xs font-bold mb-1">Kategori</label><select id="adminProdCategory" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm"><option value="Giyim">Giyim</option></select></div>
+            <div><label class="block text-xs font-bold mb-1">Toplam Stok</label><input type="number" id="adminProdStock" value="10" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+        </div>
+        <div class="mb-4"><label class="block text-xs font-bold mb-1">Beden Stokları (Örn: S:2, M:0, L:3)</label><input type="text" id="adminProdSizeStock" placeholder="S:2, M:0, L:3" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+        <div class="mb-4"><label class="block text-xs font-bold mb-1">Açıklama</label><textarea id="adminProdDesc" rows="3" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm"></textarea></div>
+        <div class="mb-4 bg-white p-5 rounded-xl border border-brand-200">
+            <label class="block text-xs font-bold mb-3 text-brand-800"><i class="fa-solid fa-images mr-1"></i> Ürün Fotoğrafları</label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                <div class="border-2 border-dashed border-brand-200 rounded-xl p-3 text-center flex flex-col items-center justify-center relative min-h-[140px] bg-brand-50"><span class="text-[10px] font-bold text-brand-400 mb-1">1. Görsel</span> <input type="file" id="fileSlot_1" accept="image/*" class="text-[10px] w-full" onchange="previewImageSlot(this, 0)" /> <img id="previewSlot_0" class="w-full h-24 object-cover rounded-lg border border-brand-200 hidden mt-2" /></div>
+                <div class="border-2 border-dashed border-brand-200 rounded-xl p-3 text-center flex flex-col items-center justify-center relative min-h-[140px] bg-brand-50"><span class="text-[10px] font-bold text-brand-400 mb-1">2. Görsel</span> <input type="file" id="fileSlot_2" accept="image/*" class="text-[10px] w-full" onchange="previewImageSlot(this, 1)" /> <img id="previewSlot_1" class="w-full h-24 object-cover rounded-lg border border-brand-200 hidden mt-2" /></div>
+                <div class="border-2 border-dashed border-brand-200 rounded-xl p-3 text-center flex flex-col items-center justify-center relative min-h-[140px] bg-brand-50"><span class="text-[10px] font-bold text-brand-400 mb-1">3. Görsel</span> <input type="file" id="fileSlot_3" accept="image/*" class="text-[10px] w-full" onchange="previewImageSlot(this, 2)" /> <img id="previewSlot_2" class="w-full h-24 object-cover rounded-lg border border-brand-200 hidden mt-2" /></div>
+                <div class="border-2 border-dashed border-brand-200 rounded-xl p-3 text-center flex flex-col items-center justify-center relative min-h-[140px] bg-brand-50"><span class="text-[10px] font-bold text-brand-400 mb-1">4. Görsel</span> <input type="file" id="fileSlot_4" accept="image/*" class="text-[10px] w-full" onchange="previewImageSlot(this, 3)" /> <img id="previewSlot_3" class="w-full h-24 object-cover rounded-lg border border-brand-200 hidden mt-2" /></div>
+            </div>
+            <p class="text-[11px] text-brand-500 font-medium mb-2">Veya harici URL linkleri girin:</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input type="text" id="adminProdImg1" placeholder="URL 1" class="bg-brand-50 border border-brand-200 rounded-lg p-2 text-xs" /> 
+                <input type="text" id="adminProdImg2" placeholder="URL 2" class="bg-brand-50 border border-brand-200 rounded-lg p-2 text-xs" />
+                <input type="text" id="adminProdImg3" placeholder="URL 3" class="bg-brand-50 border border-brand-200 rounded-lg p-2 text-xs" /> 
+                <input type="text" id="adminProdImg4" placeholder="URL 4" class="bg-brand-50 border border-brand-200 rounded-lg p-2 text-xs" />
+            </div>
+        </div>
+        <button id="btnUploadProduct" onclick="addNewProduct()" class="bg-amber-500 text-white w-full py-3.5 rounded-lg font-medium hover:bg-amber-600 shadow-lg">Kataloğa Ekle</button>
+    </div>
+
+    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accCrm')"><span><i class="fa-solid fa-users mr-2"></i> Müşteri Veritabanı &amp; Puanlar</span> <i class="fa-solid fa-plus" id="icon_accCrm"></i></div>
+    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accCrm">
+        <div id="adminCustomersContainer" class="overflow-x-auto bg-white rounded-xl border border-brand-200 p-4">Yükleniyor...</div>
+    </div>
+
+    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accOrders')"><span><i class="fa-solid fa-box-open mr-2"></i> Gelen Siparişler &amp; Lojistik</span> <i class="fa-solid fa-minus" id="icon_accOrders"></i></div>
+    <div class="admin-accordion-content mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accOrders">
+        <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+            <div class="flex gap-2 flex-wrap">
+                <button class="px-4 py-1.5 bg-brand-900 text-white rounded-full text-xs font-medium active" onclick="setOrderFilter('all', this)">Tümü</button> 
+                <button class="px-4 py-1.5 bg-brand-200 text-brand-800 rounded-full text-xs font-medium" onclick="setOrderFilter('Hazırlanıyor', this)">Hazırlanıyor</button> 
+                <button class="px-4 py-1.5 bg-brand-200 text-brand-800 rounded-full text-xs font-medium" onclick="setOrderFilter('Kargoya Verildi', this)">Kargoda</button> 
+                <button class="px-4 py-1.5 bg-brand-200 text-brand-800 rounded-full text-xs font-medium" onclick="setOrderFilter('Tamamlandı', this)">Tamamlandı</button> 
+                <button class="px-4 py-1.5 bg-brand-200 text-brand-800 rounded-full text-xs font-medium" onclick="setOrderFilter('İade Talebi Alındı', this)">İade Talepleri</button>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="bulkUpdateOrderStatus('Kargoya Verildi')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-medium"><i class="fa-solid fa-truck-fast mr-1"></i> Seçilenleri Kargola</button> 
+                <button onclick="bulkUpdateOrderStatus('Tamamlandı')" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-medium"><i class="fa-solid fa-check mr-1"></i> Seçilenleri Tamamla</button>
+            </div>
+        </div>
+        <div class="mb-3 text-xs text-brand-500"><input type="checkbox" onclick="toggleSelectAllOrders(this)" class="mr-2" /> Tümünü Seç / Kaldır</div>
+        <div id="adminOrdersContainer" class="space-y-4">Yükleniyor...</div>
+    </div>
+</section>
+
+<!-- PROFILE PAGE -->
+<section id="page-profile" class="page-section hidden max-w-4xl mx-auto px-4 py-16">
+    <h1 class="font-serif text-4xl text-brand-900 mb-8 text-center">Hesabım</h1>
+    <div class="bg-gradient-to-r from-brand-900 to-brand-800 rounded-3xl p-8 border border-brand-200 mb-8 text-white flex justify-between items-center shadow-xl">
+        <div>
+            <h2 class="font-serif text-2xl mb-1"><i class="fa-solid fa-gem text-amber-400 mr-2"></i>BALLIN Club</h2>
+            <p class="text-xs text-brand-300 font-light">Her siparişinizde %5 para puan kazanın.</p>
+        </div>
+        <div class="text-right">
+            <div class="text-4xl font-bold text-amber-400" id="profilePoints">0</div>
+            <div class="text-xs font-medium uppercase tracking-widest mt-1">Puan Bakiye</div>
+        </div>
+    </div>
+    <div class="bg-brand-50 rounded-3xl p-8 border border-brand-200 mb-8">
+        <h2 class="font-serif text-xl mb-4">Kişisel Bilgiler &amp; Adres</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div><label class="block text-xs font-bold mb-1">Ad</label><input type="text" id="profName" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+            <div><label class="block text-xs font-bold mb-1">Soyad</label><input type="text" id="profSurname" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div><label class="block text-xs font-bold mb-1">E-posta</label> <input type="email" id="profEmail" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm font-medium text-brand-900" /></div>
+            <div><label class="block text-xs font-bold mb-1">Telefon</label> <input type="tel" id="profPhone" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div><label class="block text-xs font-bold mb-1">İl</label><select id="profCity" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" onchange="populateDistricts('profCity', 'profDistrict')"></select></div>
+            <div><label class="block text-xs font-bold mb-1">İlçe</label><select id="profDistrict" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm"></select></div>
+        </div>
+        <div class="mb-4"><label class="block text-xs font-bold mb-1">Açık Adres (Mahalle, Cadde, No)</label><textarea id="profAddress" rows="3" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm"></textarea></div>
+        <div class="flex gap-4">
+            <button onclick="saveProfile()" class="bg-brand-900 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-brand-800 transition-colors">Güncelle</button> 
+            <button onclick="logout()" class="border border-red-200 text-red-600 px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors">Çıkış Yap</button>
+        </div>
+    </div>
+    <div class="bg-brand-50 rounded-3xl p-8 border border-brand-200 mb-8">
+        <h2 class="font-serif text-xl mb-4">Şifre Değiştir</h2>
+        <div class="mb-4"><input type="password" id="newPasswordInput" placeholder="Yeni Şifre (En az 6 karakter)" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+        <button onclick="updatePasswordSecure()" class="bg-brand-900 text-white px-6 py-2.5 rounded-xl text-sm font-medium">Şifreyi Güncelle</button>
+    </div>
+    <div class="bg-brand-50 rounded-3xl p-8 border border-brand-200">
+        <h2 class="font-serif text-xl mb-4">Geçmiş Siparişlerim</h2>
+        <div id="ordersList" class="space-y-4">Siparişler yükleniyor...</div>
+    </div>
+</section>
+
+<!-- CHECKOUT PAGE -->
+<section id="page-checkout" class="page-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <h1 class="font-serif text-4xl text-brand-900 mb-10 text-center">Güvenli Ödeme</h1>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-brand-50 p-8 rounded-3xl border border-brand-200">
+                <h3 class="font-serif text-xl mb-4">Teslimat Bilgileri</h3>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div><label class="block text-xs font-bold mb-1">Ad</label><input type="text" id="checkoutName" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+                    <div><label class="block text-xs font-bold mb-1">Soyad</label><input type="text" id="checkoutSurname" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+                </div>
+                <div class="mb-4"><label class="block text-xs font-bold mb-1">E-posta</label><input type="email" id="checkoutEmail" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+                <div class="mb-4"><label class="block text-xs font-bold mb-1">Telefon</label><input type="tel" id="checkoutPhone" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div><label class="block text-xs font-bold mb-1">İl</label><select id="checkoutCity" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" onchange="populateDistricts('checkoutCity', 'checkoutDistrict')"></select></div>
+                    <div><label class="block text-xs font-bold mb-1">İlçe</label><select id="checkoutDistrict" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm"></select></div>
+                </div>
+                <div class="mb-4"><label class="block text-xs font-bold mb-1">Açık Adres</label><textarea id="checkoutAddress" rows="3" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm"></textarea></div>
+            </div>
+        </div>
+        <div>
+            <div class="bg-brand-50 p-8 rounded-3xl border border-brand-200 sticky top-28">
+                <h3 class="font-serif text-xl mb-4">Sipariş Özeti</h3>
+                <div id="checkoutSummaryItems" class="space-y-2 mb-4 text-sm text-brand-600"></div>
+                <div class="flex gap-2 mb-4"><input type="text" id="promoCodeInput" placeholder="Kupon" class="flex-1 bg-white border border-brand-200 rounded-lg p-2 text-xs" /> <button onclick="applyPromoCode()" class="bg-brand-900 text-white px-4 py-2 rounded-lg text-xs">Uygula</button></div>
+                <div id="promoDiscountInfo" class="text-xs text-emerald-600 mb-4 font-medium" style="display: none;"></div>
+                <div id="checkoutPointsArea" class="mb-4" style="display: none;"><button onclick="applyLoyaltyPoints()" class="w-full border border-amber-400 text-amber-600 bg-amber-50 px-4 py-2 rounded-lg text-xs font-bold hover:bg-amber-100 transition-colors"> <i class="fa-solid fa-gem mr-1"></i> <span id="checkoutPointsText">Puan Kullan</span> </button></div>
+                <div class="flex justify-between text-sm text-brand-600 mb-2"><span>Ara Toplam:</span> <span id="checkoutSubtotal">0 TL</span></div>
+                <div class="flex justify-between text-sm text-brand-600 mb-4"><span>Kargo Ücreti:</span> <span id="checkoutShippingCost">0 TL</span></div>
+                <div class="border-t border-brand-200 pt-4 flex justify-between font-bold text-lg mb-4"><span>Genel Toplam:</span> <span id="checkoutSummaryTotal">0 TL</span></div>
+                <div class="space-y-2 mb-6">
+                    <label class="flex items-start gap-2 text-[11px] text-brand-600 cursor-pointer"> <input type="checkbox" id="checkTerms" class="mt-0.5 accent-brand-900" /> <span><a onclick="switchPage('iade-sartlari')" class="underline font-bold">Mesafeli Satış Sözleşmesi</a>'ni onaylıyorum.</span> </label> 
+                    <label class="flex items-start gap-2 text-[11px] text-brand-600 cursor-pointer"> <input type="checkbox" id="checkKvkk" class="mt-0.5 accent-brand-900" /> <span><a onclick="switchPage('gizlilik-politikasi')" class="underline font-bold">KVKK Metni</a>'ni kabul ediyorum.</span> </label>
+                </div>
+                <button id="btnCompletePayment" onclick="processPayment()" class="w-full bg-brand-900 text-white py-3.5 rounded-xl font-medium hover:bg-brand-800">Ödemeyi Tamamla</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+</main>
+
+<!-- SEPET SLIDE PANEL -->
+<div id="cartOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden" onclick="toggleCart()"></div>
+<div id="cartPanel" class="fixed top-0 right-0 w-full max-w-md h-full bg-white z-50 transform translate-x-full transition-transform duration-300 flex flex-col shadow-2xl">
+    <div class="p-6 border-b border-brand-100 flex justify-between items-center"><h2 class="font-serif text-xl font-bold">Sepetim</h2><button onclick="toggleCart()" class="text-2xl">×</button></div>
+    <div id="cartItems" class="flex-1 p-6 overflow-y-auto space-y-4"></div>
+    <div class="p-6 border-t border-brand-100 bg-brand-50">
+        <div id="cartShippingProgressContainer" class="mb-4 hidden">
+            <div class="flex justify-between text-xs font-bold text-brand-600 mb-1"><span id="cartShippingText">Kargo Bedava fırsatına...</span></div>
+            <div class="shipping-progress-bg"><div class="shipping-progress-bar" id="cartShippingBar"></div></div>
+        </div>
+        <div class="flex justify-between font-bold text-lg mb-4"><span>Toplam:</span> <span id="cartTotal">0 TL</span></div>
+        <button onclick="goToCheckout()" class="w-full bg-brand-900 text-white py-3.5 rounded-xl font-medium mb-2">Siparişi Tamamla</button> 
+        <button onclick="toggleCart()" class="w-full border border-brand-300 py-3 rounded-xl text-sm font-medium hover:bg-brand-100 transition-colors">Alışverişe Devam Et</button>
+    </div>
+</div>
+
+<!-- BEDEN REHBERİ MODAL -->
+<div id="sizeGuideModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-3xl w-[90%] max-w-md p-6 shadow-2xl relative"><span onclick="toggleSizeGuide()" class="absolute top-5 right-5 text-2xl cursor-pointer">×</span>
+        <h3 class="font-serif text-xl font-bold mb-4 text-brand-900"><i class="fa-solid fa-ruler-combined mr-2 text-amber-500"></i>Beden &amp; Ölçü Rehberi</h3>
+        <table class="w-full text-xs text-left border-collapse border border-brand-200">
+            <thead><tr class="bg-brand-100"><th class="border border-brand-200 p-2">Beden</th><th class="border border-brand-200 p-2">Göğüs</th><th class="border border-brand-200 p-2">Bel</th><th class="border border-brand-200 p-2">Boy</th></tr></thead>
+            <tbody>
+                <tr><td class="border border-brand-200 p-2 font-bold">S</td><td class="border border-brand-200 p-2">88-94</td><td class="border border-brand-200 p-2">74-80</td><td class="border border-brand-200 p-2">165-175</td></tr>
+                <tr class="bg-brand-50"><td class="border border-brand-200 p-2 font-bold">M</td><td class="border border-brand-200 p-2">95-102</td><td class="border border-brand-200 p-2">81-88</td><td class="border border-brand-200 p-2">170-182</td></tr>
+                <tr><td class="border border-brand-200 p-2 font-bold">L</td><td class="border border-brand-200 p-2">103-110</td><td class="border border-brand-200 p-2">89-96</td><td class="border border-brand-200 p-2">175-188</td></tr>
+                <tr class="bg-brand-50"><td class="border border-brand-200 p-2 font-bold">XL</td><td class="border border-brand-200 p-2">111-118</td><td class="border border-brand-200 p-2">97-104</td><td class="border border-brand-200 p-2">180-195</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- YENİ AUTH MODAL (MİSAFİR GİRİŞİ EKLENDİ) -->
+<div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-3xl w-[90%] max-w-md p-8 shadow-2xl relative"><span onclick="closeModal()" class="absolute top-5 right-5 text-2xl cursor-pointer hover:text-brand-600">×</span>
+        <h2 id="modalTitle" class="font-serif text-2xl font-bold text-center mb-6">Giriş Yap</h2>
+        
+        <button onclick="handleGoogleLogin()" class="w-full flex items-center justify-center gap-2 bg-white border border-brand-200 text-brand-800 py-3 rounded-xl font-medium mt-2 mb-4 hover:bg-brand-50 shadow-sm transition-colors"> 
+            <svg class="w-5 h-5" viewbox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"></path><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"></path><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"></path><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"></path></svg> Google ile Giriş Yap
+        </button>
+        
+        <button onclick="continueAsGuest()" class="w-full bg-brand-50 border border-brand-300 text-brand-900 py-3.5 rounded-xl font-bold mb-4 hover:bg-brand-100 transition-colors shadow-sm">
+            <i class="fa-solid fa-user-secret mr-2"></i> Misafir Olarak Devam Et
+        </button> 
+        
+	<div class="relative flex py-4 items-center">
+            <div class="flex-grow border-t border-brand-200"></div>
+            <span class="flex-shrink-0 mx-4 text-brand-400 text-xs">VEYA</span>
+            <div class="flex-grow border-t border-brand-200"></div>
+        </div>
+        
+	<div id="registerFields" class="space-y-4 mb-4" style="display: none;">
+            <div class="flex gap-2">
+                <div><label class="block text-xs font-bold mb-1">Ad</label><input type="text" id="authName" class="w-full bg-brand-50 border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>
+                <div><label class="block text-xs font-bold mb-1">Soyad</label><input type="text" id="authSurname" class="w-full bg-brand-50 border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>
+            </div>
+            <div><label class="block text-xs font-bold mb-1">Telefon</label><input type="tel" id="authPhone" class="w-full bg-brand-50 border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>
+        </div>
+        <div class="space-y-4 mb-4">
+            <div><label class="block text-xs font-bold mb-1">E-posta</label><input type="email" id="emailInput" class="w-full bg-brand-50 border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>
+            <div><label class="block text-xs font-bold mb-1">Şifre</label><input type="password" id="passwordInput" class="w-full bg-brand-50 border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>
+        </div>
+        <div class="text-right mb-4" id="forgotPassWrapper"><span class="text-xs text-brand-500 underline cursor-pointer" onclick="sendPasswordReset()">Şifremi Unuttum?</span></div>
+        <button id="modalActionBtn" onclick="handleAuth()" class="w-full bg-brand-900 text-white py-3.5 rounded-xl font-medium mb-4 hover:bg-brand-800 shadow-lg">Giriş Yap</button>
+        <div class="text-center text-xs text-brand-500 cursor-pointer" id="switchAuthText" onclick="toggleAuthMode()">Hesabınız yok mu? <span class="text-brand-900 underline font-bold">Kayıt Olun</span></div>
+    </div>
+</div>
+
+<div id="toast" class="toast-notification toast-success"><i id="toastIcon" class="fa-solid fa-circle-check text-base"></i> <span id="toastMessage">İşlem başarılı!</span></div>
+
+<footer class="bg-brand-900 text-brand-300 py-16 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-10 text-sm">
+        <div><span class="font-serif text-2xl font-bold tracking-widest text-white block mb-4">BALLIN</span><p class="font-light text-xs text-brand-400 mb-4">Zarafetin ve metalik estetiğin fütüristik çizgilerle buluştuğu nokta.</p></div>
+        <div>
+            <h4 class="text-white text-xs font-bold uppercase tracking-wider mb-4">Hızlı Linkler</h4>
+            <ul class="space-y-2 text-xs"><li><a onclick="switchPage('home'); return false;" class="hover:text-white cursor-pointer transition-colors">Anasayfa</a></li><li><a onclick="switchPage('collection'); return false;" class="hover:text-white cursor-pointer transition-colors">Koleksiyon</a></li></ul>
+        </div>
+        <div>
+            <h4 class="text-white text-xs font-bold uppercase tracking-wider mb-4">Müşteri Hizmetleri</h4>
+            <ul class="space-y-2 text-xs"><li><a onclick="switchPage('kargo-teslimat'); return false;" class="hover:text-white cursor-pointer transition-colors">Kargo ve Teslimat</a></li><li><a onclick="switchPage('iade-sartlari'); return false;" class="hover:text-white cursor-pointer transition-colors">İade ve Değişim</a></li></ul>
+        </div>
+        <div>
+            <h4 class="text-white text-xs font-bold uppercase tracking-wider mb-4">Bizi Takip Edin</h4>
+            <div class="flex gap-3 text-lg"><a href="#" class="hover:text-white transition-transform hover:scale-110"><i class="fa-brands fa-instagram"></i></a></div>
+        </div>
+    </div>
+</footer>
+
+<div class="fixed bottom-5 left-5 z-40">
+    <div id="aiChatBox" class="hidden flex-col bg-white border border-brand-200 shadow-2xl w-[90vw] max-w-[360px] sm:w-96 rounded-2xl overflow-hidden mb-4">
+        <div class="bg-brand-900 text-white px-4 py-3 flex justify-between items-center text-sm font-serif font-bold"><span>BALLIN Asistan</span><button onclick="toggleAI()">✕</button></div>
+        <div id="aiMessages" class="p-4 bg-brand-50 h-72 overflow-y-auto space-y-3 text-sm flex flex-col"><div class="bg-brand-200 text-brand-900 rounded-2xl px-4 py-2 max-w-[85%]">Merhaba! Size nasıl yardımcı olabilirim?</div></div>
+        <div class="p-3 bg-white border-t border-brand-100 flex gap-2"><input type="text" id="aiInput" placeholder="Bir şeyler sorun..." class="flex-1 bg-brand-50 rounded-xl px-4 py-2.5 text-sm outline-none" onkeypress="if(event.key==='Enter') sendAIMessage()" /><button onclick="sendAIMessage()" class="bg-brand-900 text-white px-4 rounded-xl text-sm">Gönder</button></div>
+    </div>
+    <button onclick="toggleAI()" class="bg-brand-900 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-xl hover:scale-105 transition-transform"><i class="fa-solid fa-robot"></i></button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

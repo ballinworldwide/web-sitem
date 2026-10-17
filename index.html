@@ -34,14 +34,51 @@
     </script>
 </head>
 <body class="bg-white text-brand-900 font-sans antialiased overflow-x-hidden flex flex-col min-h-screen">
-<div class="bg-brand-900 text-white text-xs py-2 overflow-hidden whitespace-nowrap relative z-10" id="topAnnouncementContainer">
-    <div class="inline-block animate-marquee tracking-widest uppercase font-light">
-        <span class="mx-6" id="marqueeShippingText">3.000 TL ÜZERİ ÜCRETSİZ KARGO &amp; KOLAY İADE - TÜM SİPARİŞLERDE</span> 
-        <span class="mx-6 text-amber-400">•</span> 
-        <span class="mx-6">HIZLI TESLİMAT &amp; %100 GÜVENLİ ALIŞVERİŞ</span> 
-        <span class="mx-6 text-amber-400">•</span> 
-        <span class="mx-6">BALLIN CLUB İLE HER SİPARİŞTE PARA-PUAN KAZAN</span> 
-        <span class="mx-6 text-amber-400">•</span>
+<style>
+    .ntui-marquee-wrapper {
+        overflow: hidden;
+        display: flex;
+        white-space: nowrap;
+        background-color: #212529; /* brand-900 */
+        color: white;
+        padding: 0.5rem 0; /* py-2 */
+        position: relative;
+        z-index: 10;
+    }
+    .ntui-marquee-track {
+        display: flex;
+        width: max-content;
+        animation: ntui-marquee 25s linear infinite;
+    }
+    /* Fare üzerine gelince durmasını isterseniz aşağıdaki yorumu kaldırabilirsiniz */
+    /* .ntui-marquee-track:hover { animation-play-state: paused; } */
+    
+    @keyframes ntui-marquee {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+    }
+</style>
+
+<div class="ntui-marquee-wrapper" id="topAnnouncementContainer">
+    <div class="ntui-marquee-track tracking-widest uppercase font-light text-xs">
+        <!-- 1. ORİJİNAL İÇERİK -->
+        <div class="flex items-center">
+            <span class="mx-6" id="marqueeShippingText">3.000 TL ÜZERİ ÜCRETSİZ KARGO &amp; KOLAY İADE - TÜM SİPARİŞLERDE</span> 
+            <span class="mx-6 text-amber-400">•</span> 
+            <span class="mx-6">HIZLI TESLİMAT &amp; %100 GÜVENLİ ALIŞVERİŞ</span> 
+            <span class="mx-6 text-amber-400">•</span> 
+            <span class="mx-6">BALLIN CLUB İLE HER SİPARİŞTE PARA-PUAN KAZAN</span> 
+            <span class="mx-6 text-amber-400">•</span>
+        </div>
+        <!-- 2. KLON İÇERİK (Sonsuz ve kusursuz döngü için zorunludur) -->
+        <div class="flex items-center" aria-hidden="true">
+            <span class="mx-6">3.000 TL ÜZERİ ÜCRETSİZ KARGO &amp; KOLAY İADE - TÜM SİPARİŞLERDE</span> 
+            <span class="mx-6 text-amber-400">•</span> 
+            <span class="mx-6">HIZLI TESLİMAT &amp; %100 GÜVENLİ ALIŞVERİŞ</span> 
+            <span class="mx-6 text-amber-400">•</span> 
+            <span class="mx-6">BALLIN CLUB İLE HER SİPARİŞTE PARA-PUAN KAZAN</span> 
+            <span class="mx-6 text-amber-400">•</span>
+        </div>
     </div>
 </div>
 <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-brand-200 transition-all duration-300" id="header">

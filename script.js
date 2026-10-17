@@ -618,7 +618,7 @@ async function generateEmailItemsHTML(items) {
 async function sendOrderConfirmationEmail(orderData) {
     try {
         let itemsHTML = await generateEmailItemsHTML(orderData.items);
-        emailjs.send("service_d4q2u4r", "template_0d78g11", {
+        emailjs.send("service_8a23cbj", "template_2pyabzf", {
             to_email: orderData.userEmail,
             customer_name: orderData.shippingInfo.name,
             order_id: orderData.orderId,
@@ -632,7 +632,7 @@ async function sendOrderConfirmationEmail(orderData) {
 async function sendShippingUpdateEmail(orderId, email, name, trackNo, items) {
     try {
         let itemsHTML = await generateEmailItemsHTML(items);
-        emailjs.send("service_d4q2u4r", "template_kargobilgi", {
+        emailjs.send("service_8a23cbj", "template_492t2tn", {
             to_email: email,
             customer_name: name,
             order_id: orderId.slice(0, 8).toUpperCase(),

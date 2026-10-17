@@ -212,142 +212,230 @@
     </div>
 </section>
 
-<!-- ADMIN PANEL -->
-<section id="page-admin" class="page-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-    <h1 class="font-serif text-4xl text-amber-600 mb-8"><i class="fa-solid fa-screwdriver-wrench mr-2"></i> Yönetici Paneli &amp; ERP</h1>
-    
-    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accCms')"><span><i class="fa-solid fa-image mr-2"></i> Ana Sayfa Banner Yönetimi (CMS)</span> <i class="fa-solid fa-plus" id="icon_accCms"></i></div>
-    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accCms">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div><label class="block text-xs font-bold mb-1">Manşet Başlığı</label> <input type="text" id="cmsHeroTitle" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
-            <div><label class="block text-xs font-bold mb-1">Manşet Sloganı</label> <input type="text" id="cmsHeroDesc" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pt-3 border-t border-brand-200">
-            <div><label class="block text-xs font-bold mb-1">Ücretsiz Kargo Limiti (TL)</label> <input type="number" id="cmsFreeShippingLimit" placeholder="3000" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
-            <div><label class="block text-xs font-bold mb-1">Sabit Kargo Ücreti (TL)</label> <input type="number" id="cmsShippingCost" placeholder="99" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
-        </div>
-        <button onclick="saveCMSBanner()" class="bg-amber-500 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors">Ayarları Güncelle</button>
+<!-- YENİ ADMIN PANEL -->
+<section id="page-admin" class="page-section hidden fixed inset-0 z-[9999] bg-[#0b0b0c] text-[#f4f4f2] overflow-hidden">
+<style>
+  :root { --ink:#0b0b0c; --side:#070708; --panel:#131316; --panel2:#1b1b1f; --line:#2a2a30; --txt:#f4f4f2; --mute:#a9a9b2; --accent:#d4ff3a; --chrome:linear-gradient(135deg,#f7f7f9 0%,#9ea3ab 50%,#f2f2f4 100%); }
+  .admin-layout { display: flex; height: 100vh; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+  .admin-layout * { box-sizing: border-box; }
+  .admin-sidebar { width: 230px; background: var(--side); border-right: 1px solid var(--line); padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+  .admin-logo { font-size: 22px; font-weight: 700; letter-spacing: .18em; padding: 0 12px 22px; background: linear-gradient(90deg,#8b9099,#fff,#8b9099); -webkit-background-clip: text; color: transparent; }
+  .nav-item { display: block; padding: 11px 12px; color: var(--mute); border-radius: 4px; border-left: 2px solid transparent; cursor: pointer; min-height: 44px; text-decoration: none; }
+  .nav-item:hover { background: var(--panel); color: var(--txt); }
+  .nav-item.active { background: var(--panel2); color: #fff; border-left-color: #d9dce2; }
+  .nav-badge { float: right; background: var(--accent); color: #000; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; }
+  .nav-bottom { margin-top: auto; border-top: 1px solid var(--line); padding-top: 14px; }
+  .admin-main { flex: 1; min-width: 0; padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  .topbar h1 { margin: 0; font-size: 26px; font-weight: 700; }
+  .btn-primary { background: var(--chrome); color: #0b0b0c; border: 0; border-radius: 4px; padding: 11px 18px; font: 600 13px 'Inter', sans-serif; cursor: pointer; }
+  .btn-ghost { background: transparent; color: var(--txt); border: 1px solid var(--line); border-radius: 4px; padding: 8px 14px; font: 600 12px 'Inter', sans-serif; cursor: pointer; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 20px; }
+  .card-title { color: var(--mute); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 12px; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .kpi-value { font-size: 30px; font-weight: 700; margin: 2px 0; }
+  .kpi-note { font-size: 12px; color: var(--mute); }
+  .up { color: #6ee7a1; } .down { color: #ff7a7a; }
+  .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; }
+  table { width: 100%; border-collapse: collapse; min-width: 560px; }
+  th { text-align: left; color: var(--mute); font-size: 12px; font-weight: 600; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+  td { padding: 13px 8px; border-bottom: 1px solid var(--line); }
+  tr:hover td { background: var(--panel2); }
+  .status { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .s-yeni { background: #1f2a3d; color: #8ab8ff; } .s-hazir { background: #3a2f12; color: #ffd166; } .s-kargo { background: #2a1f3d; color: #c4a7ff; } .s-bitti { background: #12301f; color: #6ee7a1; } .s-iade { background: #3a1616; color: #ff8f8f; }
+  
+  .admin-tab { display: none; } .admin-tab.active { display: block; }
+  
+  /* ESKİ SİSTEMİN YENİ TEMAYA OTOMATİK UYUM SAĞLAMASI İÇİN CSS OVERRIDE */
+  .admin-main .bg-white, .admin-main .bg-brand-50, .admin-main .bg-brand-100, .admin-main .bg-brand-900 { background-color: transparent !important; }
+  .admin-main .border-brand-100, .admin-main .border-brand-200, .admin-main .border-brand-300 { border-color: var(--line) !important; }
+  .admin-main .text-brand-900, .admin-main .text-brand-800, .admin-main .text-black { color: var(--txt) !important; }
+  .admin-main .text-brand-700, .admin-main .text-brand-600, .admin-main .text-brand-500, .admin-main .text-brand-400 { color: var(--mute) !important; }
+  .admin-main input, .admin-main select, .admin-main textarea { background-color: var(--panel2) !important; border: 1px solid var(--line) !important; color: var(--txt) !important; outline: none; border-radius: 4px; padding: 10px; font-size: 13px; }
+  .admin-main .bg-amber-500 { background: var(--chrome) !important; color: #0b0b0c !important; font-weight: bold; border:none; }
+</style>
+
+<div class="admin-layout">
+  <!-- SOL MENÜ -->
+  <nav class="admin-sidebar" id="sidebar">
+    <div class="admin-logo">BALLIN</div>
+    <a class="nav-item active" onclick="switchAdminTab('dashboard', this)">Genel Bakış</a>
+    <a class="nav-item" onclick="switchAdminTab('orders', this)">Siparişler <span class="nav-badge" id="navBadgeOrders">0</span></a>
+    <a class="nav-item" onclick="switchAdminTab('products', this)">Ürün Yönetimi</a>
+    <a class="nav-item" onclick="switchAdminTab('customers', this)">Müşteriler & Terk</a>
+    <a class="nav-item" onclick="switchAdminTab('coupons', this)">Kuponlar</a>
+    <a class="nav-item" onclick="switchAdminTab('settings', this)">Vitrin & Ayarlar</a>
+    <div class="nav-bottom">
+      <a class="nav-item" onclick="switchPage('home')">Siteye Dön</a>
+    </div>
+  </nav>
+
+  <!-- ANA ALAN -->
+  <main class="admin-main">
+    <div class="topbar">
+      <h1 id="adminPageTitle">Genel Bakış</h1>
+      <div class="flex gap-3">
+         <button class="btn-primary" onclick="switchAdminTab('products', document.querySelectorAll('.nav-item')[2])">+ Yeni Ürün</button>
+      </div>
     </div>
 
-    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accCategories')"><span><i class="fa-solid fa-tags mr-2"></i> Kategori Yönetimi</span> <i class="fa-solid fa-plus" id="icon_accCategories"></i></div>
-    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accCategories">
-        <div class="flex gap-2 mb-4"><input type="text" id="newCategoryInput" placeholder="Yeni Kategori Adı" class="flex-1 bg-white border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /> <button onclick="addCategory()" class="bg-amber-500 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-amber-600">Ekle</button></div>
-        <div id="adminCategoriesList" class="flex flex-wrap gap-2">Yükleniyor...</div>
-    </div>
+    <!-- TAB 1: DASHBOARD -->
+    <div id="tab-dashboard" class="admin-tab active">
+        <section class="kpis mb-5">
+          <div class="card"><p class="card-title">Net Dönem Cirosu</p><div class="kpi-value" id="kpiRevenue">₺0</div><div class="kpi-note">Başarılı siparişler</div></div>
+          <div class="card"><p class="card-title">Toplam Sipariş</p><div class="kpi-value" id="kpiOrders">0</div><div class="kpi-note">Tüm zamanlar</div></div>
+          <div class="card"><p class="card-title">Bekleyen (Hazırlanıyor)</p><div class="kpi-value" id="kpiPending">0</div><div class="kpi-note text-[#ffd166]">Kargoya hazırlanacak</div></div>
+          <div class="card"><p class="card-title">Kritik Stok</p><div class="kpi-value" id="kpiLowStock">0</div><div class="kpi-note"><span class="down">Ürün tükeniyor</span></div></div>
+        </section>
 
-    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accAnalytics')"><span><i class="fa-solid fa-chart-line mr-2"></i> Gelişmiş Analitik &amp; Ciro Raporu</span> <i class="fa-solid fa-plus" id="icon_accAnalytics"></i></div>
-    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accAnalytics">
-        <div class="flex gap-2 mb-6 flex-wrap">
-            <button class="px-4 py-1.5 bg-brand-900 text-white rounded-full text-xs font-medium active" onclick="setDashboardPeriod('all', this)">Tüm Zamanlar</button> 
-            <button class="px-4 py-1.5 bg-brand-200 text-brand-800 rounded-full text-xs font-medium" onclick="setDashboardPeriod('1month', this)">Son 1 Ay</button> 
-            <button class="px-4 py-1.5 bg-brand-200 text-brand-800 rounded-full text-xs font-medium" onclick="setDashboardPeriod('3months', this)">Son 3 Ay</button>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-            <div class="bg-white p-4 rounded-xl border border-brand-200 text-center"><h4 class="text-[10px] text-brand-400 uppercase font-bold">Toplam Sipariş</h4><div class="text-xl font-bold font-serif text-brand-900 mt-1" id="statTotalOrders">0</div></div>
-            <div class="bg-white p-4 rounded-xl border border-brand-200 text-center"><h4 class="text-[10px] text-amber-600 uppercase font-bold">Hazırlanıyor</h4><div class="text-xl font-bold font-serif text-amber-600 mt-1" id="statPreparingOrders">0</div></div>
-            <div class="bg-white p-4 rounded-xl border border-brand-200 text-center"><h4 class="text-[10px] text-blue-600 uppercase font-bold">Kargoda</h4><div class="text-xl font-bold font-serif text-blue-600 mt-1" id="statShippedOrders">0</div></div>
-            <div class="bg-white p-4 rounded-xl border border-brand-200 text-center"><h4 class="text-[10px] text-emerald-600 uppercase font-bold">Tamamlandı</h4><div class="text-xl font-bold font-serif text-emerald-600 mt-1" id="statCompletedOrders">0</div></div>
-            <div class="bg-white p-4 rounded-xl border border-brand-200 text-center"><h4 class="text-[10px] text-brand-400 uppercase font-bold">Net Dönem Cirosu</h4><div class="text-xl font-bold font-serif text-brand-900 mt-1" id="statTotalRevenue">0 TL</div></div>
-            <div class="bg-white p-4 rounded-xl border border-brand-200 text-center"><h4 class="text-[10px] text-red-600 uppercase font-bold">Kritik Stok</h4><div class="text-xl font-bold font-serif text-red-600 mt-1" id="statCriticalStock">0</div></div>
-        </div>
-        <div class="bg-white p-5 rounded-xl border border-brand-200"><h4 class="font-serif font-bold text-brand-900 mb-3">En Çok Satanlar</h4><div id="topProductsContainer" class="text-sm text-brand-600">Veriler yükleniyor...</div></div>
-    </div>
+        <section class="grid-2 mb-5">
+          <div class="card">
+            <p class="card-title">En Çok Satanlar</p>
+            <div id="topProductsContainer" style="color:var(--mute)">Veriler yükleniyor...</div>
+          </div>
+          <div class="card" id="lowStockListContainer">
+            <p class="card-title">Stok Uyarısı (Son 3 Ürün)</p>
+            <div id="lowStockListHTML">Yükleniyor...</div>
+          </div>
+        </section>
 
-    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accCsvTools')"><span><i class="fa-solid fa-file-excel mr-2"></i> Excel / CSV Toplu İçe &amp; Dışa Aktarma</span> <i class="fa-solid fa-plus" id="icon_accCsvTools"></i></div>
-    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accCsvTools">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-white p-5 rounded-xl border border-brand-200"><h4 class="font-bold text-sm mb-2 text-brand-900"><i class="fa-solid fa-download mr-1"></i> Ürünleri Dışa Aktar (CSV)</h4><button onclick="exportProductsToCSV()" class="bg-brand-900 text-white px-5 py-2.5 rounded-lg text-xs font-bold hover:bg-brand-800">CSV İndir</button></div>
-            <div class="bg-white p-5 rounded-xl border border-brand-200"><h4 class="font-bold text-sm mb-2 text-brand-900"><i class="fa-solid fa-upload mr-1"></i> Toplu Ürün Yükle (CSV)</h4><input type="file" id="csvFileInput" accept=".csv" class="text-xs mb-3 block w-full text-brand-500" /> <button onclick="importProductsFromCSV()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-lg text-xs font-bold hover:bg-emerald-700">Dosyayı Yükle</button></div>
-        </div>
-    </div>
-
-    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accAbandoned')"><span><i class="fa-solid fa-cart-arrow-down mr-2"></i> Sepeti Terk Edenler</span> <i class="fa-solid fa-plus" id="icon_accAbandoned"></i></div>
-    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accAbandoned">
-        <div id="adminAbandonedContainer" class="space-y-2">Veriler yükleniyor...</div>
-    </div>
-
-    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accCoupons')"><span><i class="fa-solid fa-ticket mr-2"></i> İndirim Kuponları</span> <i class="fa-solid fa-plus" id="icon_accCoupons"></i></div>
-    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accCoupons">
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
-            <div><label class="block text-xs font-bold mb-1">Kupon Kodu</label><input type="text" id="adminCouponCode" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
-            <div><label class="block text-xs font-bold mb-1">İndirim (%)</label><input type="number" id="adminCouponDiscount" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
-            <div><label class="block text-xs font-bold mb-1">Kişi Sınırı</label><input type="number" id="adminCouponLimit" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
-            <div><label class="block text-xs font-bold mb-1">Son Kullanma (Opsiyonel)</label><input type="date" id="adminCouponExpiry" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>
-        </div>
-        <button onclick="addNewCoupon()" class="bg-amber-500 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-amber-600 mb-4">Kupon Oluştur</button>
-        <div id="adminCouponsList"></div>
-    </div>
-
-    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accBulkProducts')"><span><i class="fa-solid fa-table mr-2"></i> Toplu Ürün Yönetimi &amp; Stok Güncelleme</span> <i class="fa-solid fa-plus" id="icon_accBulkProducts"></i></div>
-    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accBulkProducts">
-        <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
-            <span class="text-xs font-bold text-brand-600 uppercase">Seçili Ürün Aksiyonları</span>
-            <div class="flex gap-2">
-                <select id="bulkTargetCategory" class="bg-white border border-brand-200 rounded-lg px-3 py-1.5 text-xs"><option value="Giyim">Giyim</option></select>
-                <button onclick="bulkMoveCategory()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium">Kategori Değiştir</button> 
-                <button onclick="bulkDeleteProducts()" class="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium">Seçilenleri Sil</button>
-            </div>
-        </div>
-        <div class="overflow-x-auto bg-white rounded-xl border border-brand-200 p-4">
-            <table class="w-full text-left text-sm">
-                <thead><tr class="border-b border-brand-100"><th class="pb-3"><input type="checkbox" onclick="toggleSelectAll(this)" /></th><th class="pb-3">Ürün</th><th class="pb-3">Kategori</th><th class="pb-3">Fiyat (TL)</th><th class="pb-3">Toplam Stok</th><th class="pb-3">Beden Stokları</th><th class="pb-3">İşlem</th></tr></thead>
-                <tbody id="bulkTableBody"><tr><td colspan="7" class="text-center py-4 text-brand-400">Yükleniyor...</td></tr></tbody>
+        <section class="card">
+          <p class="card-title">Son Siparişler</p>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Sipariş</th><th>Müşteri</th><th>Tutar</th><th>Durum</th><th></th></tr></thead>
+              <tbody id="ordersTable"></tbody>
             </table>
+          </div>
+        </section>
+    </div>
+
+    <!-- TAB 2: SİPARİŞLER -->
+    <div id="tab-orders" class="admin-tab">
+        <div class="card mb-4">
+            <p class="card-title">Gelen Siparişler & Lojistik</p>
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+                <div class="flex gap-2 flex-wrap" id="adminOrderFilters">
+                    <button class="btn-ghost" style="border-color:var(--txt)" onclick="setOrderFilter('all', this)">Tümü</button> 
+                    <button class="btn-ghost" onclick="setOrderFilter('Hazırlanıyor', this)">Hazırlanıyor</button> 
+                    <button class="btn-ghost" onclick="setOrderFilter('Kargoya Verildi', this)">Kargoda</button> 
+                    <button class="btn-ghost" onclick="setOrderFilter('Tamamlandı', this)">Tamamlandı</button> 
+                    <button class="btn-ghost" onclick="setOrderFilter('İade Talebi Alındı', this)">İade Talepleri</button>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="bulkUpdateOrderStatus('Kargoya Verildi')" class="btn-ghost text-[#c4a7ff]">Seçilenleri Kargola</button> 
+                    <button onclick="bulkUpdateOrderStatus('Tamamlandı')" class="btn-ghost text-[#6ee7a1]">Seçilenleri Tamamla</button>
+                </div>
+            </div>
+            <div class="mb-3 text-xs" style="color:var(--mute)"><input type="checkbox" onclick="toggleSelectAllOrders(this)" class="mr-2" /> Tümünü Seç / Kaldır</div>
+            <div id="adminOrdersContainer" class="space-y-4">Yükleniyor...</div>
         </div>
     </div>
 
-    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accAddProduct')"><span><i class="fa-solid fa-plus mr-2"></i> Yeni Ürün Ekle</span> <i class="fa-solid fa-plus" id="icon_accAddProduct"></i></div>
-    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accAddProduct">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <div><label class="block text-xs font-bold mb-1">Ürün Adı</label><input type="text" id="adminProdName" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
-            <div><label class="block text-xs font-bold mb-1">Fiyat (TL)</label><input type="number" id="adminProdPrice" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
-            <div><label class="block text-xs font-bold mb-1">Kategori</label><select id="adminProdCategory" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm"><option value="Giyim">Giyim</option></select></div>
-            <div><label class="block text-xs font-bold mb-1">Toplam Stok</label><input type="number" id="adminProdStock" value="10" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
-        </div>
-        <div class="mb-4"><label class="block text-xs font-bold mb-1">Beden Stokları (Örn: S:2, M:0, L:3)</label><input type="text" id="adminProdSizeStock" placeholder="S:2, M:0, L:3" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
-        <div class="mb-4"><label class="block text-xs font-bold mb-1">Açıklama</label><textarea id="adminProdDesc" rows="3" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm"></textarea></div>
-        <div class="mb-4 bg-white p-5 rounded-xl border border-brand-200">
-            <label class="block text-xs font-bold mb-3 text-brand-800"><i class="fa-solid fa-images mr-1"></i> Ürün Fotoğrafları</label>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-                <div class="border-2 border-dashed border-brand-200 rounded-xl p-3 text-center flex flex-col items-center justify-center relative min-h-[140px] bg-brand-50"><span class="text-[10px] font-bold text-brand-400 mb-1">1. Görsel</span> <input type="file" id="fileSlot_1" accept="image/*" class="text-[10px] w-full" onchange="previewImageSlot(this, 0)" /> <img id="previewSlot_0" class="w-full h-24 object-cover rounded-lg border border-brand-200 hidden mt-2" /></div>
-                <div class="border-2 border-dashed border-brand-200 rounded-xl p-3 text-center flex flex-col items-center justify-center relative min-h-[140px] bg-brand-50"><span class="text-[10px] font-bold text-brand-400 mb-1">2. Görsel</span> <input type="file" id="fileSlot_2" accept="image/*" class="text-[10px] w-full" onchange="previewImageSlot(this, 1)" /> <img id="previewSlot_1" class="w-full h-24 object-cover rounded-lg border border-brand-200 hidden mt-2" /></div>
-                <div class="border-2 border-dashed border-brand-200 rounded-xl p-3 text-center flex flex-col items-center justify-center relative min-h-[140px] bg-brand-50"><span class="text-[10px] font-bold text-brand-400 mb-1">3. Görsel</span> <input type="file" id="fileSlot_3" accept="image/*" class="text-[10px] w-full" onchange="previewImageSlot(this, 2)" /> <img id="previewSlot_2" class="w-full h-24 object-cover rounded-lg border border-brand-200 hidden mt-2" /></div>
-                <div class="border-2 border-dashed border-brand-200 rounded-xl p-3 text-center flex flex-col items-center justify-center relative min-h-[140px] bg-brand-50"><span class="text-[10px] font-bold text-brand-400 mb-1">4. Görsel</span> <input type="file" id="fileSlot_4" accept="image/*" class="text-[10px] w-full" onchange="previewImageSlot(this, 3)" /> <img id="previewSlot_3" class="w-full h-24 object-cover rounded-lg border border-brand-200 hidden mt-2" /></div>
+    <!-- TAB 3: ÜRÜNLER -->
+    <div id="tab-products" class="admin-tab">
+        <div class="card mb-5">
+            <p class="card-title">Yeni Ürün Ekle</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div><label class="block text-xs mb-1" style="color:var(--mute)">Ürün Adı</label><input type="text" id="adminProdName" class="w-full" /></div>
+                <div><label class="block text-xs mb-1" style="color:var(--mute)">Fiyat (TL)</label><input type="number" id="adminProdPrice" class="w-full" /></div>
+                <div><label class="block text-xs mb-1" style="color:var(--mute)">Kategori</label><select id="adminProdCategory" class="w-full"><option value="Giyim">Giyim</option></select></div>
+                <div><label class="block text-xs mb-1" style="color:var(--mute)">Toplam Stok</label><input type="number" id="adminProdStock" value="10" class="w-full" /></div>
             </div>
-            <p class="text-[11px] text-brand-500 font-medium mb-2">Veya harici URL linkleri girin:</p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <input type="text" id="adminProdImg1" placeholder="URL 1" class="bg-brand-50 border border-brand-200 rounded-lg p-2 text-xs" /> 
-                <input type="text" id="adminProdImg2" placeholder="URL 2" class="bg-brand-50 border border-brand-200 rounded-lg p-2 text-xs" />
-                <input type="text" id="adminProdImg3" placeholder="URL 3" class="bg-brand-50 border border-brand-200 rounded-lg p-2 text-xs" /> 
-                <input type="text" id="adminProdImg4" placeholder="URL 4" class="bg-brand-50 border border-brand-200 rounded-lg p-2 text-xs" />
+            <div class="mb-4"><label class="block text-xs mb-1" style="color:var(--mute)">Beden Stokları (Örn: S:2, M:0, L:3)</label><input type="text" id="adminProdSizeStock" class="w-full" /></div>
+            <div class="mb-4"><label class="block text-xs mb-1" style="color:var(--mute)">Açıklama</label><textarea id="adminProdDesc" rows="2" class="w-full"></textarea></div>
+            <div class="mb-4">
+                <label class="block text-xs mb-2" style="color:var(--mute)">Görsel URL Linkleri</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="adminProdImg1" placeholder="URL 1" class="w-full" /> 
+                    <input type="text" id="adminProdImg2" placeholder="URL 2" class="w-full" />
+                </div>
+            </div>
+            <button id="btnUploadProduct" onclick="addNewProduct()" class="btn-primary w-full">Kataloğa Ekle</button>
+        </div>
+        
+        <div class="card mb-5">
+            <p class="card-title">Toplu Ürün Yönetimi & Stok Güncelleme</p>
+            <div class="flex gap-2 mb-4">
+                <select id="bulkTargetCategory" class="p-2 text-xs rounded border border-[#2a2a30] bg-[#1b1b1f] text-white"><option value="Giyim">Giyim</option></select>
+                <button onclick="bulkMoveCategory()" class="btn-ghost">Kategori Değiştir</button> 
+                <button onclick="bulkDeleteProducts()" class="btn-ghost" style="color:#ff7a7a; border-color:#ff7a7a">Seçilenleri Sil</button>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="w-full text-left text-sm">
+                    <thead><tr><th><input type="checkbox" onclick="toggleSelectAll(this)" /></th><th>Ürün</th><th>Kategori</th><th>Fiyat</th><th>Stok</th><th>İşlem</th></tr></thead>
+                    <tbody id="bulkTableBody"></tbody>
+                </table>
             </div>
         </div>
-        <button id="btnUploadProduct" onclick="addNewProduct()" class="bg-amber-500 text-white w-full py-3.5 rounded-lg font-medium hover:bg-amber-600 shadow-lg">Kataloğa Ekle</button>
+
+        <div class="card">
+            <p class="card-title">Excel / CSV İşlemleri</p>
+            <div class="flex gap-4">
+                <button onclick="exportProductsToCSV()" class="btn-ghost">CSV İndir</button>
+                <input type="file" id="csvFileInput" accept=".csv" class="text-xs" style="color:var(--mute)" /> 
+                <button onclick="importProductsFromCSV()" class="btn-ghost" style="color:#6ee7a1; border-color:#6ee7a1">Dosyayı Yükle</button>
+            </div>
+        </div>
     </div>
 
-    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accCrm')"><span><i class="fa-solid fa-users mr-2"></i> Müşteri Veritabanı &amp; Puanlar</span> <i class="fa-solid fa-plus" id="icon_accCrm"></i></div>
-    <div class="admin-accordion-content hidden mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accCrm">
-        <div id="adminCustomersContainer" class="overflow-x-auto bg-white rounded-xl border border-brand-200 p-4">Yükleniyor...</div>
+    <!-- TAB 4: MÜŞTERİLER -->
+    <div id="tab-customers" class="admin-tab">
+        <div class="card mb-5">
+            <p class="card-title">Sepeti Terk Edenler</p>
+            <div id="adminAbandonedContainer" class="space-y-2">Yükleniyor...</div>
+        </div>
+        <div class="card">
+            <p class="card-title">Müşteri Veritabanı & Puanlar</p>
+            <div id="adminCustomersContainer" style="overflow-x:auto;">Yükleniyor...</div>
+        </div>
     </div>
 
-    <div class="admin-accordion-header bg-brand-900 text-amber-400 p-4 rounded-xl cursor-pointer flex justify-between items-center mb-4 font-serif text-lg font-bold" onclick="toggleAccordion('accOrders')"><span><i class="fa-solid fa-box-open mr-2"></i> Gelen Siparişler &amp; Lojistik</span> <i class="fa-solid fa-minus" id="icon_accOrders"></i></div>
-    <div class="admin-accordion-content mb-8 bg-brand-50 p-6 rounded-xl border border-brand-200" id="accOrders">
-        <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
-            <div class="flex gap-2 flex-wrap">
-                <button class="px-4 py-1.5 bg-brand-900 text-white rounded-full text-xs font-medium active" onclick="setOrderFilter('all', this)">Tümü</button> 
-                <button class="px-4 py-1.5 bg-brand-200 text-brand-800 rounded-full text-xs font-medium" onclick="setOrderFilter('Hazırlanıyor', this)">Hazırlanıyor</button> 
-                <button class="px-4 py-1.5 bg-brand-200 text-brand-800 rounded-full text-xs font-medium" onclick="setOrderFilter('Kargoya Verildi', this)">Kargoda</button> 
-                <button class="px-4 py-1.5 bg-brand-200 text-brand-800 rounded-full text-xs font-medium" onclick="setOrderFilter('Tamamlandı', this)">Tamamlandı</button> 
-                <button class="px-4 py-1.5 bg-brand-200 text-brand-800 rounded-full text-xs font-medium" onclick="setOrderFilter('İade Talebi Alındı', this)">İade Talepleri</button>
+    <!-- TAB 5: KUPONLAR -->
+    <div id="tab-coupons" class="admin-tab">
+        <div class="card mb-4">
+            <p class="card-title">İndirim Kuponu Oluştur</p>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
+                <div><label class="block text-xs mb-1" style="color:var(--mute)">Kupon Kodu</label><input type="text" id="adminCouponCode" class="w-full" /></div>
+                <div><label class="block text-xs mb-1" style="color:var(--mute)">İndirim (%)</label><input type="number" id="adminCouponDiscount" class="w-full" /></div>
+                <div><label class="block text-xs mb-1" style="color:var(--mute)">Kişi Sınırı</label><input type="number" id="adminCouponLimit" class="w-full" /></div>
+                <div><label class="block text-xs mb-1" style="color:var(--mute)">Son Kullanma</label><input type="date" id="adminCouponExpiry" class="w-full" /></div>
             </div>
-            <div class="flex gap-2">
-                <button onclick="bulkUpdateOrderStatus('Kargoya Verildi')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-medium"><i class="fa-solid fa-truck-fast mr-1"></i> Seçilenleri Kargola</button> 
-                <button onclick="bulkUpdateOrderStatus('Tamamlandı')" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-medium"><i class="fa-solid fa-check mr-1"></i> Seçilenleri Tamamla</button>
-            </div>
+            <button onclick="addNewCoupon()" class="btn-primary">Kupon Oluştur</button>
         </div>
-        <div class="mb-3 text-xs text-brand-500"><input type="checkbox" onclick="toggleSelectAllOrders(this)" class="mr-2" /> Tümünü Seç / Kaldır</div>
-        <div id="adminOrdersContainer" class="space-y-4">Yükleniyor...</div>
+        <div class="card">
+            <p class="card-title">Aktif Kuponlar</p>
+            <div id="adminCouponsList"></div>
+        </div>
     </div>
+
+    <!-- TAB 6: AYARLAR / CMS -->
+    <div id="tab-settings" class="admin-tab">
+        <div class="card mb-5">
+            <p class="card-title">Ana Sayfa Banner & Kargo Yönetimi</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div><label class="block text-xs mb-1" style="color:var(--mute)">Manşet Başlığı</label><input type="text" id="cmsHeroTitle" class="w-full" /></div>
+                <div><label class="block text-xs mb-1" style="color:var(--mute)">Manşet Sloganı</label><input type="text" id="cmsHeroDesc" class="w-full" /></div>
+                <div><label class="block text-xs mb-1" style="color:var(--mute)">Ücretsiz Kargo Limiti (TL)</label><input type="number" id="cmsFreeShippingLimit" class="w-full" /></div>
+                <div><label class="block text-xs mb-1" style="color:var(--mute)">Sabit Kargo Ücreti (TL)</label><input type="number" id="cmsShippingCost" class="w-full" /></div>
+            </div>
+            <button onclick="saveCMSBanner()" class="btn-primary">Ayarları Güncelle</button>
+        </div>
+        
+        <div class="card">
+            <p class="card-title">Kategori Yönetimi</p>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="newCategoryInput" placeholder="Yeni Kategori Adı" class="w-full" /> 
+                <button onclick="addCategory()" class="btn-primary">Ekle</button>
+            </div>
+            <div id="adminCategoriesList" class="flex flex-wrap gap-2 mt-4">Yükleniyor...</div>
+        </div>
+    </div>
+
+  </main>
+</div>
 </section>
 
 <!-- PROFILE PAGE -->

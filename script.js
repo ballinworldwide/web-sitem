@@ -1,4 +1,4 @@
-const firebaseConfig = { apiKey: "AIzaSyA3n5nXEk_oGQvM2VQW1YP1xiDeN4CdR94", authDomain: "ballin-c8851.firebaseapp.com", projectId: "ballin-c8851", storageBucket: "ballin-c8851.firebasestorage.app", messagingSenderId: "432000140119", appId: "1:432000140119:web:74be527efa522936e27412" };
+const firebaseConfig = { apiKey: "AIzaSyAiwyFOinP5FQc3npY0S34k1OrLG6u7Elo", authDomain: "ballinww.firebaseapp.com", projectId: "ballinww", storageBucket: "ballinww.firebasestorage.app", messagingSenderId: "460665379220", appId: "1:460665379220:web:b162c760e1b06bfbc2d781" };
 const ADMIN_EMAIL = "ballinworldw@gmail.com"; 
 
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }

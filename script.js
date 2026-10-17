@@ -177,7 +177,7 @@ function initLocationDropdowns() {
         const el = document.getElementById(id);
         if(!el) return;
         el.innerHTML = '<option value="">İl Seçiniz</option>';
-        Object.keys(TURKEY_LOCATIONS).sort((a,b)=>a.localeCompare('tr')).forEach(city => {
+        Object.keys(TURKEY_LOCATIONS).sort((a, b) => a.localeCompare(b, 'tr')).forEach(city => {
             el.innerHTML += `<option value="${city}">${city}</option>`;
         });
     });
@@ -190,7 +190,7 @@ function populateDistricts(citySelectId, districtSelectId) {
     const city = cityEl.value;
     distSelect.innerHTML = '<option value="">İlçe Seçiniz</option>';
     if(city && TURKEY_LOCATIONS[city]) {
-        TURKEY_LOCATIONS[city].sort((a,b)=>a.localeCompare('tr')).forEach(d => {
+        TURKEY_LOCATIONS[city].sort((a, b) => a.localeCompare(b, 'tr')).forEach(d => {
             distSelect.innerHTML += `<option value="${d}">${d}</option>`;
         });
     }

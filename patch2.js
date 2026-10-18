@@ -2,7 +2,7 @@
    <script src="script.js"></script> <script src="patch.js"></script> <script src="patch2.js"></script> */
 (function () {
   'use strict';
-  const UPLOAD_URL = 'https://BURAYA-WORKER-ADRESI.workers.dev';   // <-- Worker adresini yaz
+  const UPLOAD_URL = 'https://ballin-upload.ballinworldw.workers.dev';   // <-- Worker adresini yaz
   const $ = id => document.getElementById(id);
   const FV = firebase.firestore.FieldValue;
   const isAdm = () => !!(currentUser && !currentUser.isAnonymous && currentUser.email === ADMIN_EMAIL);

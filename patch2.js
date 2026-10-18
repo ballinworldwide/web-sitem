@@ -2,7 +2,7 @@
    <script src="script.js"></script> <script src="patch.js"></script> <script src="patch2.js"></script> */
 (function () {
   'use strict';
-  const UPLOAD_URL = 'https://ballin-worker.pages.dev';   // <-- Worker adresini yaz
+  const UPLOAD_URL = 'https://BURAYA-WORKER-ADRESI.workers.dev';   // <-- Worker adresini yaz
   const $ = id => document.getElementById(id);
   const FV = firebase.firestore.FieldValue;
   const isAdm = () => !!(currentUser && !currentUser.isAnonymous && currentUser.email === ADMIN_EMAIL);
@@ -46,8 +46,10 @@
   async function upload(src) {
     if (NO_WORKER) { const bl = await toWebp(src, 800); return new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(bl); }); }
     const blob = await toWebp(src), tok = await currentUser.getIdToken();
-    const r = await fetch(UPLOAD_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': blob.type }, body: blob });
-    if (!r.ok) throw new Error('Görsel yüklenemedi (' + r.status + '). Worker adresini ve ayarlarını kontrol edin.');
+    let r;
+    try { r = await fetch(UPLOAD_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': blob.type }, body: blob }); }
+    catch (e) { throw new Error('Worker\'a ulaşılamadı: adres yanlış, Worker yayında değil veya ALLOWED_ORIGIN bu site adresiyle birebir aynı değil.'); }
+    if (!r.ok) { let m = ''; try { m = (await r.json()).error; } catch (e) {} throw new Error('Görsel yüklenemedi (' + r.status + (m ? ': ' + m : '') + ')'); }
     return (await r.json()).url;
   }
   const toUrl = s => String(s).startsWith('data:') ? upload(s) : Promise.resolve(s);   // base64 ise yükle, URL ise aynen bırak

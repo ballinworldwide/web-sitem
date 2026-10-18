@@ -13,7 +13,7 @@
   const st = document.createElement('style');
   st.textContent = 'body table{min-width:0}#page-admin table{min-width:560px}#page-admin{overflow-y:auto}' +
     '#aiChatBox,button[onclick="toggleAI()"]{display:none!important}' +
-    '.toast-notification{z-index:20000!important}div:has(>.compare-checkbox),.compare-checkbox,.compare-bar{display:none!important}' +
+    '.toast-notification{z-index:20000!important}.compare-checkbox,.compare-bar{display:none!important}' +
     '@media(max-width:820px){.admin-layout{flex-direction:column;height:auto;min-height:100vh}' +
     '.admin-sidebar{width:100%;flex-direction:row;overflow-x:auto;padding:10px;border-right:0;border-bottom:1px solid var(--line)}' +
     '.admin-main{padding:16px;overflow:visible}.kpis{grid-template-columns:repeat(2,1fr)}.grid-2{grid-template-columns:1fr}' +

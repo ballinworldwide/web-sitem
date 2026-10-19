@@ -5,8 +5,10 @@
   const $ = id => document.getElementById(id), E = s => window.esc(s), FV = firebase.firestore.FieldValue;
   const isOwner = () => !!(currentUser && !currentUser.isAnonymous && currentUser.email === ADMIN_EMAIL);
   const role = () => isOwner() ? 'owner' : (currentUser && !currentUser.isAnonymous ? STAFF_ROLE : null);
-  const TABS = { owner: ['dashboard', 'orders', 'products', 'customers', 'coupons', 'settings', 'pstatus', 'alerts', 'logs', 'staff'], siparis: ['orders', 'customers'], urun: ['products', 'pstatus', 'alerts'] };
-  const NAMES = { siparis: 'Sipariş sorumlusu', urun: 'Ürün sorumlusu' };
+  const TABS = { owner: ['dashboard', 'orders', 'products', 'customers', 'coupons', 'settings', 'pstatus', 'alerts', 'logs', 'staff'], siparis: ['orders'], urun: ['products', 'pstatus', 'alerts'] };
+  TABS.yonetici = TABS.owner;
+  const NAMES = { siparis: 'Sipariş sorumlusu', urun: 'Ürün sorumlusu', yonetici: 'Yönetici' };
+  const full = () => ['owner', 'yonetici'].includes(role());
   const ok = t => (TABS[role()] || []).includes(t);
   const log = (action, detail) => db.collection('admin_logs').add({ action, detail, by: currentUser.email, at: FV.serverTimestamp() }).catch(() => {});
 
@@ -34,10 +36,10 @@
   const _oap = window.openAdminPanel;
   window.openAdminPanel = function () {
     const r0 = _oap.apply(this, arguments); applyRole(); const rl = role();
-    if (rl && rl !== 'owner') { const f = TABS[rl][0]; switchAdminTab(f, [...document.querySelectorAll('.nav-item')].find(n => (n.getAttribute('onclick') || '').includes("'" + f + "'"))); }
+    if (rl && !full()) { const f = TABS[rl][0]; switchAdminTab(f, [...document.querySelectorAll('.nav-item')].find(n => (n.getAttribute('onclick') || '').includes("'" + f + "'"))); }
     return r0;
   };
-  const gate = (n, roles) => { const o = window[n]; if (o) window[n] = function () { const r = role(); if (!r || (r !== 'owner' && !roles.includes(r))) return; return o.apply(this, arguments); }; };
+  const gate = (n, roles) => { const o = window[n]; if (o) window[n] = function () { const r = role(); if (!r || (!full() && !roles.includes(r))) return; return o.apply(this, arguments); }; };
   ['loadAdminOrders', 'loadOrdersAndCalculateStats', 'loadCustomersCRM', 'loadAbandonedCarts'].forEach(n => gate(n, ['siparis']));
   gate('loadCouponsAdmin', []);
 
@@ -47,8 +49,8 @@
     const nav = [...document.querySelectorAll('.nav-item')].find(n => (n.getAttribute('onclick') || '').includes("'logs'"));
     if (nav) nav.insertAdjacentHTML('afterend', '<a class="nav-item" onclick="switchAdminTab(\'staff\', this)">Yöneticiler</a>');
     last.insertAdjacentHTML('afterend', '<div id="tab-staff" class="admin-tab"><div class="card"><p class="card-title">Yöneticiler ve Roller</p>' +
-      '<p style="font-size:12px;color:var(--mute);margin-bottom:12px"><b>Sipariş sorumlusu:</b> Siparişler, Müşteriler (müşteri bilgilerini görür). <b>Ürün sorumlusu:</b> Ürün Yönetimi, Ürün Durumu, Haber Ver. Eklenen kişi bu e-posta ile (Google girişi önerilir, e-posta doğrulanmış olmalı) giriş yapınca Yönetim düğmesini görür.</p>' +
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><input id="stfMail" type="email" placeholder="E-posta" style="flex:1;min-width:200px"><select id="stfRole"><option value="siparis">Sipariş sorumlusu</option><option value="urun">Ürün sorumlusu</option></select><button class="btn-primary" onclick="addStaff()">Ekle</button></div><div id="staffList"></div></div></div>');
+      '<p style="font-size:12px;color:var(--mute);margin-bottom:12px"><b>Sipariş sorumlusu:</b> yalnızca Siparişler. <b>Ürün sorumlusu:</b> Ürün Yönetimi, Ürün Durumu, Haber Ver. <b>Yönetici:</b> Sahip gibi her şeye erişir (Yönetici rolünü yalnızca Sahip verir/kaldırır). Eklenen kişi bu e-posta ile (Google girişi önerilir, e-posta doğrulanmış olmalı) giriş yapınca Yönetim düğmesini görür.</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><input id="stfMail" type="email" placeholder="E-posta" style="flex:1;min-width:200px"><select id="stfRole"><option value="siparis">Sipariş sorumlusu</option><option value="urun">Ürün sorumlusu</option><option value="yonetici">Yönetici</option></select><button class="btn-primary" onclick="addStaff()">Ekle</button></div><div id="staffList"></div></div></div>');
   }
   async function loadStaff() {
     const b = $('staffList'); if (!b) return; const s = await db.collection('staff').get().catch(() => null); if (!s) return;
@@ -57,8 +59,9 @@
     b.querySelectorAll('[data-del]').forEach(x => { x.onclick = () => delStaff(x.dataset.del); });
   }
   window.addStaff = async function () {
-    if (!isOwner()) return; const m = ($('stfMail').value || '').trim().toLowerCase(), r = $('stfRole').value;
+    if (!full()) return; const m = ($('stfMail').value || '').trim().toLowerCase(), r = $('stfRole').value;
     if (!/^\S+@\S+\.\S+$/.test(m) || m === ADMIN_EMAIL) return showToast('Geçerli bir e-posta girin.', 'error');
+    if (r === 'yonetici' && !isOwner()) return showToast('Yönetici rolünü yalnızca Sahip verebilir.', 'error');
     try { await db.collection('staff').doc(m).set({ role: r, addedBy: currentUser.email, at: FV.serverTimestamp() }); log('yönetici eklendi', m + ' → ' + r); $('stfMail').value = ''; showToast('Yönetici eklendi.', 'success'); loadStaff(); }
     catch (e) { showToast(e.message, 'error'); }
   };

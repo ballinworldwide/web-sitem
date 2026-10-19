@@ -1,5 +1,8 @@
 const firebaseConfig = { apiKey: "AIzaSyAiwyFOinP5FQc3npY0S34k1OrLG6u7Elo", authDomain: "ballinww.firebaseapp.com", projectId: "ballinww", storageBucket: "ballinww.firebasestorage.app", messagingSenderId: "460665379220", appId: "1:460665379220:web:b162c760e1b06bfbc2d781" };
-const ADMIN_EMAIL = "ballinworldw@gmail.com"; 
+const ADMIN_EMAIL = "ballinworldw@gmail.com";
+let STAFF_ROLE = null; // yama-3: "siparis" | "urun" | null
+function isStaffNow(u) { return !!(u && !u.isAnonymous && (u.email === ADMIN_EMAIL || STAFF_ROLE)); }
+ 
 
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.firestore();
@@ -338,7 +341,7 @@ function loadCMSBanner() {
     }).catch(e => console.log("CMS yüklenemedi:", e));
 }
 function saveCMSBanner() {
-    if(!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+    if(!isStaffNow(currentUser)) return;
     let t = document.getElementById('cmsHeroTitle') ? document.getElementById('cmsHeroTitle').value.trim() : "";
     let d = document.getElementById('cmsHeroDesc') ? document.getElementById('cmsHeroDesc').value.trim() : "";
     let limitVal = document.getElementById('cmsFreeShippingLimit') ? parseFloat(document.getElementById('cmsFreeShippingLimit').value) : 3000;
@@ -525,7 +528,7 @@ function loadCouponsAdmin() {
 }
 
 function addNewCoupon() {
-    if(!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+    if(!isStaffNow(currentUser)) return;
     let code = document.getElementById('adminCouponCode') ? document.getElementById('adminCouponCode').value.trim().toUpperCase() : "";
     let discount = document.getElementById('adminCouponDiscount') ? parseFloat(document.getElementById('adminCouponDiscount').value) : NaN;
     let limit = document.getElementById('adminCouponLimit') ? parseInt(document.getElementById('adminCouponLimit').value) : NaN;
@@ -606,7 +609,7 @@ function saveBulkItem(prodId) {
 }
 
 function loadCustomersCRM() {
-    if(!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+    if(!isStaffNow(currentUser)) return;
     db.collection("users").get().then((snap) => {
         allCustomers = [];
         let html = '<table class="w-full text-left text-sm"><thead><tr class="border-b border-brand-200"><th class="pb-2">Ad Soyad</th><th class="pb-2">E-posta</th><th class="pb-2">Telefon</th><th class="pb-2">Puan</th><th class="pb-2">Şehir</th><th class="pb-2">Kayıt Tarihi</th></tr></thead><tbody>';
@@ -625,7 +628,7 @@ function loadCustomersCRM() {
 }
 
 function loadAbandonedCarts() {
-    if(!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+    if(!isStaffNow(currentUser)) return;
     db.collection("users").get().then(snap => {
         let html = '';
         snap.forEach(doc => {
@@ -828,7 +831,7 @@ function setOrderFilter(status, btnEl) {
 function toggleSelectAllOrders(master) { document.querySelectorAll('.order-checkbox').forEach(cb => cb.checked = master.checked); }
 
 function bulkUpdateOrderStatus(targetStatus) {
-    if(!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+    if(!isStaffNow(currentUser)) return;
     let checked = document.querySelectorAll('.order-checkbox:checked');
     if(checked.length === 0) { showToast("En az bir sipariş seçin.", 'error'); return; }
     if(!confirm(`Seçilen ${checked.length} sipariş '${targetStatus}' yapılacak. Onaylıyor musunuz?`)) return;
@@ -993,7 +996,7 @@ function createProductCard(prod) {
 
 function switchPage(pageId) { 
     if (pageId === 'admin') {
-        if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+        if (!isStaffNow(currentUser)) {
             showToast("Bu sayfaya erişim yetkiniz bulunmamaktadır.", 'error');
             return;
         }
@@ -1733,7 +1736,7 @@ function rejectReturn(orderId) {
 function openAdminPanel() { switchPage('admin'); loadAdminOrders(); loadOrdersAndCalculateStats(); renderBulkTable(); loadCouponsAdmin(); loadCustomersCRM(); loadAbandonedCarts(); }
 
 function addNewProduct() { 
-    if(!currentUser || currentUser.email !== ADMIN_EMAIL) return; 
+    if(!isStaffNow(currentUser)) return; 
     const name = document.getElementById('adminProdName') ? document.getElementById('adminProdName').value.trim() : ""; 
     const price = document.getElementById('adminProdPrice') ? parseFloat(document.getElementById('adminProdPrice').value) : NaN; 
     const category = document.getElementById('adminProdCategory') ? document.getElementById('adminProdCategory').value : "Giyim"; 
@@ -1789,7 +1792,7 @@ function addNewProduct() {
 
 // --- YENİ: İade Reddi Admin Panel Görünümü ---
 function loadAdminOrders() { 
-    if(!currentUser || currentUser.email !== ADMIN_EMAIL) return; 
+    if(!isStaffNow(currentUser)) return; 
     const container = document.getElementById('adminOrdersContainer'); 
     if(!container) return;
     db.collection("orders").orderBy("orderDate", "desc").get().then((snap) => { 
@@ -2153,7 +2156,7 @@ window.saveEditedProductData = async function(btn) {
   window.esc = esc;
   const tl = n => (Number(n) || 0).toLocaleString('tr-TR');
   const FV = firebase.firestore.FieldValue;
-  const isAdm = () => !!(currentUser && !currentUser.isAnonymous && currentUser.email === ADMIN_EMAIL);
+  const isAdm = () => isStaffNow(currentUser);
   const sizeKey = i => (i.size && i.size !== 'Standart') ? String(i.size).toUpperCase() : null;
   const parseSS = s => { const m = {}; String(s || '').split(',').forEach(x => { const [a, b] = x.split(':'); if (a && b) m[a.trim().toUpperCase()] = parseInt(b) || 0; }); return m; };
   const joinSS = m => Object.entries(m).map(([a, b]) => a + ':' + b).join(', ');
@@ -2458,7 +2461,7 @@ window.saveEditedProductData = async function(btn) {
   const UPLOAD_URL = 'https://ballin-upload.ballinworldw.workers.dev';   // <-- Worker adresini yaz
   const $ = id => document.getElementById(id);
   const FV = firebase.firestore.FieldValue;
-  const isAdm = () => !!(currentUser && !currentUser.isAnonymous && currentUser.email === ADMIN_EMAIL);
+  const isAdm = () => isStaffNow(currentUser);
   const parseSS = s => { const m = {}; String(s || '').split(',').forEach(x => { const [a, b] = x.split(':'); if (a && b && !isNaN(parseInt(b))) m[a.trim().toUpperCase()] = parseInt(b); }); return m; };
   const sum = m => Object.values(m).reduce((a, b) => a + b, 0);
 
@@ -2858,7 +2861,7 @@ window.saveEditedProductData = async function(btn) {
   'use strict';
   const $ = id => document.getElementById(id), E = s => window.esc(s), tl = n => (Number(n) || 0).toLocaleString('tr-TR');
   const FV = firebase.firestore.FieldValue;
-  const isAdm = () => !!(currentUser && !currentUser.isAnonymous && currentUser.email === ADMIN_EMAIL);
+  const isAdm = () => isStaffNow(currentUser);
   const log = (action, detail) => db.collection('admin_logs').add({ action, detail: String(detail).slice(0, 300), by: currentUser.email, at: FV.serverTimestamp() }).catch(() => {});
   const vis = p => isAdm() || (!p.status || p.status === 'published');
   const dt = x => x && x.toDate ? x.toDate().toLocaleString('tr-TR') : (x || '-');

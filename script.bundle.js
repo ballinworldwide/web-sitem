@@ -1,6 +1,6 @@
 const firebaseConfig = { apiKey: "AIzaSyAiwyFOinP5FQc3npY0S34k1OrLG6u7Elo", authDomain: "ballinww.firebaseapp.com", projectId: "ballinww", storageBucket: "ballinww.firebasestorage.app", messagingSenderId: "460665379220", appId: "1:460665379220:web:b162c760e1b06bfbc2d781" };
 const ADMIN_EMAIL = "ballinworldw@gmail.com";
-let STAFF_ROLE = null; // yama-3: "siparis" | "urun" | null
+let STAFF_ROLE = null; // yama-3: "siparis" | "urun" | "yonetici" | null
 function isStaffNow(u) { return !!(u && !u.isAnonymous && (u.email === ADMIN_EMAIL || STAFF_ROLE)); }
  
 
@@ -698,32 +698,9 @@ async function generateEmailItemsHTML(items) {
     return html;
 }
 
-async function sendOrderConfirmationEmail(orderData) {
-    try {
-        let itemsHTML = await generateEmailItemsHTML(orderData.items);
-        emailjs.send("service_8a23cbj", "template_2pyabzf", {
-            to_email: orderData.userEmail,
-            customer_name: orderData.shippingInfo.name,
-            order_id: orderData.orderId,
-            total_amount: orderData.totalAmount + " TL",
-            shipping_address: orderData.shippingInfo.address + " " + (orderData.shippingInfo.district || '') + "/" + (orderData.shippingInfo.city || ''),
-            order_items_html: itemsHTML
-        });
-    } catch(e) { console.log("Email gönderilemedi:", e); }
-}
+async /* sendOrderConfirmationEmail yama-1 ile Worker üzerinden çalışır */
 
-async function sendShippingUpdateEmail(orderId, email, name, trackNo, items) {
-    try {
-        let itemsHTML = await generateEmailItemsHTML(items);
-        emailjs.send("service_8a23cbj", "template_492t2tn", {
-            to_email: email,
-            customer_name: name,
-            order_id: orderId.slice(0, 8).toUpperCase(),
-            tracking_number: trackNo,
-            order_items_html: itemsHTML
-        });
-    } catch(e) { console.log("Kargo bildirim maili gönderilemedi:", e); }
-}
+async /* sendShippingUpdateEmail yama-1 ile Worker üzerinden çalışır */
 
 function sendRecoveryEmail(email, name) {
     showToast(`${email} adresine sepet hatırlatması iletildi.`, 'success');
@@ -2646,7 +2623,7 @@ window.saveEditedProductData = async function(btn) {
       H('1. Veri sorumlusu') + P(SATICI) +
       H('2. İşlenen veriler') + P('Kimlik (ad, soyad), iletişim (e-posta, telefon, adres), müşteri işlem (sipariş, sepet, kupon, puan, yorum) ve işlem güvenliği (oturum/hesap bilgileri) verileri.') +
       H('3. Amaç ve hukuki sebep') + P('Verileriniz; siparişin alınması, teslimi, iade/cayma süreçlerinin yürütülmesi, müşteri iletişimi, hesap yönetimi, yasal yükümlülüklerin yerine getirilmesi ve hakkın tesisi/korunması amaçlarıyla; sözleşmenin kurulması ve ifası, hukuki yükümlülük ve meşru menfaat hukuki sebeplerine dayanılarak işlenir.') +
-      H('4. Aktarım') + P('Verileriniz; kargo firmalarına, e-posta ve barındırma/altyapı hizmeti sağlayıcılarına (Google Firebase, Cloudflare, EmailJS gibi, bunların bir kısmı yurt dışında yer alabilir), yetkili kamu kurumlarına ve hizmetin gerektirdiği ölçüde iş ortaklarına aktarılabilir.') +
+      H('4. Aktarım') + P('Verileriniz; kargo firmalarına, e-posta ve barındırma/altyapı hizmeti sağlayıcılarına (Google Firebase, Cloudflare, Resend gibi, bunların bir kısmı yurt dışında yer alabilir), yetkili kamu kurumlarına ve hizmetin gerektirdiği ölçüde iş ortaklarına aktarılabilir.') +
       H('5. Saklama süresi') + P('Verileriniz, işleme amacının gerektirdiği ve yasal saklama sürelerinin öngördüğü süre boyunca saklanır, süre sonunda silinir veya anonim hale getirilir.') +
       H('6. Haklarınız (KVKK m.11)') + P('Verilerinizin işlenip işlenmediğini öğrenme, bilgi talep etme, düzeltme, silme, aktarılan üçüncü kişileri öğrenme, itiraz etme ve zarar halinde tazminat talep etme haklarına sahipsiniz.') +
       H('7. Başvuru') + P('Taleplerinizi ' + e(INFO.mail) + ' adresine veya yukarıdaki adrese iletebilirsiniz.'));

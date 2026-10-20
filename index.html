@@ -19,27 +19,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <link rel="stylesheet" href="tailwind.css">
     <link rel="stylesheet" href="style.css">
-    
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script>
-        (function(){
-            emailjs.init("mJSA9JIvhcULV5-yQ");
-        })();
-    </script>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'], serif: ['Playfair Display', 'serif'] },
-                    colors: { brand: { 50: '#f8f9fa', 100: '#f1f3f5', 200: '#e9ecef', 300: '#dee2e6', 400: '#ced4da', 500: '#adb5bd', 600: '#868e96', 700: '#495057', 800: '#343a40', 900: '#212529' } }
-                }
-            }
-        }
-    </script>
 </head>
 <body class="bg-white text-brand-900 font-sans antialiased overflow-x-hidden flex flex-col min-h-screen">
 <style>
@@ -711,6 +692,7 @@
 <script src="yama-5.js"></script>
 <script src="yama-6.js"></script>
 <script src="yama-7.js"></script>
+<script src="yama-8.js"></script>
 <!-- ÜRÜN DÜZENLEME MODALI (DARK MODE) -->
 <div id="editProductModal" class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm hidden" style="font-family: 'Inter', sans-serif;">
     <div class="bg-[#131316] border border-[#2a2a30] rounded-xl w-[90%] max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative text-[#f4f4f2]">

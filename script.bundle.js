@@ -451,7 +451,8 @@ function exportProductsToCSV() {
     allProducts.forEach(p => {
         let img = (p.images && p.images[0]) ? p.images[0] : (p.image || '');
         let desc = (p.description || '').replace(/"/g, '""');
-        csv += `"${p.name}",${p.price},"${p.category || 'Giyim'}",${p.stock},"${p.sizeStock || ''}","${desc}","${img}"\n`;
+       const nm = (p.name || '').replace(/"/g, '""');
+       csv += `"${nm}",${p.price},"${p.category || 'Giyim'}",${p.stock},"${p.sizeStock || ''}","${desc}","${img}"\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -469,7 +470,7 @@ function importProductsFromCSV() {
     const reader = new FileReader();
     reader.onload = function(e) {
         const text = e.target.result;
-        const rows = text.split('\n').filter(r => r.trim() !== '');
+        const rows = text.split('\n').map(r => r.replace(/\r$/, '')).filter(r => r.trim() !== '');
         if(rows.length <= 1) { showToast("CSV dosyası geçersiz.", 'error'); return; }
         let batch = db.batch();
         let count = 0;
@@ -2306,32 +2307,43 @@ window.saveEditedProductData = async function(btn) {
   };
 
   /* ---------- Admin: iade/iptal/puan mutabakatı ---------- */
-  async function reconcile(orders) {
-    for (const o of orders) {
-      try {
-        const orf = db.collection('orders').doc(o.id), uref = db.collection('users').doc(o.userId);
-        if (['İptal Edildi', 'İade Onaylandı'].includes(o.status) && !o.refundDone) {
-          const need = groupCart(o.items || []);
-          for (const id of Object.keys(need)) {
-            await db.runTransaction(async tx => {
-              const r = db.collection('products').doc(id), s = await tx.get(r); if (!s.exists) return;
-              const p = s.data(); let ss = p.sizeStock || '';
-              if (ss) { const m = parseSS(ss); Object.keys(need[id].s).forEach(z => { if (m[z] !== undefined) m[z] += need[id].s[z]; }); ss = joinSS(m); }
-              tx.update(r, { stock: (p.stock || 0) + need[id].t, sizeStock: ss });
-            });
-          }
-          const us = await uref.get();
-          const delta = (o.usedPoints || 0) - (o.pointsCredited ? (o.creditedPoints || 0) : 0);
-          if (us.exists && delta) await uref.update({ points: FV.increment(delta) });
-          await orf.update({ refundDone: true });
-        } else if (o.status === 'Tamamlandı' && !o.pointsCredited) {
-          const pts = Math.floor((o.totalAmount || 0) * 0.05), us = await uref.get();
-          if (us.exists && pts > 0) await uref.update({ points: FV.increment(pts) });
-          await orf.update({ pointsCredited: true, creditedPoints: us.exists ? pts : 0 });
+async function reconcile(orders) {
+  for (const o of orders) {
+    try {
+      const orf = db.collection('orders').doc(o.id);
+      const claimed = await db.runTransaction(async tx => {
+        const s = await tx.get(orf); if (!s.exists) return null;
+        const d = s.data();
+        if (['İptal Edildi', 'İade Onaylandı'].includes(d.status) && !d.refundDone) {
+          tx.update(orf, { refundDone: true }); return { type: 'refund', data: d };
         }
-      } catch (e) { console.warn('mutabakat', o.id, e.message); }
-    }
+        if (d.status === 'Tamamlandı' && !d.pointsCredited) {
+          tx.update(orf, { pointsCredited: true }); return { type: 'points', data: d };
+        }
+        return null;
+      });
+      if (!claimed) continue;
+      const d = claimed.data, uref = db.collection('users').doc(o.userId);
+      if (claimed.type === 'refund') {
+        const need = groupCart(d.items || []);
+        for (const id of Object.keys(need)) {
+          await db.runTransaction(async tx => {
+            const r = db.collection('products').doc(id), s = await tx.get(r); if (!s.exists) return;
+            const p = s.data(); let ss = p.sizeStock || '';
+            if (ss) { const m = parseSS(ss); Object.keys(need[id].s).forEach(z => { if (m[z] !== undefined) m[z] += need[id].s[z]; }); ss = joinSS(m); }
+            tx.update(r, { stock: (p.stock || 0) + need[id].t, sizeStock: ss });
+          });
+        }
+        const us = await uref.get();
+        if (us.exists && d.usedPoints) await uref.update({ points: FV.increment(d.usedPoints) });
+      } else {
+        const pts = Math.floor((d.totalAmount || 0) * 0.05), us = await uref.get();
+        if (us.exists && pts > 0) await uref.update({ points: FV.increment(pts) });
+        await orf.update({ creditedPoints: us.exists ? pts : 0 });
+      }
+    } catch (e) { console.warn('mutabakat', o.id, e.message); }
   }
+}
 
   /* ---------- Admin: siparişler ---------- */
   window.loadAdminOrders = async function () {

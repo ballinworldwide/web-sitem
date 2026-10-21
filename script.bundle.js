@@ -698,9 +698,9 @@ async function generateEmailItemsHTML(items) {
     return html;
 }
 
-async /* sendOrderConfirmationEmail yama-1 ile Worker üzerinden çalışır */
+/* sendOrderConfirmationEmail yama-1 ile Worker üzerinden çalışır */
 
-async /* sendShippingUpdateEmail yama-1 ile Worker üzerinden çalışır */
+/* sendShippingUpdateEmail yama-1 ile Worker üzerinden çalışır */
 
 function sendRecoveryEmail(email, name) {
     showToast(`${email} adresine sepet hatırlatması iletildi.`, 'success');

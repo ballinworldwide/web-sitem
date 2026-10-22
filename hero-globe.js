@@ -1,42 +1,51 @@
 /* ===================================================================
-   HERO-GLOBE.JS — index.html'de script.bundle.js'ten SONRA yükle.
-   ÖNEMLİ: Bu, paylaştığın React/shadcn bileşeninin (RotatingEarth)
-   vanilla JS + D3 çevirisidir. Projen Next.js/React/shadcn değil, düz
-   HTML/JS olduğu için ".tsx" dosyasını olduğu gibi kopyalayamayız;
-   aynı görsel mantığı (noktalı/halftone dünya, fare ile döndürme,
-   scroll ile zoom) canvas üzerinde yeniden kuruldu.
-
-   index.html'de yapman gerekenler:
-   1) <head> içine (tailwind.css'ten sonra, fark etmez):
-      <script src="https://d3js.org/d3.v7.min.js"></script>
-   2) #page-home içindeki hero div'ine (h1/p/button'un olduğu kısım),
-      arka plan olarak eklemek için şu satırı ekle:
-      <canvas id="heroGlobe" style="position:absolute;inset:0;margin:auto;max-width:100%"></canvas>
-      (hero div'i zaten position:relative, overflow:hidden olduğu için
-      canvas'ı metnin arkasına koymak için z-index: metin bloğuna
-      "relative z-10" eklemen yeterli — mevcut hero'da zaten var.)
-   3) Bu dosyayı en sona, diğer script etiketlerinden sonra ekle.
-
-   Not: Veri raw.githubusercontent.com'dan çekiliyor; _headers'ta CSP
-   yok şu an, o yüzden sorun çıkarmaz. İleride CSP eklersen bu domaini
-   connect-src'ye eklemeyi unutma.
+   HERO-GLOBE.JS (DÜZELTİLMİŞ) — index.html'de script.bundle.js'ten
+   SONRA tek bir satırla ekle, başka HİÇBİR HTML değişikliği GEREKMEZ:
+      <script src="hero-globe.js"></script>
+   Bu sürüm d3'ü kendi yüklüyor ve canvas'ı "Ana Sayfa" hero bölümüne
+   (bg-brand-50 class'lı kutuya) kendisi ekliyor.
    =================================================================== */
 (function () {
   'use strict';
-  function initHeroGlobe() {
-    const canvas = document.getElementById('heroGlobe');
-    if (!canvas || !window.d3 || canvas.dataset.inited) return;
-    canvas.dataset.inited = '1';
-    const context = canvas.getContext('2d');
-    if (!context) return;
 
-    const parent = canvas.closest('.relative') || canvas.parentElement;
-    const w = Math.min(parent.clientWidth || 800, window.innerWidth - 40);
-    const h = Math.min(600, window.innerHeight - 100);
+  function ensureD3(cb) {
+    if (window.d3) return cb();
+    const s = document.createElement('script');
+    s.src = 'https://d3js.org/d3.v7.min.js';
+    s.onload = cb;
+    s.onerror = () => console.warn('[hero-globe] d3 yüklenemedi');
+    document.head.appendChild(s);
+  }
+
+  function findHeroContainer() {
+    const home = document.getElementById('page-home'); if (!home) return null;
+    return [...home.children].find(el => el.classList && el.classList.contains('bg-brand-50')) || null;
+  }
+
+  function ensureCanvas() {
+    const hero = findHeroContainer(); if (!hero) return null;
+    let c = document.getElementById('heroGlobe');
+    if (!c) {
+      c = document.createElement('canvas');
+      c.id = 'heroGlobe';
+      c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:auto;opacity:.9';
+      hero.insertBefore(c, hero.firstChild);
+    }
+    return c;
+  }
+
+  function initHeroGlobe() {
+    const canvas = ensureCanvas();
+    if (!canvas || canvas.dataset.inited) return;
+    const hero = canvas.parentElement;
+    const w = hero.clientWidth || 800, h = hero.clientHeight || 500;
+    if (w < 50 || h < 50) { setTimeout(initHeroGlobe, 300); return; } // hero henüz layout almamış olabilir
+    canvas.dataset.inited = '1';
+    const context = canvas.getContext('2d'); if (!context) return;
+
     const radius = Math.min(w, h) / 2.5;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = w * dpr; canvas.height = h * dpr;
-    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
     context.scale(dpr, dpr);
 
     const projection = d3.geoOrthographic().scale(radius).translate([w / 2, h / 2]).clipAngle(90);
@@ -85,13 +94,13 @@
       const scaleFactor = projection.scale() / radius;
       context.beginPath();
       context.arc(w / 2, h / 2, projection.scale(), 0, 2 * Math.PI);
-      context.fillStyle = '#000000'; context.fill();
+      context.fillStyle = '#0b0b0c'; context.fill();
       context.strokeStyle = '#ffffff'; context.lineWidth = 2 * scaleFactor; context.stroke();
       if (!landFeatures) return;
 
       const graticule = d3.geoGraticule();
       context.beginPath(); path(graticule());
-      context.strokeStyle = '#ffffff'; context.lineWidth = 1 * scaleFactor; context.globalAlpha = 0.25; context.stroke(); context.globalAlpha = 1;
+      context.strokeStyle = '#ffffff'; context.lineWidth = 1 * scaleFactor; context.globalAlpha = 0.2; context.stroke(); context.globalAlpha = 1;
 
       context.beginPath();
       landFeatures.features.forEach(f => path(f));
@@ -101,7 +110,7 @@
         const pr = projection([d.lng, d.lat]);
         if (pr && pr[0] >= 0 && pr[0] <= w && pr[1] >= 0 && pr[1] <= h) {
           context.beginPath(); context.arc(pr[0], pr[1], 1.2 * scaleFactor, 0, 2 * Math.PI);
-          context.fillStyle = '#999999'; context.fill();
+          context.fillStyle = '#d4d4d8'; context.fill();
         }
       });
     }
@@ -113,7 +122,7 @@
         landFeatures.features.forEach(f => generateDots(f, 16).forEach(([lng, lat]) => allDots.push({ lng, lat })));
         render();
       })
-      .catch(() => {});
+      .catch(e => console.warn('[hero-globe] veri yüklenemedi', e));
 
     const rotation = [0, 0]; let autoRotate = true;
     d3.timer(() => { if (autoRotate) { rotation[0] += 0.5; projection.rotate(rotation); render(); } });
@@ -142,7 +151,8 @@
     }, { passive: false });
   }
 
+  function boot() { ensureD3(() => setTimeout(initHeroGlobe, 50)); }
   const _sw = window.switchPage;
-  window.switchPage = function (id) { const r = _sw.apply(this, arguments); if (id === 'home') setTimeout(initHeroGlobe, 50); return r; };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initHeroGlobe); else initHeroGlobe();
+  window.switchPage = function (id) { const r = _sw.apply(this, arguments); if (id === 'home') setTimeout(boot, 50); return r; };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

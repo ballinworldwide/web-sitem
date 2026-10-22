@@ -20,6 +20,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="tailwind.css">
+	    <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-white text-brand-900 font-sans antialiased overflow-x-hidden flex flex-col min-h-screen">
@@ -122,7 +123,8 @@
             <h1 id="homeHeroTitle" class="font-serif text-4xl md:text-6xl lg:text-7xl tracking-tight text-brand-900 mb-6">LÜKSÜN YENİ TANIMI</h1>
             <p id="homeHeroDesc" class="mt-4 max-w-2xl text-lg md:text-xl text-brand-600 font-light mb-10">Zarafetin ve metalik estetiğin fütüristik çizgilerle buluştuğu nokta.</p>
             <button onclick="switchPage('collection')" class="inline-flex items-center justify-center px-8 py-4 text-sm font-medium tracking-widest text-white uppercase bg-brand-900 rounded-full shadow-xl hover:bg-brand-800 transition-all">Koleksiyonu Keşfet</button>
-        </div>
+            <canvas id="heroGlobe" style="position:absolute;inset:0;margin:auto;max-width:100%"></canvas>
+		</div>
     </div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <h2 class="font-serif text-3xl md:text-4xl text-brand-900 mb-12 text-center">Öne Çıkanlar</h2>

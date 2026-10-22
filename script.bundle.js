@@ -1,3 +1,36 @@
+/* ===================================================================
+   BALLIN — script.bundle.js (BİRLEŞTİRİLMİŞ SÜRÜM)
+   Bu dosya, script.bundle.js (çekirdek + patch.js...patch6.js) ve
+   ayrı yüklenen yama-1.js...yama-9.js dosyalarının TEK dosyada
+   birleştirilmiş halidir. Artık index.html'de bu dosyadan sonra
+   başka bir <script> etiketine gerek yoktur; eski yama-1.js...
+   yama-9.js dosyalarını index.html'den kaldırabilirsin.
+
+   Bölüm sırası aşağıdaki gibidir, her biri kendi başlığıyla
+   işaretlenmiştir — neyin nerede olduğunu aramak için büyük harfli
+   bölüm adlarını (CORE, PATCH.JS, YAMA-1 ...) ara:
+     1) CORE            — temel ürün/sepet/admin/CMS fonksiyonları
+     2) PATCH.JS         — güvenli ödeme, kupon/puan mutabakatı (YAMA-9 kilidi dahil)
+     3) PATCH2.JS        — görsel R2 yükleme, ürün ekle/düzenle
+     4) PATCH3.JS        — yasal sayfalar (TASLAK — INFO'yu doldur!)
+     5) PATCH4.JS        — sepette adet, kartta hızlı sepete ekle
+     6) PATCH5.JS        — sıralama, sipariş sorgula, kargo linki
+     7) PATCH6.JS        — vitrin, ürün durumu, log, e-posta doğrulama
+     8) YAMA-1 ... YAMA-8 — sırasıyla daha önce ayrı yüklenen yamalar
+     9) YAMA-9           — ek admin kilidi + CSV ikinci güvenlik katmanı
+
+   YAMA-9 ile yapılan asıl düzeltmeler (CORE ve PATCH.JS içine işlendi):
+     - CORE: script'i durduran 2 adet yalnız "async" satırı silindi
+     - CORE: exportProductsToCSV artık ürün adındaki " karakterini kaçırıyor
+     - PATCH.JS: reconcile() artık transaction ile kilitli (çifte iade yok)
+   =================================================================== */
+
+/* ===================================================================
+   CORE — script.bundle.js'in orijinal çekirdeği: Firebase bağlantısı,
+   kategori/konum verileri, ürün listeleme, sepet/ödeme (temel sürüm —
+   PATCH.JS bunu ezer), admin paneli temel fonksiyonları, ürün detayı,
+   CSV dışa/içe aktarma (YAMA-9: ürün adı kaçışı eklendi).
+   =================================================================== */
 const firebaseConfig = { apiKey: "AIzaSyAiwyFOinP5FQc3npY0S34k1OrLG6u7Elo", authDomain: "ballinww.firebaseapp.com", projectId: "ballinww", storageBucket: "ballinww.firebasestorage.app", messagingSenderId: "460665379220", appId: "1:460665379220:web:b162c760e1b06bfbc2d781" };
 const ADMIN_EMAIL = "ballinworldw@gmail.com";
 let STAFF_ROLE = null; // yama-3: "siparis" | "urun" | "yonetici" | null
@@ -451,8 +484,8 @@ function exportProductsToCSV() {
     allProducts.forEach(p => {
         let img = (p.images && p.images[0]) ? p.images[0] : (p.image || '');
         let desc = (p.description || '').replace(/"/g, '""');
-       const nm = (p.name || '').replace(/"/g, '""');
-       csv += `"${nm}",${p.price},"${p.category || 'Giyim'}",${p.stock},"${p.sizeStock || ''}","${desc}","${img}"\n`;
+        let nm = (p.name || '').replace(/"/g, '""');
+        csv += `"${nm}",${p.price},"${p.category || 'Giyim'}",${p.stock},"${p.sizeStock || ''}","${desc}","${img}"\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -1104,8 +1137,8 @@ function selectSizeOrNotify(sz, isOut, btnEl, prodId, prodName) {
         if(userMail && userMail.includes('@')) { 
             db.collection("stock_alerts").add({
                 email: userMail, productId: prodId || "Bilinmiyor", productName: prodName || "Bilinmiyor", size: sz, status: "bekliyor", requestDate: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => { showToast(`(${sz} Bedeni) Talebiniz alındı. Stok güncellendiğinde e-posta alacaksınız.`, 'success'); }).catch(e => { showToast("Talep kaydedilemedi, tekrar deneyin.", 'error'); });
-        } else if (userMail) { showToast("Geçerli bir e-posta adresi giriniz.", 'error'); }
+            }).then(() => { showToast(`(${sz} Bedeni) Talebiniz alındı. Stok güncellendiğinde e-posta alacaksınız.`, 'success'); }).catch(e => { showToast("Talep kaydedilemedi, tekrar deneyin.", 'error'); }); 
+        } else if (userMail) { showToast("Geçerli bir e-posta adresi giriniz.", 'error'); } 
         return; 
     } 
     
@@ -1123,7 +1156,7 @@ function notifyWhenAvailable(prodId, prodName) {
     if(userMail && userMail.includes('@')) { 
         db.collection("stock_alerts").add({
             email: userMail, productId: prodId || "Bilinmiyor", productName: prodName || "Bilinmiyor", size: "Standart / Tümü", status: "bekliyor", requestDate: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => { showToast("Talebiniz başarıyla alındı!", 'success'); });
+        }).then(() => { showToast("Talebiniz başarıyla alındı!", 'success'); }); 
     } 
 }
 
@@ -2123,10 +2156,14 @@ window.saveEditedProductData = async function(btn) {
         btn.disabled = false;
     }
 };
-;
-/* BALLIN patch.js (Aşama 1) — index.html'de script.js'ten HEMEN SONRA yükle:
-   <script src="script.js"></script>
-   <script src="patch.js"></script>                                              */
+/* ===================================================================
+   PATCH.JS — "Aşama 1" (orijinal patch sistemi, script.bundle.js içine
+   gömülüydü). Güvenli ödeme transaction'ı, kupon/puan mutabakatı,
+   yorumlar, admin sipariş ekranı burada tanımlanır.
+   YAMA-9 ile reconcile() fonksiyonu transaction-kilitli hale getirildi
+   (aşağıda "YAMA-9 DÜZELTMESİ" yorumunu ara) — çifte stok/puan iadesi
+   riskini kapatır.
+   =================================================================== */
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
@@ -2306,44 +2343,51 @@ window.saveEditedProductData = async function(btn) {
     }).catch(() => {});
   };
 
-  /* ---------- Admin: iade/iptal/puan mutabakatı ---------- */
-async function reconcile(orders) {
-  for (const o of orders) {
-    try {
-      const orf = db.collection('orders').doc(o.id);
-      const claimed = await db.runTransaction(async tx => {
-        const s = await tx.get(orf); if (!s.exists) return null;
-        const d = s.data();
-        if (['İptal Edildi', 'İade Onaylandı'].includes(d.status) && !d.refundDone) {
-          tx.update(orf, { refundDone: true }); return { type: 'refund', data: d };
+  /* ---------- Admin: iade/iptal/puan mutabakatı ----------
+     YAMA-9 DÜZELTMESİ: eskiden "oku → karar ver → yaz" sırasıyla çalışıyordu;
+     loadAdminOrders() hızlı art arda (ör. sekme değişimi + manuel tıklama)
+     tetiklenirse aynı sipariş iki kez iade edilebiliyordu (çifte stok/puan).
+     Şimdi "refundDone / pointsCredited" bayrağı TEK bir runTransaction
+     içinde okunup aynı anda true yapılıyor (kilit), asıl stok/puan işlemi
+     o kilit başarılı olduysa yapılıyor. İki eşzamanlı çağrıdan biri
+     transaction'ı kazanır, diğeri "zaten işlenmiş" görüp atlar. */
+  async function reconcile(orders) {
+    for (const o of orders) {
+      try {
+        const orf = db.collection('orders').doc(o.id);
+        const claimed = await db.runTransaction(async tx => {
+          const s = await tx.get(orf); if (!s.exists) return null;
+          const d = s.data();
+          if (['İptal Edildi', 'İade Onaylandı'].includes(d.status) && !d.refundDone) {
+            tx.update(orf, { refundDone: true }); return { type: 'refund', data: d };
+          }
+          if (d.status === 'Tamamlandı' && !d.pointsCredited) {
+            tx.update(orf, { pointsCredited: true }); return { type: 'points', data: d };
+          }
+          return null;
+        });
+        if (!claimed) continue;
+        const d = claimed.data, uref = db.collection('users').doc(o.userId);
+        if (claimed.type === 'refund') {
+          const need = groupCart(d.items || []);
+          for (const id of Object.keys(need)) {
+            await db.runTransaction(async tx => {
+              const r = db.collection('products').doc(id), s = await tx.get(r); if (!s.exists) return;
+              const p = s.data(); let ss = p.sizeStock || '';
+              if (ss) { const m = parseSS(ss); Object.keys(need[id].s).forEach(z => { if (m[z] !== undefined) m[z] += need[id].s[z]; }); ss = joinSS(m); }
+              tx.update(r, { stock: (p.stock || 0) + need[id].t, sizeStock: ss });
+            });
+          }
+          const us = await uref.get();
+          if (us.exists && d.usedPoints) await uref.update({ points: FV.increment(d.usedPoints) });
+        } else {
+          const pts = Math.floor((d.totalAmount || 0) * 0.05), us = await uref.get();
+          if (us.exists && pts > 0) await uref.update({ points: FV.increment(pts) });
+          await orf.update({ creditedPoints: us.exists ? pts : 0 });
         }
-        if (d.status === 'Tamamlandı' && !d.pointsCredited) {
-          tx.update(orf, { pointsCredited: true }); return { type: 'points', data: d };
-        }
-        return null;
-      });
-      if (!claimed) continue;
-      const d = claimed.data, uref = db.collection('users').doc(o.userId);
-      if (claimed.type === 'refund') {
-        const need = groupCart(d.items || []);
-        for (const id of Object.keys(need)) {
-          await db.runTransaction(async tx => {
-            const r = db.collection('products').doc(id), s = await tx.get(r); if (!s.exists) return;
-            const p = s.data(); let ss = p.sizeStock || '';
-            if (ss) { const m = parseSS(ss); Object.keys(need[id].s).forEach(z => { if (m[z] !== undefined) m[z] += need[id].s[z]; }); ss = joinSS(m); }
-            tx.update(r, { stock: (p.stock || 0) + need[id].t, sizeStock: ss });
-          });
-        }
-        const us = await uref.get();
-        if (us.exists && d.usedPoints) await uref.update({ points: FV.increment(d.usedPoints) });
-      } else {
-        const pts = Math.floor((d.totalAmount || 0) * 0.05), us = await uref.get();
-        if (us.exists && pts > 0) await uref.update({ points: FV.increment(pts) });
-        await orf.update({ creditedPoints: us.exists ? pts : 0 });
-      }
-    } catch (e) { console.warn('mutabakat', o.id, e.message); }
+      } catch (e) { console.warn('mutabakat', o.id, e.message); }
+    }
   }
-}
 
   /* ---------- Admin: siparişler ---------- */
   window.loadAdminOrders = async function () {
@@ -2441,10 +2485,12 @@ async function reconcile(orders) {
       .map(p => '<div class="row"><span>' + esc(p.name) + '</span><b style="color:var(--accent)">' + p.stock + ' adet</b></div>').join('') || '<p style="color:var(--mute)">Stok sorunu yok.</p>';
   };
 })();
-
-;
-/* BALLIN patch2.js (Aşama 2) — patch.js'ten SONRA yükle:
-   <script src="script.js"></script> <script src="patch.js"></script> <script src="patch2.js"></script> */
+/* ===================================================================
+   PATCH2.JS — "Aşama 2". Mobil/admin stil düzeltmeleri, geri tuşu /
+   doğrudan link yönlendirme, görsel küçültme + R2 Worker'a yükleme,
+   yeni ürün ekleme ve ürün düzenleme (R2 entegrasyonlu), tek seferlik
+   eski görsel taşıma butonu burada.
+   =================================================================== */
 (function () {
   'use strict';
   const UPLOAD_URL = 'https://ballin-upload.ballinworldw.workers.dev';   // <-- Worker adresini yaz
@@ -2577,11 +2623,13 @@ async function reconcile(orders) {
     b.onclick = () => migrate(b); document.body.appendChild(b);
   });
 })();
-
-;
-/* BALLIN patch3.js — yasal sayfalar (TASLAK). patch2.js'ten SONRA yükle:
-   <script src="patch3.js"></script>
-   Aşağıdaki INFO bilgilerini doldur. Yayına almadan önce bir avukat/mali müşavire kontrol ettir. */
+/* ===================================================================
+   PATCH3.JS — Yasal sayfalar (TASLAK): Mesafeli Satış Sözleşmesi,
+   İade Şartları, KVKK Aydınlatma Metni, Çerez Politikası, Künye.
+   !!! INFO nesnesindeki yer tutucular (unvan, adres, vergi no, tel,
+   e-posta) GERÇEK bilgilerle doldurulmadan yayına ALINMAMALI !!!
+   Metinleri bir avukat/mali müşavire kontrol ettir.
+   =================================================================== */
 (function () {
   'use strict';
   const INFO = {
@@ -2668,10 +2716,11 @@ async function reconcile(orders) {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
-
-;
-/* BALLIN patch4.js — sepette adet, kartta "Sepete Ekle", beden seçimi. patch3.js'ten SONRA yükle:
-   <script src="patch4.js"></script> */
+/* ===================================================================
+   PATCH4.JS — Sepette aynı ürün+beden tek satırda adet (+/-), ürün
+   kartında hızlı "Sepete Ekle" ve beden seçim modalı, stok sınırını
+   aşan eklemeyi engelleme.
+   =================================================================== */
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
@@ -2768,10 +2817,10 @@ async function reconcile(orders) {
   renderCart(); updateCartBadge();
   if (typeof renderMainGrid === 'function') { try { renderMainGrid(); filterAndSortProducts(); renderNewGrid(); renderWishlistGrid(); } catch (e) {} }
 })();
-
-;
-/* BALLIN patch5.js — ürün sıralama, sipariş sorgulama sayfası, müşteri tarafı doğru kargo takip linki.
-   patch4.js'ten SONRA yükle: <script src="patch5.js"></script> */
+/* ===================================================================
+   PATCH5.JS — Ürün sıralama (fiyat/isim), Siparişlerim'de doğru kargo
+   firması+takip linki, misafirler için "Sipariş Sorgula" sayfası.
+   =================================================================== */
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
@@ -2842,10 +2891,12 @@ async function reconcile(orders) {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
-
-;
-/* BALLIN patch6.js — Haber Ver sekmesi, ürün durumu/eski fiyat, işlem günlüğü, puan düzeltme, kupon min. sepet,
-   e-posta doğrulama, hesap silme/veri indirme, vitrin. patch5.js'ten SONRA yükle: <script src="patch6.js"></script> */
+/* ===================================================================
+   PATCH6.JS — Vitrin (son ürünler/kategori kartları, taslak-arşiv
+   gizleme), admin: Ürün Durumu + eski fiyat, Haber Ver listesi, İşlem
+   Günlüğü, Müşteriler'de puan düzeltme, kupon min. sepet tutarı,
+   e-posta doğrulama zorunluluğu, Hesabım: verilerimi indir / hesabı sil.
+   =================================================================== */
 (function () {
   'use strict';
   const $ = id => document.getElementById(id), E = s => window.esc(s), tl = n => (Number(n) || 0).toLocaleString('tr-TR');
@@ -3003,4 +3054,506 @@ async function reconcile(orders) {
     if (typeof allProducts !== 'undefined' && allProducts.length) { try { renderMainGrid(); } catch (e) {} }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+/* ===================================================================
+   YAMA-1 — sipariş e-postaları artık Worker + Resend üzerinden gider
+   (EmailJS kullanılmaz). MAIL_URL'ye mail Worker adresini yaz.
+   =================================================================== */
+(function () {
+  'use strict';
+  const MAIL_URL = 'https://ballin-mail.ballinworldw.workers.dev';
+  const call = async (path, orderId) => {
+    try {
+      const tok = await currentUser.getIdToken();
+      const r = await fetch(MAIL_URL + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify({ orderId }) });
+      if (!r.ok) console.warn('mail hatası', path, r.status, await r.text());
+    } catch (e) { console.warn('mail gönderilemedi', e); }
+  };
+  window.sendOrderConfirmationEmail = o => call('/order-created', o.orderId);
+  window.sendShippingUpdateEmail = id => call('/order-shipped', id);
+})();
+/* ===================================================================
+   YAMA-2 — 1) "Görselleri taşı" admin paneline  2) kargo ücreti/limiti
+   banner ayarıyla otomatik  3) ödemede puan/kupon uygulayınca bilgiler
+   silinmesin  4) ödemeye geçerken giriş/misafir penceresi  5) admin
+   görünümünde TASLAK/ARŞİV etiketi
+   =================================================================== */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id), tl = n => (Number(n) || 0).toLocaleString('tr-TR');
+  const isAdm = () => isStaffNow(currentUser);
+  const UPLOAD_URL = 'https://ballin-upload.ballinworldw.workers.dev';
+  const st = document.createElement('style'); st.textContent = '#migrateBtn{display:none!important}'; document.head.appendChild(st);
+
+  /* ---- 1) Görselleri taşı: ana ekrandaki düğme gizlendi, Admin > Ürün Durumu içine alındı ---- */
+  async function toWebp(src) {
+    const url = typeof src === 'string' ? src : URL.createObjectURL(src);
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Görsel okunamadı.')); i.src = url; });
+    const r = Math.min(1, 1200 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+    c.width = Math.round(img.width * r); c.height = Math.round(img.height * r); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return new Promise(res => c.toBlob(res, 'image/webp', 0.82));
+  }
+  async function up(src) {
+    const blob = await toWebp(src), tok = await currentUser.getIdToken();
+    const r = await fetch(UPLOAD_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': blob.type }, body: blob });
+    if (!r.ok) { let m = ''; try { m = (await r.json()).error; } catch (e) {} throw new Error('Görsel yüklenemedi (' + r.status + (m ? ': ' + m : '') + ')'); }
+    return (await r.json()).url;
+  }
+  async function migrate(btn) {
+    btn.disabled = true; const t = btn.innerText; let n = 0;
+    try {
+      const snap = await db.collection('products').get();
+      for (const d of snap.docs) {
+        const imgs = d.data().images || []; if (!imgs.some(x => String(x).startsWith('data:'))) continue;
+        const out = []; for (const x of imgs) out.push(String(x).startsWith('data:') ? await up(x) : x);
+        await d.ref.update({ images: out }); n++; btn.innerText = 'Taşınan ürün: ' + n;
+      }
+      showToast(n ? n + ' ürünün görselleri taşındı.' : 'Taşınacak görsel yok.', 'success'); loadProducts();
+    } catch (e) { showToast(e.message, 'error'); }
+    btn.innerText = t; btn.disabled = false;
+  }
+  function adminBtn() {
+    const c = $('tab-pstatus'); if (!c || $('migrateBtn2')) return;
+    c.querySelector('.card').insertAdjacentHTML('afterbegin', '<div style="margin-bottom:14px"><button id="migrateBtn2" class="btn-ghost">Eski görselleri taşı (R2)</button> <span style="font-size:11px;color:var(--mute)">Eski ürünlerdeki büyük görselleri Cloudflare R2\'ye aktarır; bir kez yeterli.</span></div>');
+    $('migrateBtn2').onclick = function () { migrate(this); };
+  }
+
+  /* ---- 2) Kargo ücreti ve limiti banner ayarından (FREE_SHIPPING_THRESHOLD / SHIPPING_FEE) gelsin ---- */
+  function shipText() {
+    const T = tl(FREE_SHIPPING_THRESHOLD), F = tl(SHIPPING_FEE);
+    const p = document.querySelector('#page-kargo-teslimat .space-y-4 p:nth-of-type(2)');
+    if (p) p.innerHTML = '<strong>2. Kargo Ücretleri:</strong> ' + T + ' TL ve üzeri siparişlerde kargo ücretsizdir; bunun altındaki siparişlerde kargo ücreti ' + F + ' TL\'dir.';
+    const pd = document.querySelector('[id^="page-product"]');
+    if (pd) { const w = document.createTreeWalker(pd, NodeFilter.SHOW_TEXT), ns = []; while (w.nextNode()) ns.push(w.currentNode);
+      ns.forEach(n => { if (/3\.?000 TL/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(/3\.?000 TL/g, T + ' TL'); }); }
+  }
+  ['switchPage', 'openProductDetail'].forEach(n => { const o = window[n]; if (o) window[n] = function () { const r = o.apply(this, arguments); setTimeout(shipText, 60); return r; }; });
+  const _cms = window.loadCMSBanner;
+  if (_cms) window.loadCMSBanner = function () { const r = _cms.apply(this, arguments); Promise.resolve(r).then(() => setTimeout(shipText, 300)); setTimeout(shipText, 1500); return r; };
+
+  /* ---- 3 + 4) Ödeme: puan/kupon sonrası bilgiler korunur; girişsizse giriş/misafir penceresi ---- */
+  const FIELDS = ['checkoutName', 'checkoutSurname', 'checkoutEmail', 'checkoutPhone', 'checkoutAddress', 'checkoutCity', 'checkoutDistrict'];
+  const _g = window.goToCheckout; let pending = false;
+  const onCheckout = () => { const p = $('page-checkout'); return p && !p.classList.contains('hidden'); };
+  const closeChooser = () => { const o = $('guestChooser'); if (o) o.remove(); };
+  function chooser() {
+    closeChooser();
+    const b = 'width:100%;padding:13px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;margin-top:10px;';
+    const o = document.createElement('div'); o.id = 'guestChooser';
+    o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px';
+    o.innerHTML = '<div style="background:#fff;border-radius:18px;max-width:380px;width:100%;padding:26px;text-align:center"><h3 style="font-weight:700;font-size:18px;margin-bottom:8px">Nasıl devam etmek istersiniz?</h3>' +
+      '<p style="font-size:13px;color:#666;margin-bottom:12px">Üye olarak siparişlerinizi takip edebilir, puan ve kupon kullanabilirsiniz.</p>' +
+      '<button id="gcLogin" style="' + b + 'background:#212529;color:#fff;border:0">Giriş Yap / Üye Ol</button><button id="gcGuest" style="' + b + 'background:#fff;color:#212529;border:1px solid #212529">Misafir Olarak Devam Et</button></div>';
+    o.onclick = e => { if (e.target === o) closeChooser(); };
+    document.body.appendChild(o);
+    $('gcLogin').onclick = () => { pending = true; closeChooser(); openModal(); };
+    $('gcGuest').onclick = () => { sessionStorage.setItem('ballin_guest', '1'); closeChooser(); goToCheckout(); };
+  }
+  window.goToCheckout = function () {
+    if (!cart.length) return _g.apply(this, arguments);
+    const on = onCheckout();
+    if (!on && !currentUser && !sessionStorage.getItem('ballin_guest')) { chooser(); return; }
+    const saved = on ? FIELDS.reduce((o, f) => { o[f] = $(f) ? $(f).value : ''; return o; }, {}) : null;
+    const r = _g.apply(this, arguments);
+    if (saved) {
+      const back = () => {
+        FIELDS.forEach(f => { if (f !== 'checkoutDistrict' && saved[f] && $(f)) $(f).value = saved[f]; });
+        if (saved.checkoutCity && $('checkoutCity')) { $('checkoutCity').value = saved.checkoutCity; populateDistricts('checkoutCity', 'checkoutDistrict'); if (saved.checkoutDistrict) $('checkoutDistrict').value = saved.checkoutDistrict; }
+      };
+      [400, 1200].forEach(t => setTimeout(back, t));
+    }
+    return r;
+  };
+  firebase.auth().onAuthStateChanged(u => { if (pending && u && u.email) { pending = false; setTimeout(() => goToCheckout(), 500); } });
+
+  /* ---- 5) Admin görünümünde taslak/arşiv ürünlere etiket (yayındakilerde etiket yok) ---- */
+  const _cpc = window.createProductCard;
+  window.createProductCard = function (p) {
+    let h = _cpc.apply(this, arguments);
+    if (isAdm() && p.status && p.status !== 'published')
+      h = h.replace('overflow-hidden mb-4 bg-white">', 'overflow-hidden mb-4 bg-white"><span class="absolute bottom-14 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded z-10">' + (p.status === 'draft' ? 'TASLAK' : 'ARŞİV') + '</span>');
+    return h;
+  };
+
+  function init() { adminBtn(); shipText(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+/* ===================================================================
+   YAMA-3 — yönetici rolleri (Sahip, Sipariş sorumlusu, Ürün sorumlusu).
+   =================================================================== */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id), E = s => window.esc(s), FV = firebase.firestore.FieldValue;
+  const isOwner = () => !!(currentUser && !currentUser.isAnonymous && currentUser.email === ADMIN_EMAIL);
+  const role = () => isOwner() ? 'owner' : (currentUser && !currentUser.isAnonymous ? STAFF_ROLE : null);
+  const TABS = { owner: ['dashboard', 'orders', 'products', 'customers', 'coupons', 'settings', 'pstatus', 'alerts', 'logs', 'staff'], siparis: ['orders'], urun: ['products', 'pstatus', 'alerts'] };
+  TABS.yonetici = TABS.owner;
+  const NAMES = { siparis: 'Sipariş sorumlusu', urun: 'Ürün sorumlusu', yonetici: 'Yönetici' };
+  const full = () => ['owner', 'yonetici'].includes(role());
+  const ok = t => (TABS[role()] || []).includes(t);
+  const log = (action, detail) => db.collection('admin_logs').add({ action, detail, by: currentUser.email, at: FV.serverTimestamp() }).catch(() => {});
+
+  function applyRole() {
+    const r = role(), b = $('adminButton'); if (b) b.style.display = r ? 'inline-block' : 'none';
+    document.querySelectorAll('.nav-item[onclick^="switchAdminTab"]').forEach(n => {
+      const m = /switchAdminTab\('(\w+)'/.exec(n.getAttribute('onclick')); if (m) n.style.display = (!r || ok(m[1])) ? '' : 'none';
+    });
+  }
+  firebase.auth().onAuthStateChanged(async u => {
+    STAFF_ROLE = null;
+    if (u && !u.isAnonymous && u.email && u.emailVerified && u.email !== ADMIN_EMAIL) {
+      try { const d = await db.collection('staff').doc(u.email.toLowerCase()).get(); if (d.exists && NAMES[d.data().role]) STAFF_ROLE = d.data().role; } catch (e) {}
+    }
+    applyRole();
+  });
+
+  /* Yetkisiz sekmeler kapalı; yönetici açılışta kendi ilk sekmesine gider */
+  const _sw = window.switchAdminTab;
+  window.switchAdminTab = function (id) {
+    if (role() && !ok(id)) return showToast('Bu bölüm için yetkiniz yok.', 'error');
+    _sw.apply(this, arguments);
+    if (id === 'staff') { if ($('adminPageTitle')) $('adminPageTitle').innerText = 'Yöneticiler'; loadStaff(); }
+  };
+  const _oap = window.openAdminPanel;
+  window.openAdminPanel = function () {
+    const r0 = _oap.apply(this, arguments); applyRole(); const rl = role();
+    if (rl && !full()) { const f = TABS[rl][0]; switchAdminTab(f, [...document.querySelectorAll('.nav-item')].find(n => (n.getAttribute('onclick') || '').includes("'" + f + "'"))); }
+    return r0;
+  };
+  const gate = (n, roles) => { const o = window[n]; if (o) window[n] = function () { const r = role(); if (!r || (!full() && !roles.includes(r))) return; return o.apply(this, arguments); }; };
+  ['loadAdminOrders', 'loadOrdersAndCalculateStats', 'loadCustomersCRM', 'loadAbandonedCarts'].forEach(n => gate(n, ['siparis']));
+  gate('loadCouponsAdmin', []);
+
+  /* Sahip: Yöneticiler sekmesi */
+  function ui() {
+    const last = $('tab-logs') || $('tab-coupons'); if (!last || $('tab-staff')) return;
+    const nav = [...document.querySelectorAll('.nav-item')].find(n => (n.getAttribute('onclick') || '').includes("'logs'"));
+    if (nav) nav.insertAdjacentHTML('afterend', '<a class="nav-item" onclick="switchAdminTab(\'staff\', this)">Yöneticiler</a>');
+    last.insertAdjacentHTML('afterend', '<div id="tab-staff" class="admin-tab"><div class="card"><p class="card-title">Yöneticiler ve Roller</p>' +
+      '<p style="font-size:12px;color:var(--mute);margin-bottom:12px"><b>Sipariş sorumlusu:</b> yalnızca Siparişler. <b>Ürün sorumlusu:</b> Ürün Yönetimi, Ürün Durumu, Haber Ver. <b>Yönetici:</b> Sahip gibi her şeye erişir (Yönetici rolünü yalnızca Sahip verir/kaldırır). Eklenen kişi bu e-posta ile (Google girişi önerilir, e-posta doğrulanmış olmalı) giriş yapınca Yönetim düğmesini görür.</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><input id="stfMail" type="email" placeholder="E-posta" style="flex:1;min-width:200px"><select id="stfRole"><option value="siparis">Sipariş sorumlusu</option><option value="urun">Ürün sorumlusu</option><option value="yonetici">Yönetici</option></select><button class="btn-primary" onclick="addStaff()">Ekle</button></div><div id="staffList"></div></div></div>');
+  }
+  async function loadStaff() {
+    const b = $('staffList'); if (!b) return; const s = await db.collection('staff').get().catch(() => null); if (!s) return;
+    b.innerHTML = s.empty ? '<p class="text-xs">Henüz yönetici eklenmedi.</p>' : '<table><thead><tr><th>E-posta</th><th>Rol</th><th></th></tr></thead><tbody>' +
+      s.docs.map(d => '<tr><td>' + E(d.id) + '</td><td>' + E(NAMES[d.data().role] || d.data().role) + '</td><td><button class="btn-ghost" data-del="' + E(d.id) + '">Kaldır</button></td></tr>').join('') + '</tbody></table>';
+    b.querySelectorAll('[data-del]').forEach(x => { x.onclick = () => delStaff(x.dataset.del); });
+  }
+  window.addStaff = async function () {
+    if (!full()) return; const m = ($('stfMail').value || '').trim().toLowerCase(), r = $('stfRole').value;
+    if (!/^\S+@\S+\.\S+$/.test(m) || m === ADMIN_EMAIL) return showToast('Geçerli bir e-posta girin.', 'error');
+    if (r === 'yonetici' && !isOwner()) return showToast('Yönetici rolünü yalnızca Sahip verebilir.', 'error');
+    try { await db.collection('staff').doc(m).set({ role: r, addedBy: currentUser.email, at: FV.serverTimestamp() }); log('yönetici eklendi', m + ' → ' + r); $('stfMail').value = ''; showToast('Yönetici eklendi.', 'success'); loadStaff(); }
+    catch (e) { showToast(e.message, 'error'); }
+  };
+  async function delStaff(m) {
+    if (!confirm(m + ' yetkisi kaldırılsın mı?')) return;
+    try { await db.collection('staff').doc(m).delete(); log('yönetici kaldırıldı', m); showToast('Kaldırıldı.', 'success'); loadStaff(); } catch (e) { showToast(e.message, 'error'); }
+  }
+  function init() { ui(); applyRole(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+/* ===================================================================
+   YAMA-4 — tüm ürünler yüklenir (12 ürün sınırı kalktı); arama, filtre,
+   sıralama, admin tablosu ve CSV dışa aktarma artık tüm ürünlerle çalışır.
+   =================================================================== */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const CACHE_KEY = 'ballin_products_v1', TTL = 3 * 60 * 1000;   // ziyaretçiler için 3 dk önbellek (okuma maliyetini düşürür)
+  const isStaff = () => typeof isStaffNow === 'function' && isStaffNow(currentUser);
+
+  function readCache() {
+    try { const c = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null'); return c && Date.now() - c.t < TTL ? c.p : null; } catch (e) { return null; }
+  }
+  function writeCache(list) {
+    try { const s = JSON.stringify({ t: Date.now(), p: list }); if (s.length < 2000000) sessionStorage.setItem(CACHE_KEY, s); } catch (e) {}
+  }
+  const plain = d => { const p = d.data(); p.id = d.id; if (p.createdAt && p.createdAt.toMillis) p.createdAt = p.createdAt.toMillis(); if (p.updatedAt && p.updatedAt.toMillis) p.updatedAt = p.updatedAt.toMillis(); return p; };
+
+  window.loadProducts = function () {
+    if (isLoadingProducts) return;
+    const cached = (!isStaff() && !arguments[1]) ? readCache() : null;
+    const done = list => {
+      allProducts = list; lastProductDoc = null;
+      renderMainGrid(); filterAndSortProducts(); renderNewGrid(); renderWishlistGrid();
+      loadOrdersAndCalculateStats(); loadCustomersCRM(); updateWishlistBadge(); renderBulkTable(); loadCouponsAdmin(); loadCMSBanner(); loadAbandonedCarts();
+      updateCartBadge();
+      const btn = $('loadMoreBtn'); if (btn) btn.style.display = 'none';      // "Daha fazla yükle" artık gerekmiyor
+      isLoadingProducts = false;
+      const h = window.location.hash;
+      if (h && h.startsWith('#/')) { const t = allProducts.find(p => createSlug(p.name) === h.replace('#/', '')); if (t) setTimeout(() => openProductDetail(t.id), 100); }
+    };
+    if (cached) return done(cached);
+    isLoadingProducts = true;
+    db.collection('products').orderBy('createdAt', 'desc').limit(500).get()
+      .then(snap => { const list = snap.docs.map(plain); if (!isStaff()) writeCache(list); done(list); })
+      .catch(e => { isLoadingProducts = false; console.warn('ürünler yüklenemedi', e); });
+  };
+  // Yönetici bir şeyi kaydedince önbellek temizlensin (ziyaretçiler en geç 3 dk içinde yeni halini görür)
+  try { sessionStorage.removeItem(CACHE_KEY); } catch (e) {}
+})();
+/* ===================================================================
+   YAMA-5 — admin siparişleri: arama, tarih filtresi, sayfalama, iç not;
+   dashboard dönem filtresi ve günlük ciro grafiği.
+   (firestore.rules'a order_notes kuralı eklendi, yeniden yayınla.)
+   =================================================================== */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id), E = s => window.esc(s), tl = n => (Number(n) || 0).toLocaleString('tr-TR'), FV = firebase.firestore.FieldValue;
+  const isAdm = () => isStaffNow(currentUser), DAY = 864e5;
+  const ms = o => o.orderDate && o.orderDate.toMillis ? o.orderDate.toMillis() : 0;
+  const sod = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  const since = r => r === 'all' ? 0 : r === '1' ? sod() : Date.now() - Number(r) * DAY;
+
+  /* ---------- Siparişler: arama + tarih + sayfalama + iç not ---------- */
+  let q = '', range = 'all', shown = 20, notes = {};
+  function toolbar() {
+    const box = $('adminOrdersContainer'); if (!box || $('ordToolbar')) return;
+    box.insertAdjacentHTML('beforebegin', '<div id="ordToolbar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><input id="ordSearch" placeholder="Ara: ad, e-posta, telefon, sipariş no, not" style="flex:1;min-width:220px"><select id="ordRange"><option value="all">Tüm zamanlar</option><option value="1">Bugün</option><option value="7">Son 7 gün</option><option value="30">Son 30 gün</option></select></div>');
+    box.insertAdjacentHTML('afterend', '<div id="ordMore" style="text-align:center;margin:14px 0"></div>');
+    $('ordSearch').oninput = e => { q = e.target.value.trim().toLowerCase(); shown = 20; view(); };
+    $('ordRange').onchange = e => { range = e.target.value; shown = 20; view(); };
+  }
+  function view() {
+    const box = $('adminOrdersContainer'); if (!box) return; let ok = 0, hidden = 0; const t0 = since(range);
+    [...box.children].forEach(card => {
+      const cb = card.querySelector('.order-checkbox'); if (!cb) return;
+      const id = cb.value, o = allOrders.find(x => x.id === id) || {};
+      const hit = (!q || (card.textContent + ' ' + id + ' ' + (notes[id] || '')).toLowerCase().includes(q)) && (!t0 || ms(o) >= t0);
+      if (hit && ok < shown) { card.style.display = ''; ok++; } else { card.style.display = 'none'; if (hit) hidden++; }
+    });
+    const m = $('ordMore'); if (!m) return;
+    m.innerHTML = hidden ? '<button class="btn-ghost" id="ordMoreBtn">Daha fazla göster (' + hidden + ')</button>' : (ok ? '' : '<p class="text-xs">Eşleşen sipariş yok.</p>');
+    if ($('ordMoreBtn')) $('ordMoreBtn').onclick = () => { shown += 20; view(); };
+  }
+  async function decorate() {
+    const box = $('adminOrdersContainer'); if (!box) return;
+    try { const s = await db.collection('order_notes').get(); notes = {}; s.forEach(d => { notes[d.id] = d.data().note || ''; }); } catch (e) {}
+    [...box.children].forEach(card => {
+      const cb = card.querySelector('.order-checkbox'); if (!cb || card.querySelector('.ordNote')) return; const id = cb.value;
+      card.insertAdjacentHTML('beforeend', '<div class="ordNote w-full" style="display:flex;gap:8px;align-items:flex-start;border-top:1px dashed #ccc;padding-top:10px"><textarea id="note_' + E(id) + '" rows="2" placeholder="İç not (müşteri görmez)" style="flex:1"></textarea><button class="btn-ghost" onclick="saveOrderNote(\'' + E(id) + '\')">Notu kaydet</button></div>');
+      $('note_' + id).value = notes[id] || '';
+    });
+  }
+  window.saveOrderNote = async function (id) {
+    try { const v = $('note_' + id).value.slice(0, 1000); await db.collection('order_notes').doc(id).set({ note: v, by: currentUser.email, at: FV.serverTimestamp() }); notes[id] = v; showToast('Not kaydedildi.', 'success'); }
+    catch (e) { showToast(e.message, 'error'); }
+  };
+  const _lao = window.loadAdminOrders;
+  window.loadAdminOrders = async function () { const r = await _lao.apply(this, arguments); if (!isAdm()) return r; toolbar(); await decorate(); view(); return r; };
+
+  /* ---------- Dashboard: dönem filtresi + günlük ciro grafiği ---------- */
+  let per = 'all';
+  function chart(list) {
+    const tab = $('tab-dashboard'); if (!tab) return;
+    if (!$('revChart')) { const h = '<div class="card" id="revChart" style="margin-top:14px"><p class="card-title">Günlük Ciro (son 14 gün)</p><div id="revChartBody"></div></div>', k = tab.querySelector('.kpis'); k ? k.insertAdjacentHTML('afterend', h) : tab.insertAdjacentHTML('beforeend', h); }
+    const days = [...Array(14)].map((_, i) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 13 + i); return d; });
+    const live = list.filter(o => !['İptal Edildi', 'İade Onaylandı'].includes(o.status));
+    const sums = days.map(d => live.filter(o => ms(o) >= d.getTime() && ms(o) < d.getTime() + DAY).reduce((s, o) => s + (o.totalAmount || 0), 0));
+    const max = Math.max(...sums, 1), W = 560, H = 150, bw = W / 14;
+    $('revChartBody').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + (H + 22) + '" style="width:100%;height:auto">' + sums.map((v, i) => { const h = Math.round(v / max * H);
+      return '<rect x="' + (i * bw + 6) + '" y="' + (H - h) + '" width="' + (bw - 12) + '" height="' + h + '" rx="4" fill="currentColor" opacity=".75"><title>' + days[i].toLocaleDateString('tr-TR') + ': ' + tl(v) + ' TL</title></rect><text x="' + (i * bw + bw / 2) + '" y="' + (H + 15) + '" font-size="9" text-anchor="middle" fill="currentColor" opacity=".6">' + days[i].getDate() + '</text>'; }).join('') + '</svg>';
+  }
+  const _uds = window.updateDashboardStats;
+  window.updateDashboardStats = function () {
+    const orig = allOrders, t0 = since(per); allOrders = orig.filter(o => !t0 || ms(o) >= t0);
+    try { _uds.apply(this, arguments); } finally { allOrders = orig; }
+    try { chart(orig); } catch (e) {}
+  };
+  function init() {
+    const tab = $('tab-dashboard'); if (!tab || $('dashRange')) return;
+    tab.insertAdjacentHTML('afterbegin', '<div style="margin-bottom:12px"><select id="dashRange"><option value="all">Tüm zamanlar</option><option value="1">Bugün</option><option value="7">Son 7 gün</option><option value="30">Son 30 gün</option></select></div>');
+    $('dashRange').onchange = e => { per = e.target.value; updateDashboardStats(); };
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+/* ===================================================================
+   YAMA-6 — Firebase App Check (reCAPTCHA Enterprise / Fraud Defense,
+   görünmez). ÖNEMLİ: index.html'de firebase-firestore-compat.js
+   satırının altına firebase-app-check-compat.js eklenmeli (zaten ekli).
+   Firebase konsolunda App Check → APIs sekmesinden Firestore'u
+   "Enforced" moduna almayı unutma (bkz. sohbetteki not).
+   =================================================================== */
+(function () {
+  'use strict';
+  const SITE_KEY = '6LdT3_YtAAAAABqQnHQTdwwRHRDEB8wpM-24q4Vz';
+  try {
+    if (!firebase.appCheck) { console.warn('App Check SDK yüklü değil: index.html\'e firebase-app-check-compat.js ekleyin.'); return; }
+    firebase.appCheck().activate(new firebase.appCheck.ReCaptchaEnterpriseProvider(SITE_KEY), true);
+  } catch (e) { console.warn('App Check başlatılamadı', e); }
+})();
+/* ===================================================================
+   YAMA-7 — iptal/iade mailleri, "Haber Ver" stokta maili, ürün
+   detayında eski fiyat, mobil sabit "Sepete Ekle" çubuğu.
+   (mail-worker.js yeni halini Cloudflare'e yapıştır.)
+   =================================================================== */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id), tl = n => (Number(n) || 0).toLocaleString('tr-TR');
+  const MAIL_URL = 'https://ballin-mail.ballinworldw.workers.dev';
+  async function mail(path, payload) {
+    try {
+      const tok = await currentUser.getIdToken();
+      const r = await fetch(MAIL_URL + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify(payload) });
+      if (!r.ok) console.warn('mail', path, r.status, await r.text());
+      return r.ok;
+    } catch (e) { console.warn('mail gönderilemedi', e); return false; }
+  }
+
+  /* İptal ve iade mailleri: işlem bitince Worker güncel durumu okuyup uygun maili gönderir */
+  ['cancelMyOrder', 'requestReturn', 'rejectReturn'].forEach(n => {
+    const o = window[n]; if (!o) return;
+    window[n] = function (id) { const r = o.apply(this, arguments); setTimeout(() => mail('/order-status', { orderId: id }), 1800); return r; };
+  });
+  const _u = window.updateAdminOrder;
+  window.updateAdminOrder = async function (id) {
+    const st = $('adminStatus_' + id) ? $('adminStatus_' + id).value : '';
+    const r = await _u.apply(this, arguments);
+    if (['İptal Edildi', 'İade Onaylandı', 'İade Onaylanmadı'].includes(st)) mail('/order-status', { orderId: id });
+    return r;
+  };
+
+  /* Haber Ver: tek tıkla "ürün stokta" maili (gönderilince talep silinir) */
+  function decorate() {
+    const el = $('alertsList'); if (!el) return;
+    el.querySelectorAll('tr').forEach(tr => {
+      const del = tr.querySelector('[onclick^="delAlert("]'); if (!del || tr.querySelector('.ntf')) return;
+      const m = /delAlert\('([^']+)'/.exec(del.getAttribute('onclick')); if (!m) return;
+      del.insertAdjacentHTML('beforebegin', '<button class="btn-ghost ntf" onclick="notifyAlert(\'' + m[1] + '\')">Stokta maili gönder</button> ');
+    });
+  }
+  window.notifyAlert = async function (id) {
+    if (!confirm('Müşteriye "ürün stokta" maili gönderilsin ve talep silinsin mi?')) return;
+    if (await mail('/stock-back', { alertId: id })) { showToast('Mail gönderildi.', 'success'); delAlert(id); } else showToast('Mail gönderilemedi.', 'error');
+  };
+
+  /* Ürün detayı: eski fiyat (üstü çizili) + indirim yüzdesi */
+  const _opd = window.openProductDetail;
+  window.openProductDetail = function (id) {
+    const r = _opd.apply(this, arguments);
+    setTimeout(() => {
+      const p = allProducts.find(x => x.id === id), pg = $('page-product-detail');
+      if (!p || !pg || !(p.oldPrice > p.price) || pg.querySelector('.oldPriceTag')) return;
+      const re = new RegExp('^\\s*' + String(p.price).replace('.', '[.,]') + '\\s*TL\\s*$'), w = document.createTreeWalker(pg, NodeFilter.SHOW_TEXT);
+      while (w.nextNode()) {
+        const n = w.currentNode; if (!re.test(n.nodeValue)) continue;
+        const s = document.createElement('span'); s.className = 'oldPriceTag'; s.style.cssText = 'text-decoration:line-through;opacity:.5;font-size:.7em;margin-right:8px'; s.textContent = tl(p.oldPrice) + ' TL';
+        n.parentNode.insertBefore(s, n);
+        const d = document.createElement('span'); d.style.cssText = 'font-size:.6em;color:#dc2626;margin-left:8px;font-weight:700'; d.textContent = '%' + Math.round((1 - p.price / p.oldPrice) * 100) + ' indirim';
+        n.parentNode.appendChild(d); break;
+      }
+    }, 80);
+    return r;
+  };
+
+  /* Mobil: ürün sayfasında alta sabit "Sepete Ekle" çubuğu (sayfadaki asıl düğmeyi tetikler) */
+  function bar() {
+    let b = $('stickyAdd'); const pg = $('page-product-detail');
+    const t = pg && !pg.classList.contains('hidden') && innerWidth <= 768 ? pg.querySelector('[onclick^="addDetailedToCart"]') : null;
+    if (!t) { if (b) b.style.display = 'none'; return; }
+    if (!b) {
+      b = document.createElement('div'); b.id = 'stickyAdd';
+      b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:4000;background:#fff;padding:10px 14px;box-shadow:0 -6px 20px rgba(0,0,0,.15)';
+      b.innerHTML = '<button style="width:100%;background:#212529;color:#fff;border:0;border-radius:12px;padding:14px;font-weight:700;font-size:15px">Sepete Ekle</button>';
+      b.firstChild.onclick = () => { const x = $('page-product-detail').querySelector('[onclick^="addDetailedToCart"]'); if (x) x.click(); };
+      document.body.appendChild(b);
+    }
+    b.style.display = 'block';
+  }
+  setInterval(bar, 700);
+  function init() { const el = $('alertsList'); if (el) new MutationObserver(decorate).observe(el, { childList: true, subtree: true }); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+/* ===================================================================
+   YAMA-8 — Ürün Durumu sekmesine SKU ve maliyet/kâr marjı; Müşteriler
+   sekmesinde sipariş sayısı, toplam harcama ve sipariş geçmişi.
+   (firestore.rules'a product_costs kuralı eklendi, yeniden yayınla.)
+   =================================================================== */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id), E = s => window.esc(s), tl = n => (Number(n) || 0).toLocaleString('tr-TR');
+  const full = () => !!(currentUser && !currentUser.isAnonymous && (currentUser.email === ADMIN_EMAIL || STAFF_ROLE === 'yonetici'));
+  const dt = x => x && x.toDate ? x.toDate().toLocaleString('tr-TR') : '-';
+
+  /* ---- SKU (herkese açık ürün belgesinde) + maliyet (ayrı, yalnızca Sahip/Yönetici görür) ---- */
+  let costs = {};
+  async function decorate() {
+    const el = $('pstatusList'); if (!el) return;
+    if (full()) { try { const s = await db.collection('product_costs').get(); costs = {}; s.forEach(d => { costs[d.id] = d.data().cost; }); } catch (e) {} }
+    const hr = el.querySelector('thead tr'); if (hr && !hr.querySelector('.skuh')) hr.insertAdjacentHTML('beforeend', '<th class="skuh">SKU</th>' + (full() ? '<th>Maliyet</th><th>Marj</th>' : ''));
+    el.querySelectorAll('tbody tr').forEach(tr => {
+      const op = tr.querySelector('input[id^="op_"]'); if (!op || tr.dataset.dec) return; tr.dataset.dec = '1';
+      const id = op.id.slice(3), p = allProducts.find(x => x.id === id) || {}, c = costs[id];
+      const margin = (c != null && p.price) ? Math.round((p.price - c) / p.price * 100) + '%' : '-';
+      tr.insertAdjacentHTML('beforeend', '<td><input id="sku_' + E(id) + '" value="' + E(p.sku || '') + '" style="width:90px"></td>' +
+        (full() ? '<td><input type="number" id="cost_' + E(id) + '" value="' + (c != null ? c : '') + '" style="width:90px"></td><td>' + margin + '</td>' : ''));
+    });
+  }
+  const _sp = window.savePStatus;
+  window.savePStatus = async function (id) {
+    const r = await _sp.apply(this, arguments);
+    try {
+      const sku = $('sku_' + id) ? $('sku_' + id).value.trim().slice(0, 40) : null;
+      if (sku !== null) await db.collection('products').doc(id).update({ sku });
+      const cv = $('cost_' + id) ? parseFloat($('cost_' + id).value) : NaN;
+      if (full() && !isNaN(cv)) await db.collection('product_costs').doc(id).set({ cost: cv });
+    } catch (e) { showToast(e.message, 'error'); }
+    return r;
+  };
+
+  /* ---- Müşteriler: sipariş sayısı, toplam harcama, sipariş geçmişi ---- */
+  let agg = {};
+  window.loadCustomersCRM = async function () {
+    if (!full()) return; const b = $('adminCustomersContainer'); if (!b) return;
+    try {
+      const [us, os] = await Promise.all([db.collection('users').get(), db.collection('orders').get()]); agg = {};
+      os.forEach(d => { const o = d.data(); if (['İptal Edildi', 'İade Onaylandı'].includes(o.status)) return; const a = agg[o.userId] = agg[o.userId] || { n: 0, t: 0, list: [] }; a.n++; a.t += o.totalAmount || 0; a.list.push({ id: d.id, ...o }); });
+      b.innerHTML = us.empty ? '<p class="text-xs">Müşteri yok.</p>' : '<table><thead><tr><th>Ad Soyad</th><th>E-posta</th><th>Telefon</th><th>Puan</th><th>Sipariş</th><th>Toplam harcama</th><th></th></tr></thead><tbody>' +
+        us.docs.map(d => { const u = d.data(), a = agg[d.id] || { n: 0, t: 0 };
+          return '<tr><td>' + E(u.name || '') + ' ' + E(u.surname || '') + '</td><td>' + E(u.email || '-') + '</td><td>' + E(u.phone || '-') + '</td><td>' + tl(u.points) + '</td><td>' + a.n + '</td><td>' + tl(a.t) + ' TL</td><td><button class="btn-ghost" onclick="custHistory(\'' + d.id + '\')">Geçmiş</button> <button class="btn-ghost" onclick="adjustPoints(\'' + d.id + '\')">Puan düzelt</button></td></tr>'; }).join('') + '</tbody></table>';
+    } catch (e) { console.warn('müşteriler', e); }
+  };
+  window.custHistory = function (uid) {
+    const a = agg[uid]; const o = document.createElement('div');
+    o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20000;display:flex;align-items:center;justify-content:center;padding:16px'; o.onclick = e => { if (e.target === o) o.remove(); };
+    const rows = a ? a.list.sort((x, y) => (y.orderDate && y.orderDate.toMillis ? y.orderDate.toMillis() : 0) - (x.orderDate && x.orderDate.toMillis ? x.orderDate.toMillis() : 0))
+      .map(x => '<tr><td>#' + E(x.id.slice(0, 8)) + '</td><td>' + E(dt(x.orderDate)) + '</td><td>' + E(x.status) + '</td><td>' + tl(x.totalAmount) + ' TL</td></tr>').join('') : '';
+    o.innerHTML = '<div style="background:#fff;color:#111;border-radius:14px;max-width:560px;width:100%;max-height:80vh;overflow:auto;padding:20px"><b>Sipariş geçmişi</b>' + (rows ? '<table style="width:100%;margin-top:10px"><thead><tr><th>No</th><th>Tarih</th><th>Durum</th><th>Tutar</th></tr></thead><tbody>' + rows + '</tbody></table>' : '<p style="margin-top:10px">Bu müşterinin (iptal/iade dışında) siparişi yok.</p>') + '<p style="text-align:right;margin-top:12px"><button onclick="this.closest(\'div[style*=fixed]\').remove()" style="border:1px solid #999;border-radius:8px;padding:6px 14px">Kapat</button></p></div>';
+    document.body.appendChild(o);
+  };
+  function init() { const el = $('pstatusList'); if (el) new MutationObserver(decorate).observe(el, { childList: true, subtree: true }); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+/* ===================================================================
+   YAMA-9 — 1) PATCH.JS içindeki iki "yalnız async" satırı silindi
+   (ReferenceError veriyordu, script'in geri kalanını durduruyordu).
+   2) reconcile() artık bir runTransaction ile kilitleniyor (yukarıda
+   PATCH.JS bloğuna bkz: "YAMA-9 DÜZELTMESİ"), çifte stok/puan iadesi
+   önlendi. Burada ek olarak loadAdminOrders'ı 1.5 sn'lik bir istemci
+   kilidine daha alıyoruz (çok hızlı art arda tetiklenme için ikinci
+   güvenlik katmanı). 3) CSV dışa aktarmada ürün adı artık kaçışlı
+   (ana düzeltme core.js'de; burada ikinci bir güvenlik katmanı).
+   =================================================================== */
+(function () {
+  'use strict';
+  const isAdm = () => isStaffNow(currentUser);
+
+  /* loadAdminOrders'ı üst üste tetiklenmeye karşı kilitle */
+  let busy = false;
+  const _lao = window.loadAdminOrders;
+  window.loadAdminOrders = async function () {
+    if (!isAdm() || busy) return;
+    busy = true;
+    try { return await _lao.apply(this, arguments); }
+    finally { setTimeout(() => { busy = false; }, 1500); }
+  };
+
+  /* CSV dışa aktarmada ürün adındaki çift tırnağı kaçır (ikinci güvenlik katmanı) */
+  const _exp = window.exportProductsToCSV;
+  if (_exp) window.exportProductsToCSV = function () {
+    const orig = allProducts;
+    allProducts = orig.map(p => ({ ...p, name: String(p.name || '').replace(/"/g, '""') }));
+    try { return _exp.apply(this, arguments); } finally { allProducts = orig; }
+  };
 })();

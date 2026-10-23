@@ -1,9 +1,12 @@
 /* ===================================================================
-   HERO-GLOBE.JS (DÜZELTİLMİŞ) — index.html'de script.bundle.js'ten
-   SONRA tek bir satırla ekle, başka HİÇBİR HTML değişikliği GEREKMEZ:
-      <script src="hero-globe.js"></script>
-   Bu sürüm d3'ü kendi yüklüyor ve canvas'ı "Ana Sayfa" hero bölümüne
-   (bg-brand-50 class'lı kutuya) kendisi ekliyor.
+   HERO-GLOBE.JS (v2) — aynı isimle eskisinin üzerine yaz.
+   Değişiklik: Globe artık hero'yu TAMAMEN kaplamıyor (önceki sürüm
+   muhtemelen "berbat" görünmesinin sebebiydi: açık renkli hero'nun
+   üstüne oturan büyük siyah daire + buton/metnin üstünü kapatıyordu).
+   Şimdi: sağ tarafta, sabit boyutlu, pointer-events:none (tıklamaları
+   ASLA engellemez), metnin arkasında kalacak şekilde, yalnızca büyük
+   ekranlarda (≥1024px) görünür — mobilde hero zaten dar olduğu için
+   gösterilmiyor (metni ezmesin diye).
    =================================================================== */
 (function () {
   'use strict';
@@ -22,14 +25,20 @@
     return [...home.children].find(el => el.classList && el.classList.contains('bg-brand-50')) || null;
   }
 
+  const SIZE = 420; // canvas kare boyutu (px) — masaüstünde
+
   function ensureCanvas() {
     const hero = findHeroContainer(); if (!hero) return null;
     let c = document.getElementById('heroGlobe');
     if (!c) {
       c = document.createElement('canvas');
       c.id = 'heroGlobe';
-      c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:auto;opacity:.9';
+      c.style.cssText = 'position:absolute;right:-60px;top:50%;transform:translateY(-50%);width:' + SIZE + 'px;height:' + SIZE + 'px;pointer-events:none;opacity:.35;z-index:0;display:none';
       hero.insertBefore(c, hero.firstChild);
+      // Sadece büyük ekranda göster (mobilde metni ezmesin)
+      const mq = window.matchMedia('(min-width: 1024px)');
+      const apply = () => { c.style.display = mq.matches ? 'block' : 'none'; };
+      apply(); mq.addEventListener ? mq.addEventListener('change', apply) : mq.addListener(apply);
     }
     return c;
   }
@@ -37,13 +46,10 @@
   function initHeroGlobe() {
     const canvas = ensureCanvas();
     if (!canvas || canvas.dataset.inited) return;
-    const hero = canvas.parentElement;
-    const w = hero.clientWidth || 800, h = hero.clientHeight || 500;
-    if (w < 50 || h < 50) { setTimeout(initHeroGlobe, 300); return; } // hero henüz layout almamış olabilir
     canvas.dataset.inited = '1';
     const context = canvas.getContext('2d'); if (!context) return;
 
-    const radius = Math.min(w, h) / 2.5;
+    const w = SIZE, h = SIZE, radius = w / 2.4;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = w * dpr; canvas.height = h * dpr;
     context.scale(dpr, dpr);
@@ -80,7 +86,7 @@
     }
     function generateDots(feature, dotSpacing) {
       const dots = [], bounds = d3.geoBounds(feature);
-      const [[minLng, minLat], [maxLng, maxLat]] = bounds, step = dotSpacing * 0.08;
+      const [[minLng, minLat], [maxLng, maxLat]] = bounds, step = dotSpacing * 0.1; // v1'den daha seyrek (performans)
       for (let lng = minLng; lng <= maxLng; lng += step)
         for (let lat = minLat; lat <= maxLat; lat += step)
           if (pointInFeature([lng, lat], feature)) dots.push([lng, lat]);
@@ -92,25 +98,21 @@
     function render() {
       context.clearRect(0, 0, w, h);
       const scaleFactor = projection.scale() / radius;
+      // Dolgusuz, sadece ince çerçeve — hero'nun açık rengiyle çakışmasın
       context.beginPath();
       context.arc(w / 2, h / 2, projection.scale(), 0, 2 * Math.PI);
-      context.fillStyle = '#0b0b0c'; context.fill();
-      context.strokeStyle = '#ffffff'; context.lineWidth = 2 * scaleFactor; context.stroke();
+      context.strokeStyle = '#212529'; context.lineWidth = 1.5 * scaleFactor; context.stroke();
       if (!landFeatures) return;
-
-      const graticule = d3.geoGraticule();
-      context.beginPath(); path(graticule());
-      context.strokeStyle = '#ffffff'; context.lineWidth = 1 * scaleFactor; context.globalAlpha = 0.2; context.stroke(); context.globalAlpha = 1;
 
       context.beginPath();
       landFeatures.features.forEach(f => path(f));
-      context.strokeStyle = '#ffffff'; context.lineWidth = 1 * scaleFactor; context.stroke();
+      context.strokeStyle = '#212529'; context.lineWidth = 1 * scaleFactor; context.stroke();
 
       allDots.forEach(d => {
         const pr = projection([d.lng, d.lat]);
         if (pr && pr[0] >= 0 && pr[0] <= w && pr[1] >= 0 && pr[1] <= h) {
-          context.beginPath(); context.arc(pr[0], pr[1], 1.2 * scaleFactor, 0, 2 * Math.PI);
-          context.fillStyle = '#d4d4d8'; context.fill();
+          context.beginPath(); context.arc(pr[0], pr[1], 1 * scaleFactor, 0, 2 * Math.PI);
+          context.fillStyle = '#495057'; context.fill();
         }
       });
     }
@@ -124,31 +126,10 @@
       })
       .catch(e => console.warn('[hero-globe] veri yüklenemedi', e));
 
-    const rotation = [0, 0]; let autoRotate = true;
-    d3.timer(() => { if (autoRotate) { rotation[0] += 0.5; projection.rotate(rotation); render(); } });
-
-    canvas.addEventListener('mousedown', ev => {
-      autoRotate = false;
-      const startX = ev.clientX, startY = ev.clientY, start = [...rotation];
-      function move(me) {
-        rotation[0] = start[0] + (me.clientX - startX) * 0.5;
-        rotation[1] = Math.max(-90, Math.min(90, start[1] - (me.clientY - startY) * 0.5));
-        projection.rotate(rotation); render();
-      }
-      function up() {
-        document.removeEventListener('mousemove', move);
-        document.removeEventListener('mouseup', up);
-        setTimeout(() => { autoRotate = true; }, 10);
-      }
-      document.addEventListener('mousemove', move);
-      document.addEventListener('mouseup', up);
-    });
-    canvas.addEventListener('wheel', ev => {
-      ev.preventDefault();
-      const f = ev.deltaY > 0 ? 0.9 : 1.1;
-      projection.scale(Math.max(radius * 0.5, Math.min(radius * 3, projection.scale() * f)));
-      render();
-    }, { passive: false });
+    const rotation = [0, 0];
+    d3.timer(() => { rotation[0] += 0.35; projection.rotate(rotation); render(); });
+    // Not: artık pointer-events:none olduğu için fare ile döndürme/zoom kaldırıldı —
+    // dekoratif bir arka plan öğesi, kullanıcı etkileşimi hero'daki butonları engellemesin diye bilerek kapatıldı.
   }
 
   function boot() { ensureD3(() => setTimeout(initHeroGlobe, 50)); }

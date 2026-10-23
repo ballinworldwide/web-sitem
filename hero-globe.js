@@ -1,9 +1,9 @@
 /* ===================================================================
-   HERO-GLOBE.JS (v3) — aynı isimle eskisinin üzerine yaz.
-   v2'deki küçük/soluk daire yerine artık: tüm hero'yu kaplayan, büyük,
-   yoğun noktalı bir globe (paylaştığın referans görsele göre). Renk
-   şeması bilerek aynı bırakıldı (sonra ayrı ele alacağız) — bu patch
-   sadece BOYUT, KONUM ve YOĞUNLUĞU değiştiriyor.
+   HERO-GLOBE.JS (v4) — aynı isimle eskisinin üzerine yaz.
+   index.html'deki hero div'ini de yukarıdaki talimata göre değiştirdiysen
+   (gradient + buton kaldırıldı, min-h-screen) ideal; ama onu unutsan bile
+   bu script eski gradient overlay'i ve "Koleksiyonu Keşfet" butonunu
+   KENDİSİ bulup kaldırıyor — tek başına çalışır.
    =================================================================== */
 (function () {
   'use strict';
@@ -22,13 +22,24 @@
     return [...home.children].find(el => el.classList && el.classList.contains('bg-brand-50')) || null;
   }
 
+  function cleanupHero(hero) {
+    // Eski gradient overlay'i kaldır
+    hero.querySelectorAll(':scope > div.bg-gradient-to-br').forEach(el => el.remove());
+    // "Koleksiyonu Keşfet" butonunu kaldır (manşet ve başlık hariç her şey gitsin)
+    const btn = hero.querySelector('button[onclick*="switchPage(\'collection\')"]');
+    if (btn) btn.remove();
+    // Hero'yu gerçekten tam ekrana yakın yap (eski min-h-[80vh] + py-20 kalmışsa da düzelt)
+    hero.classList.remove('py-20');
+    hero.classList.add('min-h-screen');
+  }
+
   function ensureCanvas() {
     const hero = findHeroContainer(); if (!hero) return null;
+    cleanupHero(hero);
     let c = document.getElementById('heroGlobe');
     if (!c) {
       c = document.createElement('canvas');
       c.id = 'heroGlobe';
-      // Artık hero'nun TAMAMINI kaplıyor, tıklamaları engellemez (pointer-events:none)
       c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:1;z-index:0';
       hero.insertBefore(c, hero.firstChild);
     }
@@ -40,9 +51,8 @@
     if (!canvas) return;
     const hero = canvas.parentElement;
     const w = hero.clientWidth, h = hero.clientHeight;
-    if (w < 50 || h < 50) { setTimeout(initHeroGlobe, 300); return; } // hero henüz layout almamış olabilir
+    if (w < 50 || h < 50) { setTimeout(initHeroGlobe, 300); return; }
 
-    // Yeniden boyutlanınca (pencere değişince) de yeniden kur
     if (canvas.dataset.inited && canvas.dataset.w == w && canvas.dataset.h == h) return;
     canvas.dataset.inited = '1'; canvas.dataset.w = w; canvas.dataset.h = h;
 
@@ -51,7 +61,6 @@
     canvas.width = w * dpr; canvas.height = h * dpr;
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Globe hero'nun tamamını kaplasın diye büyük yarıçap (referans görseldeki gibi edge-to-edge)
     const radius = Math.max(w, h) * 0.62;
     const projection = d3.geoOrthographic().scale(radius).translate([w / 2, h / 2]).clipAngle(90);
     const path = d3.geoPath().projection(projection).context(context);
@@ -85,7 +94,7 @@
     }
     function generateDots(feature, dotSpacing) {
       const dots = [], bounds = d3.geoBounds(feature);
-      const [[minLng, minLat], [maxLng, maxLat]] = bounds, step = dotSpacing * 0.08; // v2'den daha sık (yoğun görünüm)
+      const [[minLng, minLat], [maxLng, maxLat]] = bounds, step = dotSpacing * 0.08;
       for (let lng = minLng; lng <= maxLng; lng += step)
         for (let lat = minLat; lat <= maxLat; lat += step)
           if (pointInFeature([lng, lat], feature)) dots.push([lng, lat]);

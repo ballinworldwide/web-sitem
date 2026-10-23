@@ -20,7 +20,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="tailwind.css">
-	<script src="hero.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-white text-brand-900 font-sans antialiased overflow-x-hidden flex flex-col min-h-screen">
@@ -115,42 +114,6 @@
     </div>
 </header>
 <main class="flex-1">
-
-<section id="page-home" class="page-section active animate-fade-in">
-<div class="relative bg-[#0b0b0c] min-h-[85vh] flex items-center justify-center py-20 px-4 overflow-hidden">
-    <!-- Küre Canvas Alanı -->
-    <div id="globe-container" class="absolute inset-0 flex items-center justify-center opacity-80 cursor-move">
-        <canvas id="globe-canvas" class="w-full h-full max-w-[800px] max-h-[800px]"></canvas>
-        <div id="globe-loading" class="absolute text-brand-400 text-sm font-light tracking-widest uppercase">Dünya Yükleniyor...</div>
-    </div>
-
-    <!-- Ön Plandaki Yazılar -->
-    <div class="relative z-10 max-w-7xl mx-auto text-center flex flex-col items-center pointer-events-none mt-10">
-        <h1 id="homeHeroTitle" class="font-serif text-5xl md:text-7xl lg:text-8xl tracking-tight text-white mb-6 drop-shadow-lg">KÜRESEL ESTETİK</h1>
-        <p id="homeHeroDesc" class="mt-4 max-w-2xl text-lg md:text-xl text-brand-300 font-light mb-10 drop-shadow-md">Dünyanın neresinde olursanız olun, fütüristik lüks daima sizinle.</p>
-        <button onclick="switchPage('collection')" class="pointer-events-auto inline-flex items-center justify-center px-8 py-4 text-sm font-bold tracking-widest text-[#0b0b0c] uppercase bg-white rounded-full hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]">Koleksiyonu Keşfet</button>
-    </div>
-</div>
-    
-    <div class="absolute bottom-8 left-8 text-xs text-brand-500 px-3 py-1.5 rounded-md bg-black/50 backdrop-blur-sm z-20 border border-brand-800">
-        Sürükle: Döndür • Kaydır: Yakınlaştır
-    </div>
-
-    <!-- Ön Plandaki Yazılar -->
-    <div class="relative z-10 max-w-7xl mx-auto text-center flex flex-col items-center pointer-events-none mt-10">
-        <h1 id="homeHeroTitle" class="font-serif text-5xl md:text-7xl lg:text-8xl tracking-tight text-white mb-6 drop-shadow-lg">KÜRESEL ESTETİK</h1>
-        <p id="homeHeroDesc" class="mt-4 max-w-2xl text-lg md:text-xl text-brand-300 font-light mb-10 drop-shadow-md">Dünyanın neresinde olursanız olun, fütüristik lüks daima sizinle.</p>
-        <button onclick="switchPage('collection')" class="pointer-events-auto inline-flex items-center justify-center px-8 py-4 text-sm font-bold tracking-widest text-[#0b0b0c] uppercase bg-white rounded-full hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]">Koleksiyonu Keşfet</button>
-    </div>
-</div>
-    </div>
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h2 class="font-serif text-3xl md:text-4xl text-brand-900 mb-12 text-center">Öne Çıkanlar</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" id="mainProductGrid">
-            <p class="text-center text-brand-500 col-span-full">Ürünler yükleniyor...</p>
-        </div>
-    </div>
-</section>
 
 <!-- COLLECTION PAGE -->
 <section id="page-collection" class="page-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -706,6 +669,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
 <script src="script.bundle.js"></script>
 <script src="yama-10.js"></script>
+<script src="hero.js"></script>
 
 <!-- ÜRÜN DÜZENLEME MODALI (DARK MODE) -->
 <div id="editProductModal" class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm hidden" style="font-family: 'Inter', sans-serif;">

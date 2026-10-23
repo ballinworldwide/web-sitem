@@ -118,14 +118,24 @@
 <main class="flex-1">
 
 <section id="page-home" class="page-section active animate-fade-in">
-    <div class="relative bg-brand-50 min-h-[80vh] flex items-center justify-center overflow-hidden py-20 px-4">
-        <div class="absolute inset-0 bg-gradient-to-br from-white via-brand-100 to-brand-300 opacity-50"></div>
-        <div class="relative z-10 max-w-7xl mx-auto text-center flex flex-col items-center">
-            <h1 id="homeHeroTitle" class="font-serif text-4xl md:text-6xl lg:text-7xl tracking-tight text-brand-900 mb-6">LÜKSÜN YENİ TANIMI</h1>
-            <p id="homeHeroDesc" class="mt-4 max-w-2xl text-lg md:text-xl text-brand-600 font-light mb-10">Zarafetin ve metalik estetiğin fütüristik çizgilerle buluştuğu nokta.</p>
-            <button onclick="switchPage('collection')" class="inline-flex items-center justify-center px-8 py-4 text-sm font-medium tracking-widest text-white uppercase bg-brand-900 rounded-full shadow-xl hover:bg-brand-800 transition-all">Koleksiyonu Keşfet</button>
-            <canvas id="heroGlobe" style="position:absolute;inset:0;margin:auto;max-width:100%"></canvas>
-		</div>
+<div class="relative bg-[#0b0b0c] min-h-[85vh] flex items-center justify-center py-20 px-4 overflow-hidden">
+    <!-- Küre Canvas Alanı -->
+    <div id="globe-container" class="absolute inset-0 flex items-center justify-center opacity-80 cursor-move">
+        <canvas id="globe-canvas" class="w-full h-full max-w-[800px] max-h-[800px]"></canvas>
+        <div id="globe-loading" class="absolute text-brand-400 text-sm font-light tracking-widest uppercase">Dünya Yükleniyor...</div>
+    </div>
+    
+    <div class="absolute bottom-8 left-8 text-xs text-brand-500 px-3 py-1.5 rounded-md bg-black/50 backdrop-blur-sm z-20 border border-brand-800">
+        Sürükle: Döndür • Kaydır: Yakınlaştır
+    </div>
+
+    <!-- Ön Plandaki Yazılar -->
+    <div class="relative z-10 max-w-7xl mx-auto text-center flex flex-col items-center pointer-events-none mt-10">
+        <h1 id="homeHeroTitle" class="font-serif text-5xl md:text-7xl lg:text-8xl tracking-tight text-white mb-6 drop-shadow-lg">KÜRESEL ESTETİK</h1>
+        <p id="homeHeroDesc" class="mt-4 max-w-2xl text-lg md:text-xl text-brand-300 font-light mb-10 drop-shadow-md">Dünyanın neresinde olursanız olun, fütüristik lüks daima sizinle.</p>
+        <button onclick="switchPage('collection')" class="pointer-events-auto inline-flex items-center justify-center px-8 py-4 text-sm font-bold tracking-widest text-[#0b0b0c] uppercase bg-white rounded-full hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]">Koleksiyonu Keşfet</button>
+    </div>
+</div>
     </div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <h2 class="font-serif text-3xl md:text-4xl text-brand-900 mb-12 text-center">Öne Çıkanlar</h2>

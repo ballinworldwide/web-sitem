@@ -3557,7 +3557,6 @@ window.saveEditedProductData = async function(btn) {
     try { return _exp.apply(this, arguments); } finally { allProducts = orig; }
   };
 })();
-// --- DOTTED GLOBE ANIMATION (Vanilla JS Port) ---
 function initRotatingEarth() {
     const canvas = document.getElementById("globe-canvas");
     const loadingEl = document.getElementById("globe-loading");
@@ -3582,7 +3581,6 @@ function initRotatingEarth() {
 
     const path = d3.geoPath().projection(projection).context(context);
 
-    // Noktanın poligon içinde olup olmadığını kontrol eden fonksiyon
     const pointInPolygon = (point, polygon) => {
         const [x, y] = point;
         let inside = false;
@@ -3648,17 +3646,15 @@ function initRotatingEarth() {
         const currentScale = projection.scale();
         const scaleFactor = currentScale / radius;
 
-        // Okyanus (Arka Plan Küre)
         context.beginPath();
         context.arc(containerWidth / 2, containerHeight / 2, currentScale, 0, 2 * Math.PI);
-        context.fillStyle = "#0b0b0c"; // Temaya uygun karanlık arka plan
+        context.fillStyle = "#0b0b0c"; 
         context.fill();
-        context.strokeStyle = "#2a2a30"; // Temaya uygun küre sınırı
+        context.strokeStyle = "#2a2a30"; 
         context.lineWidth = 1 * scaleFactor;
         context.stroke();
 
         if (landFeatures) {
-            // Enlem ve Boylam çizgileri (Graticule)
             const graticule = d3.geoGraticule();
             context.beginPath();
             path(graticule());
@@ -3666,20 +3662,18 @@ function initRotatingEarth() {
             context.lineWidth = 0.5 * scaleFactor;
             context.stroke();
 
-            // Kara sınırları çizgisi
             context.beginPath();
             landFeatures.features.forEach(feature => path(feature));
             context.strokeStyle = "#495057";
             context.lineWidth = 1 * scaleFactor;
             context.stroke();
 
-            // Kara parçalarındaki noktalar (Halftone effect)
             allDots.forEach((dot) => {
                 const projected = projection([dot.lng, dot.lat]);
                 if (projected && projected[0] >= 0 && projected[0] <= containerWidth && projected[1] >= 0 && projected[1] <= containerHeight) {
                     context.beginPath();
                     context.arc(projected[0], projected[1], 1.2 * scaleFactor, 0, 2 * Math.PI);
-                    context.fillStyle = "#a9a9b2"; // BALLIN metalik gri tonu
+                    context.fillStyle = "#a9a9b2"; 
                     context.fill();
                 }
             });
@@ -3708,10 +3702,9 @@ function initRotatingEarth() {
         }
     };
 
-    // Etkileşim ve Rotasyon Kontrolleri
     const rotation = [0, 0];
     let autoRotate = true;
-    const rotationSpeed = 0.3; // Orijinalden biraz daha yavaş, daha zarif bir dönüş
+    const rotationSpeed = 0.3;
 
     const rotate = () => {
         if (autoRotate) {
@@ -3721,7 +3714,7 @@ function initRotatingEarth() {
         }
     };
 
-    const rotationTimer = d3.timer(rotate);
+    d3.timer(rotate);
 
     const handleMouseDown = (event) => {
         autoRotate = false;
@@ -3745,7 +3738,7 @@ function initRotatingEarth() {
         const handleMouseUp = () => {
             document.removeEventListener("mousemove", handleMouseMove);
             document.removeEventListener("mouseup", handleMouseUp);
-            setTimeout(() => { autoRotate = true; }, 3000); // Bıraktıktan 3 saniye sonra tekrar dönmeye başlasın
+            setTimeout(() => { autoRotate = true; }, 3000); 
         };
 
         document.addEventListener("mousemove", handleMouseMove);
@@ -3753,8 +3746,6 @@ function initRotatingEarth() {
     };
 
     const handleWheel = (event) => {
-        // Hero bölümünde scroll yaparken tamamen sayfanın kaymasını engellememek için
-        // sadece canvas üzerinde isek ve shift tuşuna basılı tutuyorsak zoom yapsın
         if (!event.shiftKey) return; 
         event.preventDefault();
         const scaleFactor = event.deltaY > 0 ? 0.9 : 1.1;
@@ -3769,5 +3760,4 @@ function initRotatingEarth() {
     loadWorldData();
 }
 
-// Sayfa yüklendiğinde veya home sekmesine geçildiğinde dünyayı başlat
 document.addEventListener('DOMContentLoaded', initRotatingEarth);

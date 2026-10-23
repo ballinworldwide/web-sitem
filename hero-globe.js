@@ -1,12 +1,9 @@
 /* ===================================================================
-   HERO-GLOBE.JS (v2) — aynı isimle eskisinin üzerine yaz.
-   Değişiklik: Globe artık hero'yu TAMAMEN kaplamıyor (önceki sürüm
-   muhtemelen "berbat" görünmesinin sebebiydi: açık renkli hero'nun
-   üstüne oturan büyük siyah daire + buton/metnin üstünü kapatıyordu).
-   Şimdi: sağ tarafta, sabit boyutlu, pointer-events:none (tıklamaları
-   ASLA engellemez), metnin arkasında kalacak şekilde, yalnızca büyük
-   ekranlarda (≥1024px) görünür — mobilde hero zaten dar olduğu için
-   gösterilmiyor (metni ezmesin diye).
+   HERO-GLOBE.JS (v3) — aynı isimle eskisinin üzerine yaz.
+   v2'deki küçük/soluk daire yerine artık: tüm hero'yu kaplayan, büyük,
+   yoğun noktalı bir globe (paylaştığın referans görsele göre). Renk
+   şeması bilerek aynı bırakıldı (sonra ayrı ele alacağız) — bu patch
+   sadece BOYUT, KONUM ve YOĞUNLUĞU değiştiriyor.
    =================================================================== */
 (function () {
   'use strict';
@@ -25,35 +22,37 @@
     return [...home.children].find(el => el.classList && el.classList.contains('bg-brand-50')) || null;
   }
 
-  const SIZE = 420; // canvas kare boyutu (px) — masaüstünde
-
   function ensureCanvas() {
     const hero = findHeroContainer(); if (!hero) return null;
     let c = document.getElementById('heroGlobe');
     if (!c) {
       c = document.createElement('canvas');
       c.id = 'heroGlobe';
-      c.style.cssText = 'position:absolute;right:-60px;top:50%;transform:translateY(-50%);width:' + SIZE + 'px;height:' + SIZE + 'px;pointer-events:none;opacity:.35;z-index:0;display:none';
+      // Artık hero'nun TAMAMINI kaplıyor, tıklamaları engellemez (pointer-events:none)
+      c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:1;z-index:0';
       hero.insertBefore(c, hero.firstChild);
-      // Sadece büyük ekranda göster (mobilde metni ezmesin)
-      const mq = window.matchMedia('(min-width: 1024px)');
-      const apply = () => { c.style.display = mq.matches ? 'block' : 'none'; };
-      apply(); mq.addEventListener ? mq.addEventListener('change', apply) : mq.addListener(apply);
     }
     return c;
   }
 
   function initHeroGlobe() {
     const canvas = ensureCanvas();
-    if (!canvas || canvas.dataset.inited) return;
-    canvas.dataset.inited = '1';
-    const context = canvas.getContext('2d'); if (!context) return;
+    if (!canvas) return;
+    const hero = canvas.parentElement;
+    const w = hero.clientWidth, h = hero.clientHeight;
+    if (w < 50 || h < 50) { setTimeout(initHeroGlobe, 300); return; } // hero henüz layout almamış olabilir
 
-    const w = SIZE, h = SIZE, radius = w / 2.4;
+    // Yeniden boyutlanınca (pencere değişince) de yeniden kur
+    if (canvas.dataset.inited && canvas.dataset.w == w && canvas.dataset.h == h) return;
+    canvas.dataset.inited = '1'; canvas.dataset.w = w; canvas.dataset.h = h;
+
+    const context = canvas.getContext('2d'); if (!context) return;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = w * dpr; canvas.height = h * dpr;
-    context.scale(dpr, dpr);
+    context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+    // Globe hero'nun tamamını kaplasın diye büyük yarıçap (referans görseldeki gibi edge-to-edge)
+    const radius = Math.max(w, h) * 0.62;
     const projection = d3.geoOrthographic().scale(radius).translate([w / 2, h / 2]).clipAngle(90);
     const path = d3.geoPath().projection(projection).context(context);
 
@@ -86,7 +85,7 @@
     }
     function generateDots(feature, dotSpacing) {
       const dots = [], bounds = d3.geoBounds(feature);
-      const [[minLng, minLat], [maxLng, maxLat]] = bounds, step = dotSpacing * 0.1; // v1'den daha seyrek (performans)
+      const [[minLng, minLat], [maxLng, maxLat]] = bounds, step = dotSpacing * 0.08; // v2'den daha sık (yoğun görünüm)
       for (let lng = minLng; lng <= maxLng; lng += step)
         for (let lat = minLat; lat <= maxLat; lat += step)
           if (pointInFeature([lng, lat], feature)) dots.push([lng, lat]);
@@ -98,11 +97,15 @@
     function render() {
       context.clearRect(0, 0, w, h);
       const scaleFactor = projection.scale() / radius;
-      // Dolgusuz, sadece ince çerçeve — hero'nun açık rengiyle çakışmasın
+
       context.beginPath();
       context.arc(w / 2, h / 2, projection.scale(), 0, 2 * Math.PI);
       context.strokeStyle = '#212529'; context.lineWidth = 1.5 * scaleFactor; context.stroke();
       if (!landFeatures) return;
+
+      const graticule = d3.geoGraticule();
+      context.beginPath(); path(graticule());
+      context.strokeStyle = '#212529'; context.lineWidth = 1 * scaleFactor; context.globalAlpha = 0.25; context.stroke(); context.globalAlpha = 1;
 
       context.beginPath();
       landFeatures.features.forEach(f => path(f));
@@ -111,7 +114,7 @@
       allDots.forEach(d => {
         const pr = projection([d.lng, d.lat]);
         if (pr && pr[0] >= 0 && pr[0] <= w && pr[1] >= 0 && pr[1] <= h) {
-          context.beginPath(); context.arc(pr[0], pr[1], 1 * scaleFactor, 0, 2 * Math.PI);
+          context.beginPath(); context.arc(pr[0], pr[1], 1.3 * scaleFactor, 0, 2 * Math.PI);
           context.fillStyle = '#495057'; context.fill();
         }
       });
@@ -120,19 +123,22 @@
     fetch('https://raw.githubusercontent.com/martynafford/natural-earth-geojson/refs/heads/master/110m/physical/ne_110m_land.json')
       .then(r => { if (!r.ok) throw new Error('land data'); return r.json(); })
       .then(data => {
-        landFeatures = data;
+        landFeatures = data; allDots.length = 0;
         landFeatures.features.forEach(f => generateDots(f, 16).forEach(([lng, lat]) => allDots.push({ lng, lat })));
         render();
       })
       .catch(e => console.warn('[hero-globe] veri yüklenemedi', e));
 
-    const rotation = [0, 0];
-    d3.timer(() => { rotation[0] += 0.35; projection.rotate(rotation); render(); });
-    // Not: artık pointer-events:none olduğu için fare ile döndürme/zoom kaldırıldı —
-    // dekoratif bir arka plan öğesi, kullanıcı etkileşimi hero'daki butonları engellemesin diye bilerek kapatıldı.
+    if (!canvas.dataset.timerStarted) {
+      canvas.dataset.timerStarted = '1';
+      const rotation = [0, 0];
+      d3.timer(() => { rotation[0] += 0.35; projection.rotate(rotation); render(); });
+    }
   }
 
   function boot() { ensureD3(() => setTimeout(initHeroGlobe, 50)); }
+  let resizeT;
+  window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { const c = document.getElementById('heroGlobe'); if (c) { c.dataset.inited = ''; initHeroGlobe(); } }, 400); });
   const _sw = window.switchPage;
   window.switchPage = function (id) { const r = _sw.apply(this, arguments); if (id === 'home') setTimeout(boot, 50); return r; };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

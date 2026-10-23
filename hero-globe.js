@@ -7,7 +7,7 @@
    =================================================================== */
 (function () {
   'use strict';
-  console.log('[hero-globe] SÜRÜM v5 çalışıyor — eğer bu satırı konsolda görmüyorsan tarayıcı/CDN eski dosyayı önbellekten veriyor demektir.');
+  console.log('[hero-globe] SÜRÜM v6 çalışıyor (ResizeObserver eklendi) — bu satırı görmüyorsan tarayıcı/CDN eski dosyayı önbellekten veriyor demektir.');
 
   function ensureD3(cb) {
     if (window.d3) return cb();

@@ -21,7 +21,11 @@
 
   function findHeroContainer() {
     const home = document.getElementById('page-home'); if (!home) return null;
-    return [...home.children].find(el => el.classList && el.classList.contains('bg-brand-50')) || null;
+    // Önce bg-brand-50 class'ıyla ara (orijinal yapı); bulunamazsa #page-home'un
+    // ilk DIV çocuğunu kullan (class'lar elle değiştirilmiş olsa bile çalışsın diye).
+    return [...home.children].find(el => el.classList && el.classList.contains('bg-brand-50'))
+      || [...home.children].find(el => el.tagName === 'DIV')
+      || null;
   }
 
   function cleanupHero(hero) {

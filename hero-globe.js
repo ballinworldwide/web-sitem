@@ -146,9 +146,26 @@
     }
   }
 
-  function boot() { ensureD3(() => setTimeout(initHeroGlobe, 50)); }
-  let resizeT;
-  window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { const c = document.getElementById('heroGlobe'); if (c) { c.dataset.inited = ''; initHeroGlobe(); } }, 400); });
+  function boot() {
+    ensureD3(() => {
+      const hero = findHeroContainer(); if (!hero) return;
+      cleanupHero(hero);
+      // ResizeObserver: hero'nun GERÇEK nihai boyutu ne zaman netleşirse (fontlar/CSS
+      // yüklenip layout oturduğunda, pencere boyutu değişince, vs.) anında yeniden çizer.
+      // Eski sürümdeki "yalnızca window resize'da yeniden ölç" yaklaşımı, sayfa henüz
+      // tam yerleşmeden yapılan ilk (küçük) ölçümü bir daha düzeltmiyordu — küçük
+      // görünmenin sebebi buydu.
+      if (!hero.dataset.roSet) {
+        hero.dataset.roSet = '1';
+        const ro = new ResizeObserver(() => initHeroGlobe());
+        ro.observe(hero);
+      }
+      initHeroGlobe();
+      // Ekstra güvence: birkaç kare sonra ve 1sn sonra tekrar dene (font swap vb. geç tetiklenen değişimler için)
+      requestAnimationFrame(() => initHeroGlobe());
+      setTimeout(initHeroGlobe, 1000);
+    });
+  }
   const _sw = window.switchPage;
   window.switchPage = function (id) { const r = _sw.apply(this, arguments); if (id === 'home') setTimeout(boot, 50); return r; };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

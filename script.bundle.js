@@ -353,6 +353,7 @@ function loadCMSBanner() {
     db.collection("settings").doc("cms").get().then(doc => {
         if(doc.exists) {
             let d = doc.data();
+            if(d.heroKicker && document.getElementById('homeHeroKicker')) document.getElementById('homeHeroKicker').innerText = d.heroKicker;
             if(d.heroTitle && document.getElementById('homeHeroTitle')) document.getElementById('homeHeroTitle').innerText = d.heroTitle;
             if(d.heroDesc && document.getElementById('homeHeroDesc')) document.getElementById('homeHeroDesc').innerText = d.heroDesc;
             
@@ -375,12 +376,14 @@ function loadCMSBanner() {
 }
 function saveCMSBanner() {
     if(!isStaffNow(currentUser)) return;
+    let k = document.getElementById('cmsHeroKicker') ? document.getElementById('cmsHeroKicker').value.trim() : "";
     let t = document.getElementById('cmsHeroTitle') ? document.getElementById('cmsHeroTitle').value.trim() : "";
     let d = document.getElementById('cmsHeroDesc') ? document.getElementById('cmsHeroDesc').value.trim() : "";
     let limitVal = document.getElementById('cmsFreeShippingLimit') ? parseFloat(document.getElementById('cmsFreeShippingLimit').value) : 3000;
     let costVal = document.getElementById('cmsShippingCost') ? parseFloat(document.getElementById('cmsShippingCost').value) : 99;
 
     let updatePayload = {
+        heroKicker: k || "LÜKSÜN YENİ TANIMI",
         heroTitle: t || "LÜKSÜN YENİ TANIMI",
         heroDesc: d || "Zarafetin ve metalik estetiğin fütüristik çizgilerle buluştuğu nokta.",
         freeShippingLimit: isNaN(limitVal) ? 3000 : limitVal,

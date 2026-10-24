@@ -353,9 +353,15 @@ function loadCMSBanner() {
     db.collection("settings").doc("cms").get().then(doc => {
         if(doc.exists) {
             let d = doc.data();
-            if(d.heroKicker && document.getElementById('homeHeroKicker')) document.getElementById('homeHeroKicker').innerText = d.heroKicker;
-            if(d.heroTitle && document.getElementById('homeHeroTitle')) document.getElementById('homeHeroTitle').innerText = d.heroTitle;
-            if(d.heroDesc && document.getElementById('homeHeroDesc')) document.getElementById('homeHeroDesc').innerText = d.heroDesc;
+            // YAMA-11: boş bırakılmış alan da uygulansın diye artık "d.heroX &&" değil "!== undefined" kontrolü;
+            // yani kaydedilmemiş (hiç Firestore'a yazılmamış) alan eski/varsayılan metni korur,
+            // ama bilerek boş kaydedilmiş alan da gerçekten boş gösterilir.
+            if(d.heroKicker !== undefined && document.getElementById('homeHeroKicker')) document.getElementById('homeHeroKicker').innerText = d.heroKicker;
+            if(d.heroTitle !== undefined && document.getElementById('homeHeroTitle')) document.getElementById('homeHeroTitle').innerText = d.heroTitle;
+            if(d.heroDesc !== undefined && document.getElementById('homeHeroDesc')) document.getElementById('homeHeroDesc').innerText = d.heroDesc;
+            if(document.getElementById('cmsHeroKicker') && d.heroKicker !== undefined) document.getElementById('cmsHeroKicker').value = d.heroKicker;
+            if(document.getElementById('cmsHeroTitle') && d.heroTitle !== undefined) document.getElementById('cmsHeroTitle').value = d.heroTitle;
+            if(document.getElementById('cmsHeroDesc') && d.heroDesc !== undefined) document.getElementById('cmsHeroDesc').value = d.heroDesc;
             
             if(d.freeShippingLimit !== undefined) {
                 FREE_SHIPPING_THRESHOLD = Number(d.freeShippingLimit);
@@ -382,10 +388,12 @@ function saveCMSBanner() {
     let limitVal = document.getElementById('cmsFreeShippingLimit') ? parseFloat(document.getElementById('cmsFreeShippingLimit').value) : 3000;
     let costVal = document.getElementById('cmsShippingCost') ? parseFloat(document.getElementById('cmsShippingCost').value) : 99;
 
+    // YAMA-11: artık boş bırakılan alan zorla varsayılan metne çevrilmiyor — admin bilerek
+    // boş bırakmışsa (örn. üst etiketi hiç göstermek istemiyorsa) olduğu gibi boş kaydediliyor.
     let updatePayload = {
-        heroKicker: k || "LÜKSÜN YENİ TANIMI",
-        heroTitle: t || "LÜKSÜN YENİ TANIMI",
-        heroDesc: d || "Zarafetin ve metalik estetiğin fütüristik çizgilerle buluştuğu nokta.",
+        heroKicker: k,
+        heroTitle: t,
+        heroDesc: d,
         freeShippingLimit: isNaN(limitVal) ? 3000 : limitVal,
         shippingCost: isNaN(costVal) ? 99 : costVal
     };

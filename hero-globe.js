@@ -94,6 +94,24 @@
         '<button onclick="switchPage(\'new\')" class="hero-btn-ghost">Yeni Gelenler</button>';
       wrap.appendChild(btns);
     }
+
+    wireKickerVisibility();
+  }
+
+  // Admin panelinden üst etiket (kicker) silinirse/eklenirse, altındaki çizgi de
+  // otomatik görünür/gizlenir olsun diye metin değişimini canlı izliyoruz.
+  function wireKickerVisibility() {
+    const k = document.getElementById('homeHeroKicker');
+    const bw = document.querySelector('.hero-fillbar-wrap');
+    if (!k || !bw || k.dataset.visWired) return;
+    k.dataset.visWired = '1';
+    const sync = () => {
+      const empty = !k.textContent.trim();
+      k.style.display = empty ? 'none' : '';
+      bw.style.display = empty ? 'none' : '';
+    };
+    sync();
+    new MutationObserver(sync).observe(k, { childList: true, characterData: true, subtree: true });
   }
 
   function replayHeroAnimations(hero) {

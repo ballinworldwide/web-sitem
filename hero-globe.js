@@ -10,7 +10,7 @@
    =================================================================== */
 (function () {
   'use strict';
-  console.log('[hero-globe] SÜRÜM v8 (kicker+bar+buton tasarımı) çalışıyor.');
+  console.log('[hero-globe] SÜRÜM v9 (kicker zamanlama düzeltmesi) çalışıyor.');
 
   function ensureThree(cb) {
     if (window.THREE) return cb();
@@ -67,7 +67,7 @@
     if (!document.getElementById('homeHeroKicker')) {
       const k = document.createElement('span');
       k.id = 'homeHeroKicker'; k.className = 'hero-kicker';
-      k.textContent = 'Ballin World Wide';
+      k.textContent = 'LÜKSÜN YENİ TANIMI';
       wrap.insertBefore(k, wrap.firstChild);
     }
     if (!document.querySelector('.hero-fillbar-wrap')) {
@@ -115,8 +115,6 @@
 
   function initHeroGlobe() {
     const hero = findHeroContainer(); if (!hero) return;
-    ensureStyles();
-    buildHeroContent(hero);
     const canvas = ensureCanvas(hero);
     if (canvas.dataset.threeInited) return;
     const w = hero.clientWidth, h = hero.clientHeight;
@@ -155,7 +153,16 @@
     ro.observe(hero);
   }
 
-  function boot() { ensureThree(() => initHeroGlobe()); }
+  function boot() {
+    // ÖNEMLİ (yama-11 düzeltmesi): içerik (kicker/bar/buton) three.js'in CDN'den
+    // yüklenmesini BEKLEMEDEN hemen kuruluyor. Önceki sürümde kicker elemanı
+    // three.js yüklendikten SONRA oluşturuluyordu; script.bundle.js'teki
+    // loadCMSBanner() sayfa açılır açılmaz çalıştığı için o an #homeHeroKicker
+    // henüz DOM'da olmadığından admin panelindeki metin hiç uygulanmıyordu.
+    const hero = findHeroContainer();
+    if (hero) { ensureStyles(); buildHeroContent(hero); }
+    ensureThree(() => initHeroGlobe());
+  }
   const _sw = window.switchPage;
   window.switchPage = function (id) {
     const r = _sw.apply(this, arguments);

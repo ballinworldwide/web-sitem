@@ -10,7 +10,7 @@
    =================================================================== */
 (function () {
   'use strict';
-  console.log('[hero-globe] SÜRÜM v9 (kicker zamanlama düzeltmesi) çalışıyor.');
+  console.log('[hero-globe] SÜRÜM v10 (kicker boşsa çizgi de otomatik gizlenir) çalışıyor.');
 
   function ensureThree(cb) {
     if (window.THREE) return cb();

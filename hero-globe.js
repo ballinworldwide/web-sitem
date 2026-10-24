@@ -67,7 +67,7 @@
     if (!document.getElementById('homeHeroKicker')) {
       const k = document.createElement('span');
       k.id = 'homeHeroKicker'; k.className = 'hero-kicker';
-      k.textContent = 'LÜKSÜN YENİ TANIMI';
+      k.textContent = 'Ballin World Wide';
       wrap.insertBefore(k, wrap.firstChild);
     }
     if (!document.querySelector('.hero-fillbar-wrap')) {

@@ -349,19 +349,29 @@ function toggleAccordion(id) {
     else { content.classList.add('hidden'); icon.className = "fa-solid fa-plus"; }
 }
 
+function applyCMSBannerData(d) {
+    if(d.heroKicker !== undefined && document.getElementById('homeHeroKicker')) document.getElementById('homeHeroKicker').innerText = d.heroKicker;
+    if(d.heroTitle !== undefined && document.getElementById('homeHeroTitle')) document.getElementById('homeHeroTitle').innerText = d.heroTitle;
+    if(d.heroDesc !== undefined && document.getElementById('homeHeroDesc')) document.getElementById('homeHeroDesc').innerText = d.heroDesc;
+    if(document.getElementById('cmsHeroKicker') && d.heroKicker !== undefined) document.getElementById('cmsHeroKicker').value = d.heroKicker;
+    if(document.getElementById('cmsHeroTitle') && d.heroTitle !== undefined) document.getElementById('cmsHeroTitle').value = d.heroTitle;
+    if(document.getElementById('cmsHeroDesc') && d.heroDesc !== undefined) document.getElementById('cmsHeroDesc').value = d.heroDesc;
+}
 function loadCMSBanner() {
+    // YAMA-12: "flash of default content" düzeltmesi — Firestore'dan cevap gelene kadar
+    // (ağ gecikmesi 1-2sn sürebiliyor) ekranda kod içindeki sabit varsayılan metin yerine,
+    // bir önceki ziyarette kaydedilmiş son hali anında (senkron, localStorage'dan) göster.
+    // İlk ziyarette önbellek henüz yoksa doğal olarak varsayılan görünür, bu normaldir.
+    try {
+        let cached = JSON.parse(localStorage.getItem('ballin_cms_cache') || 'null');
+        if(cached) applyCMSBannerData(cached);
+    } catch(e) {}
+
     db.collection("settings").doc("cms").get().then(doc => {
         if(doc.exists) {
             let d = doc.data();
-            // YAMA-11: boş bırakılmış alan da uygulansın diye artık "d.heroX &&" değil "!== undefined" kontrolü;
-            // yani kaydedilmemiş (hiç Firestore'a yazılmamış) alan eski/varsayılan metni korur,
-            // ama bilerek boş kaydedilmiş alan da gerçekten boş gösterilir.
-            if(d.heroKicker !== undefined && document.getElementById('homeHeroKicker')) document.getElementById('homeHeroKicker').innerText = d.heroKicker;
-            if(d.heroTitle !== undefined && document.getElementById('homeHeroTitle')) document.getElementById('homeHeroTitle').innerText = d.heroTitle;
-            if(d.heroDesc !== undefined && document.getElementById('homeHeroDesc')) document.getElementById('homeHeroDesc').innerText = d.heroDesc;
-            if(document.getElementById('cmsHeroKicker') && d.heroKicker !== undefined) document.getElementById('cmsHeroKicker').value = d.heroKicker;
-            if(document.getElementById('cmsHeroTitle') && d.heroTitle !== undefined) document.getElementById('cmsHeroTitle').value = d.heroTitle;
-            if(document.getElementById('cmsHeroDesc') && d.heroDesc !== undefined) document.getElementById('cmsHeroDesc').value = d.heroDesc;
+            try { localStorage.setItem('ballin_cms_cache', JSON.stringify({ heroKicker: d.heroKicker, heroTitle: d.heroTitle, heroDesc: d.heroDesc })); } catch(e) {}
+            applyCMSBannerData(d);
             
             if(d.freeShippingLimit !== undefined) {
                 FREE_SHIPPING_THRESHOLD = Number(d.freeShippingLimit);

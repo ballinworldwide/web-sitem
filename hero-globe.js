@@ -10,7 +10,7 @@
    =================================================================== */
 (function () {
   'use strict';
-  console.log('[hero-globe] SÜRÜM v10 (kicker boşsa çizgi de otomatik gizlenir) çalışıyor.');
+  console.log('[hero-globe] SÜRÜM v11 (admin Üst Etiket alanı otomatik ekleniyor) çalışıyor.');
 
   function ensureThree(cb) {
     if (window.THREE) return cb();
@@ -171,7 +171,22 @@
     ro.observe(hero);
   }
 
+  // Admin panelindeki "Ana Sayfa Banner" kartına "Üst Etiket" alanını kendimiz ekliyoruz —
+  // index.html'de elle HTML eklemeye güvenmek yerine (önceki mesajlarda bu adım hep atlanmıştı).
+  function ensureAdminKickerField() {
+    if (document.getElementById('cmsHeroKicker')) return;
+    const titleInput = document.getElementById('cmsHeroTitle');
+    if (!titleInput) return; // admin bölümü henüz DOM'da değilse sorun değil, boot() periyodik tekrar dener
+    const grid = titleInput.closest('.grid');
+    if (!grid || !grid.parentElement) return;
+    const field = document.createElement('div');
+    field.className = 'mb-4';
+    field.innerHTML = '<label class="block text-xs mb-1" style="color:var(--mute)">Üst Etiket (küre üzerindeki kısa yazı)</label><input type="text" id="cmsHeroKicker" class="w-full" />';
+    grid.parentElement.insertBefore(field, grid);
+  }
+
   function boot() {
+    ensureAdminKickerField();
     // ÖNEMLİ (yama-11 düzeltmesi): içerik (kicker/bar/buton) three.js'in CDN'den
     // yüklenmesini BEKLEMEDEN hemen kuruluyor. Önceki sürümde kicker elemanı
     // three.js yüklendikten SONRA oluşturuluyordu; script.bundle.js'teki

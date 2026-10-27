@@ -10,7 +10,7 @@
    =================================================================== */
 (function () {
   'use strict';
-  console.log('[hero-globe] SÜRÜM v11 (admin Üst Etiket alanı otomatik ekleniyor) çalışıyor.');
+  console.log('[hero-globe] SÜRÜM v12 (hareket azaltma desteği) çalışıyor.');
 
   function ensureThree(cb) {
     if (window.THREE) return cb();
@@ -46,6 +46,11 @@
       @keyframes heroRiseIn{to{opacity:1;transform:translateY(0)}}
       @keyframes heroFadeIn{to{opacity:1}}
       @keyframes heroFillBar{to{width:100%}}
+      @media (prefers-reduced-motion: reduce){
+        .hero-kicker,.hero-btns,#homeHeroDesc{animation:none !important;opacity:1 !important}
+        #homeHeroTitle{animation:none !important;opacity:1 !important;transform:none !important}
+        .hero-fillbar{animation:none !important;width:100% !important}
+      }
     `;
     document.head.appendChild(st);
   }
@@ -154,12 +159,15 @@
     );
     group.add(sphere);
 
+    // Kullanıcı "hareketi azalt" ayarını açtıysa küre dönmez, sabit bir kare çizilir
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     function animate() {
-      requestAnimationFrame(animate);
-      group.rotation.y += 0.0022;
-      group.rotation.x += 0.0006;
+      if (!reduceMotion) requestAnimationFrame(animate);
+      group.rotation.y += reduceMotion ? 0 : 0.0022;
+      group.rotation.x += reduceMotion ? 0 : 0.0006;
       renderer.render(scene, camera);
     }
+    if (reduceMotion) group.rotation.set && group.rotation.set(0.4, 0.8, 0);
     animate();
 
     const ro = new ResizeObserver(() => {

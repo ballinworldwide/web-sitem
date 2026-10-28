@@ -2210,8 +2210,7 @@ window.saveEditedProductData = async function(btn) {
 
   /* ---------- Oturum ---------- */
   firebase.auth().onAuthStateChanged(u => {
-    { altına console.log("Admin Girişi Tetiklendi");
-   if (u && u.isAnonymous) currentUser = u;                       // misafir oturumu artık "çıkış yapmış" sayılmaz
+    if (u && u.isAnonymous) currentUser = u;                       // misafir oturumu artık "çıkış yapmış" sayılmaz
     else if (u && u.email) db.collection('users').doc(u.uid).set({ email: u.email }, { merge: true }).catch(() => {});
   });
   async function ensureAuth() { if (!currentUser) currentUser = (await firebase.auth().signInAnonymously()).user; return currentUser; }

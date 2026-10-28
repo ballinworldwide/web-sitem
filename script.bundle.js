@@ -2896,14 +2896,20 @@ window.saveEditedProductData = async function(btn) {
   const refreshTrk = () => (!currentUser || currentUser.isAnonymous) ? Promise.resolve() :
     db.collection('orders').where('userId', '==', currentUser.uid).get()
       .then(s => s.forEach(d => { const o = d.data(); if (o.trackingNumber) trk[o.trackingNumber] = { url: o.trackingUrl || '', carrier: o.carrier || '' }; })).catch(() => {});
+  /* ACİL DÜZELTME (yama-14b): eskiden Aras takip adresi de "araskargo" içerdiği için düzeltilen link
+     tekrar tekrar bulunuyor, etiket metni yeniden yazılıyor, bu da MutationObserver'ı sonsuza kadar
+     tetikliyor ve sayfayı donduruyordu. Artık düzeltilen link işaretleniyor (data-fixed) ve bir daha
+     işlenmiyor; metin zaten aynıysa yeniden yazılmıyor. */
   function fixLinks() {
     const c = $('ordersList'); if (!c) return;
-    c.querySelectorAll('a[href*="araskargo"]').forEach(a => {
+    c.querySelectorAll('a[href*="araskargo"]:not([data-fixed])').forEach(a => {
       const no = Object.keys(trk).find(n => a.textContent.includes(n));
       if (!no || !trk[no].url) return;
+      a.setAttribute('data-fixed', '1');
       a.href = trk[no].url; a.target = '_blank'; a.rel = 'noopener noreferrer';
       const lab = a.parentNode.querySelector('span');
-      if (lab && trk[no].carrier) lab.textContent = trk[no].carrier + ' · Takip No';
+      const txt = trk[no].carrier ? trk[no].carrier + ' · Takip No' : '';
+      if (lab && txt && lab.textContent !== txt) lab.textContent = txt;
     });
   }
   const _lo = window.loadUserOrders;

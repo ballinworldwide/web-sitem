@@ -2390,17 +2390,44 @@ window.saveEditedProductData = async function(btn) {
         if (!claimed) continue;
         const d = claimed.data, uref = db.collection('users').doc(o.userId);
         if (claimed.type === 'refund') {
+          /* YAMA-14: iptal/iade mutabakatı artık 3 ayrı adım ve her biri bağımsız:
+             (1) stok iadesi, (2) puan: kullanılan puan geri verilir + sipariş tamamlanıp
+             puan kazandırılmışsa o kazanılan puan GERİ ALINIR (bakiye negatife düşebilir;
+             müşteri yeni puan kazanana kadar kullanamaz), (3) kupon: sadece İPTALde kupon
+             hakkı iade edilir (iadede edilmez). Bir adım hata verirse diğerleri yine çalışır,
+             hata sipariş belgesine "refundErrors" olarak yazılır (admin görebilsin). */
+          const errs = [];
+          const step = async (name, fn) => { try { await fn(); } catch (e) { errs.push(name + ': ' + e.message); console.warn('mutabakat', o.id, name, e.message); } };
           const need = groupCart(d.items || []);
-          for (const id of Object.keys(need)) {
+          await step('stok', async () => {
+            for (const id of Object.keys(need)) {
+              await db.runTransaction(async tx => {
+                const r = db.collection('products').doc(id), s = await tx.get(r); if (!s.exists) return;
+                const p = s.data(); let ss = p.sizeStock || '';
+                if (ss) { const m = parseSS(ss); Object.keys(need[id].s).forEach(z => { if (m[z] !== undefined) m[z] += need[id].s[z]; }); ss = joinSS(m); }
+                tx.update(r, { stock: (p.stock || 0) + need[id].t, sizeStock: ss });
+              });
+            }
+          });
+          await step('puan', async () => {
+            const us = await uref.get(); if (!us.exists) return;
+            let delta = Number(d.usedPoints) || 0, revoked = 0;
+            if (d.pointsCredited) {
+              revoked = Number(d.creditedPoints);
+              if (!(revoked >= 0)) revoked = Math.floor((d.totalAmount || 0) * 0.05); // creditedPoints henüz yazılmamışsa hesapla
+              delta -= revoked;
+            }
+            if (delta) await uref.update({ points: FV.increment(delta) });
+            if (revoked) await orf.update({ pointsRevoked: revoked });
+          });
+          if (d.status === 'İptal Edildi' && d.couponCode) await step('kupon', async () => {
             await db.runTransaction(async tx => {
-              const r = db.collection('products').doc(id), s = await tx.get(r); if (!s.exists) return;
-              const p = s.data(); let ss = p.sizeStock || '';
-              if (ss) { const m = parseSS(ss); Object.keys(need[id].s).forEach(z => { if (m[z] !== undefined) m[z] += need[id].s[z]; }); ss = joinSS(m); }
-              tx.update(r, { stock: (p.stock || 0) + need[id].t, sizeStock: ss });
+              const cr = db.collection('coupons').doc(d.couponCode), cs = await tx.get(cr);
+              if (cs.exists && (cs.data().usedCount || 0) > 0) tx.update(cr, { usedCount: FV.increment(-1) });
+              tx.delete(cr.collection('uses').doc(o.userId));
             });
-          }
-          const us = await uref.get();
-          if (us.exists && d.usedPoints) await uref.update({ points: FV.increment(d.usedPoints) });
+          });
+          if (errs.length) { try { await orf.update({ refundErrors: errs.slice(0, 5) }); } catch (e) {} }
         } else {
           const pts = Math.floor((d.totalAmount || 0) * 0.05), us = await uref.get();
           if (us.exists && pts > 0) await uref.update({ points: FV.increment(pts) });

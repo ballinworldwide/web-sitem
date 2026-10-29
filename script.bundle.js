@@ -2199,6 +2199,19 @@ window.saveEditedProductData = async function(btn) {
   const groupCart = items => { const n = {}; items.forEach(i => { const g = n[i.dbId] = n[i.dbId] || { t: 0, s: {} }; g.t++; const z = sizeKey(i); if (z) g.s[z] = (g.s[z] || 0) + 1; }); return n; };
 
   // Kargo takip adresleri: kullandığın firmaların güncel takip linkini kontrol et, gerekirse düzelt
+  /* YAMA-15: sipariş durum geçiş tablosu (admin ekranı + toplu işlem). Aynı tablo firestore.rules'ta da
+     (validTransition) uygulanır. "İptal Edildi" ve "İade Onaylandı" KAPALI durumlardır: stok/puan iadesi
+     bir kez yapıldığı için bu siparişler bir daha aktif hale getirilemez. */
+  const NEXT = {
+    'Hazırlanıyor': ['Kargoya Verildi', 'Tamamlandı', 'İptal Edildi'],
+    'Kargoya Verildi': ['Tamamlandı', 'Hazırlanıyor', 'İptal Edildi'],
+    'Tamamlandı': ['İade Talebi Alındı', 'İade Onaylandı'],
+    'İade Talebi Alındı': ['İade Onaylandı', 'İade Onaylanmadı'],
+    'İade Onaylanmadı': ['İade Onaylandı', 'Tamamlandı'],
+    'İade Onaylandı': [],
+    'İptal Edildi': []
+  };
+  const canMove = (from, to) => from === to || (NEXT[from] || []).includes(to);
   const CARRIERS = {
     'Aras Kargo': 'https://kargotakip.araskargo.com.tr/mainpage.aspx?code=',
     'Yurtiçi Kargo': 'https://www.yurticikargo.com/tr/online-servisler/gonderi-sorgula?code=',
@@ -2453,7 +2466,7 @@ window.saveEditedProductData = async function(btn) {
         const si = o.shippingInfo || {}, id = esc(o.id);
         const bad = o.status === 'Hazırlanıyor' && (o.items || []).some(i => cur[i.dbId] !== undefined && cur[i.dbId] !== i.price);
         const d = o.orderDate && o.orderDate.toDate ? o.orderDate.toDate().toLocaleString('tr-TR') : '-';
-        const states = ['Hazırlanıyor', 'Kargoya Verildi', 'Tamamlandı', 'İade Onaylandı', 'İade Onaylanmadı', 'İptal Edildi'].concat(o.status === 'İade Talebi Alındı' ? ['İade Talebi Alındı'] : []);
+        const states = [o.status].concat(NEXT[o.status] || []), closed = (NEXT[o.status] || []).length === 0 && o.status in NEXT;
         return '<div class="bg-white p-5 rounded-2xl border border-brand-200 flex flex-col md:flex-row gap-6 flex-wrap">' +
           '<div class="flex-1 min-w-0"><div class="flex items-center gap-2 mb-3"><input type="checkbox" class="order-checkbox" value="' + id + '"><b>#' + esc(o.id.slice(0, 8)) + '</b>' +
           (o.status === 'İade Talebi Alındı' ? ' <span class="bg-red-100 text-red-600 px-2 rounded text-[10px]">İADE TALEBİ</span>' : '') +
@@ -2466,7 +2479,8 @@ window.saveEditedProductData = async function(btn) {
           '<div class="w-full md:w-64 flex flex-col justify-center shrink-0 gap-2">' +
           '<button onclick="printInvoice(\'' + id + '\')" class="btn-ghost">Sipariş / Kargo Fişi</button>' +
           (o.status === 'İade Talebi Alındı' ? '<button onclick="rejectReturn(\'' + id + '\')" class="btn-ghost" style="color:#ff7a7a">İadeyi Reddet (Not)</button>' : '') +
-          '<select id="adminStatus_' + id + '">' + opt(states, o.status) + '</select>' +
+          '<select id="adminStatus_' + id + '"' + (closed ? ' disabled title="Bu sipariş kapatıldı, durumu değiştirilemez"' : '') + '>' + opt(states, o.status) + '</select>' +
+          (closed ? '<p class="text-[10px]" style="opacity:.6">🔒 Kapatılmış sipariş: durum değiştirilemez</p>' : '') +
           '<select id="adminCarrier_' + id + '"><option value="">Kargo firması seç</option>' + opt(Object.keys(CARRIERS), o.carrier) + '</select>' +
           '<input type="text" id="adminTrack_' + id + '" value="' + esc(o.trackingNumber || '') + '" placeholder="Takip no">' +
           '<button onclick="updateAdminOrder(\'' + id + '\')" class="btn-primary">Kaydet ve Bildir</button></div></div>';
@@ -2477,6 +2491,8 @@ window.saveEditedProductData = async function(btn) {
   window.updateAdminOrder = async function (id) {
     if (!isAdm()) return;
     const status = $('adminStatus_' + id).value, carrier = $('adminCarrier_' + id).value, track = $('adminTrack_' + id).value.trim();
+    const cur = allOrders.find(x => x.id === id);
+    if (cur && !canMove(cur.status, status)) return showToast('"' + cur.status + '" durumundan "' + status + '" durumuna geçilemez.', 'error');
     if (status === 'Kargoya Verildi' && (!carrier || !track)) return showToast('Kargoya vermek için firma ve takip numarası girin.', 'error');
     try {
       const o = allOrders.find(x => x.id === id) || {};
@@ -2486,7 +2502,17 @@ window.saveEditedProductData = async function(btn) {
     } catch (e) { showToast('Güncelleme hatası: ' + e.message, 'error'); }
   };
   const _bulk = window.bulkUpdateOrderStatus;
-  window.bulkUpdateOrderStatus = function (s) { return s === 'Kargoya Verildi' ? showToast('Kargolamak için her siparişte firma ve takip no girin.', 'error') : _bulk.apply(this, arguments); };
+  window.bulkUpdateOrderStatus = function (s) {
+    if (s === 'Kargoya Verildi') return showToast('Kargolamak için her siparişte firma ve takip no girin.', 'error');
+    let bad = 0;
+    document.querySelectorAll('.order-checkbox:checked').forEach(cb => {
+      const o = allOrders.find(x => x.id === cb.value);
+      if (o && !canMove(o.status, s)) { cb.checked = false; bad++; }
+    });
+    if (bad) showToast(bad + ' sipariş "' + s + '" durumuna geçirilemez, seçimden çıkarıldı.', 'error');
+    if (!document.querySelector('.order-checkbox:checked')) return;
+    return _bulk.apply(this, arguments);
+  };
 
   window.printInvoice = function (id) {
     const o = allOrders.find(x => x.id === id); if (!o) return;

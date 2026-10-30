@@ -34,6 +34,8 @@
 const firebaseConfig = { apiKey: "AIzaSyAiwyFOinP5FQc3npY0S34k1OrLG6u7Elo", authDomain: "ballinww.firebaseapp.com", projectId: "ballinww", storageBucket: "ballinww.firebasestorage.app", messagingSenderId: "460665379220", appId: "1:460665379220:web:b162c760e1b06bfbc2d781" };
 const ADMIN_EMAIL = "ballinworldw@gmail.com";
 let STAFF_ROLE = null; // yama-3: "siparis" | "urun" | "yonetici" | null
+/* YAMA-17: HTML'e veri basarken kullanılan güvenli kaçış yardımcısı (kategori, ürün adı, kupon kodu vb.) */
+function escHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 function isStaffNow(u) { return !!(u && !u.isAnonymous && (u.email === ADMIN_EMAIL || STAFF_ROLE)); }
  
 
@@ -73,7 +75,7 @@ function renderAdminCategories() {
     if (!listEl) return;
     listEl.innerHTML = allCategories.map((cat, index) =>
         `<span class="bg-white border border-brand-200 px-3 py-1.5 rounded-full text-sm font-medium text-brand-700 flex items-center gap-2 shadow-sm">
-            ${cat} <i class="fa-solid fa-xmark text-red-500 cursor-pointer hover:scale-110" onclick="deleteCategory(${index})"></i>
+            ${escHtml(cat)} <i class="fa-solid fa-xmark text-red-500 cursor-pointer hover:scale-110" onclick="deleteCategory(${index})"></i>
         </span>`
     ).join('');
 }
@@ -103,7 +105,7 @@ function deleteCategory(index) {
 }
 
 function updateCategoryDropdowns() {
-    const optionsHTML = allCategories.map(c => `<option value="${c}">${c}</option>`).join('');
+    const optionsHTML = allCategories.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
     const addSelect = document.getElementById('adminProdCategory');
     const bulkSelect = document.getElementById('bulkTargetCategory');
     if(addSelect) addSelect.innerHTML = optionsHTML;
@@ -115,7 +117,7 @@ function renderCategoryFilters() {
     if(!filterContainer) return;
     let html = `<button class="cat-btn ${currentCategory === 'Tümü' ? 'bg-brand-900 text-white' : 'bg-brand-100 text-brand-700 hover:bg-brand-200'} px-6 py-2 rounded-full text-sm font-medium transition-all active" onclick="setCategoryFilter('Tümü', this)">Tümü</button>`;
     allCategories.forEach(cat => {
-        html += `<button class="cat-btn ${currentCategory === cat ? 'bg-brand-900 text-white' : 'bg-brand-100 text-brand-700 hover:bg-brand-200'} px-6 py-2 rounded-full text-sm font-medium transition-all" onclick="setCategoryFilter('${cat}', this)">${cat}</button>`;
+        html += `<button class="cat-btn ${currentCategory === cat ? 'bg-brand-900 text-white' : 'bg-brand-100 text-brand-700 hover:bg-brand-200'} px-6 py-2 rounded-full text-sm font-medium transition-all" onclick="setCategoryFilter(${escHtml(JSON.stringify(cat))}, this)">${escHtml(cat)}</button>`;
     });
     filterContainer.innerHTML = html;
 }
@@ -124,7 +126,7 @@ let wishlist = [];
 try { let w = JSON.parse(localStorage.getItem('ballin_wishlist')); if(Array.isArray(w)) wishlist = w; } catch(e){}
 let cart = [];
 try { let c = JSON.parse(localStorage.getItem('ballin_cart')); if(Array.isArray(c)) cart = c; } catch(e){}
-let compareList = []; 
+ 
 
 let appliedDiscountRate = 0;
 let appliedCouponCode = "";
@@ -415,43 +417,15 @@ function saveCMSBanner() {
     }).catch(e => showToast("Ayarlar kaydedilemedi: " + e.message, 'error'));
 }
 
-function toggleCompare(prodId, event) {
-    if(event) event.stopPropagation();
-    const index = compareList.indexOf(prodId);
-    if(index > -1) { compareList.splice(index, 1); } 
-    else {
-        if(compareList.length >= 3) { showToast("En fazla 3 ürün karşılaştırılabilir.", 'error'); return; }
-        compareList.push(prodId);
-    }
-    updateCompareBar(); filterAndSortProducts();
-}
+/* YAMA-17: ölü kod kaldırıldı: toggleCompare */
 
-function updateCompareBar() {
-    const bar = document.getElementById('compareBar');
-    const countEl = document.getElementById('compareCount');
-    if(!bar || !countEl) return;
-    countEl.innerText = compareList.length;
-    if(compareList.length > 0) bar.classList.add('show'); else bar.classList.remove('show');
-}
+/* YAMA-17: ölü kod kaldırıldı: updateCompareBar */
 
-function clearCompareSelection() { compareList = []; updateCompareBar(); filterAndSortProducts(); }
+/* YAMA-17: ölü kod kaldırıldı: clearCompareSelection */
 
-function goToComparePage() {
-    const container = document.getElementById('compareContainer');
-    if(!container) return;
-    if(compareList.length === 0) { container.innerHTML = '<p class="text-brand-400">Ürün seçilmedi.</p>'; switchPage('compare'); return; }
-    let html = '';
-    compareList.forEach(id => {
-        let p = allProducts.find(item => item.id === id);
-        if(p) {
-            let img = (p.images && p.images[0]) ? p.images[0] : (p.image || 'https://placehold.co/300');
-            html += `<div class="bg-brand-50 p-6 rounded-2xl border border-brand-200 text-center"><img src="${img}" class="w-full h-64 object-cover rounded-xl mb-4 shadow-sm"><h3 class="font-serif font-bold text-lg text-brand-900 mb-2">${p.name}</h3><p class="font-semibold text-brand-900 text-lg mb-3">${(p.price||0).toLocaleString('tr-TR')} TL</p><p class="text-xs text-brand-500 uppercase mb-2">Kategori: ${p.category || 'Diğer'}</p><p class="text-xs text-brand-500 mb-4">Stok: ${p.stock > 0 ? (p.stock <= 5 ? 'Sınırlı Stok!' : 'Mevcut') : 'Tükendi'}</p><p class="text-xs text-brand-600 text-left border-t border-brand-200 pt-4">${p.description || 'Açıklama yok.'}</p></div>`;
-        }
-    });
-    container.innerHTML = html; switchPage('compare');
-}
+/* YAMA-17: ölü kod kaldırıldı: goToComparePage */
 
-function clearCompare() { compareList = []; updateCompareBar(); switchPage('collection'); }
+/* YAMA-17: ölü kod kaldırıldı: clearCompare */
 
 // --- YENİ: Favorileri (Wishlist) Firestore ile Senkronize Etme ---
 function syncWishlistToFirebase() {
@@ -501,14 +475,15 @@ function renderWishlistGrid() {
 
 function exportProductsToCSV() {
     if(allProducts.length === 0) { showToast("Dışa aktarılacak ürün bulunamadı.", 'error'); return; }
-    let csv = "name,price,category,stock,sizeStock,description,image\n";
+    // YAMA-17: her alan tırnaklanır, içindeki " kaçırılır; =,+,-,@ ile başlayan metinlerin başına ' konur
+    // (Excel'de formül olarak çalışmasın). İçe aktarırken bu ' otomatik temizlenir.
+    const q = v => { let t = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
+    let csv = "name,price,category,stock,sizeStock,description,image\r\n";
     allProducts.forEach(p => {
-        let img = (p.images && p.images[0]) ? p.images[0] : (p.image || '');
-        let desc = (p.description || '').replace(/"/g, '""');
-        let nm = (p.name || '').replace(/"/g, '""');
-        csv += `"${nm}",${p.price},"${p.category || 'Giyim'}",${p.stock},"${p.sizeStock || ''}","${desc}","${img}"\n`;
+        const img = (p.images && p.images[0]) ? p.images[0] : (p.image || '');
+        csv += [q(p.name), Number(p.price) || 0, q(p.category || 'Giyim'), Number(p.stock) || 0, q(p.sizeStock || ''), q(p.description), q(img)].join(',') + "\r\n";
     });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.setAttribute("download", `ballin_katalog_${Date.now()}.csv`);
@@ -517,37 +492,55 @@ function exportProductsToCSV() {
     document.body.removeChild(link);
     showToast("Ürünler CSV olarak indirildi.", 'success');
 }
-
+function parseCSV(text) {
+    text = String(text).replace(/^\uFEFF/, '');
+    const rows = []; let row = [], cur = '', inQ = false;
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (inQ) {
+            if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
+            else cur += ch;
+        } else if (ch === '"') inQ = true;
+        else if (ch === ',') { row.push(cur); cur = ''; }
+        else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cur); cur = ''; rows.push(row); row = []; }
+        else cur += ch;
+    }
+    if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+    return rows.filter(r => r.some(c => String(c).trim() !== ''));
+}
 function importProductsFromCSV() {
     const fileInput = document.getElementById('csvFileInput');
     if(!fileInput || !fileInput.files || fileInput.files.length === 0) { showToast("Lütfen bir CSV dosyası seçin.", 'error'); return; }
     const reader = new FileReader();
     reader.onload = function(e) {
-        const text = e.target.result;
-        const rows = text.split('\n').map(r => r.replace(/\r$/, '')).filter(r => r.trim() !== '');
+        // YAMA-17: tırnak içindeki virgül/satır sonu destekli gerçek CSV ayrıştırıcı; sütunlar başlıktan okunur;
+        // her satır doğrulanır (geçersiz satır atlanır ve sayılır); 400'lük gruplarla yazılır.
+        const rows = parseCSV(e.target.result);
         if(rows.length <= 1) { showToast("CSV dosyası geçersiz.", 'error'); return; }
-        let batch = db.batch();
-        let count = 0;
-        for(let i = 1; i < rows.length; i++) {
-            const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            if(cols.length >= 4) {
-                let name = cols[0].replace(/"/g, '').trim();
-                let price = parseFloat(cols[1]) || 0;
-                let category = cols[2].replace(/"/g, '').trim();
-                let stock = parseInt(cols[3]) || 0;
-                let sizeStock = cols[4] ? cols[4].replace(/"/g, '').trim() : '';
-                let desc = cols[5] ? cols[5].replace(/"/g, '').trim() : '';
-                let img = cols[6] ? cols[6].replace(/"/g, '').trim() : '';
-
-                let docRef = db.collection("products").doc();
-                batch.set(docRef, { name: name, price: price, category: category, stock: stock, sizeStock: sizeStock, description: desc, images: [img], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-                count++;
-            }
+        const head = rows[0].map(h => String(h).trim().toLowerCase());
+        const idx = k => head.indexOf(k);
+        if (idx('name') < 0 || idx('price') < 0) { showToast("CSV başlığında en az name ve price sütunları olmalı.", 'error'); return; }
+        const clean = v => { v = String(v == null ? '' : v).trim(); return /^'[=+\-@]/.test(v) ? v.slice(1) : v; };
+        const SIZE_RE = /^\s*[A-Za-z0-9]+\s*:\s*\d+\s*(,\s*[A-Za-z0-9]+\s*:\s*\d+\s*)*$/;
+        const valid = []; let skipped = 0;
+        for (let i = 1; i < rows.length; i++) {
+            const r = rows[i], get = k => idx(k) >= 0 ? clean(r[idx(k)]) : '';
+            const name = get('name'), price = parseFloat(get('price')), sizeStock = get('sizestock'), img = get('image');
+            let stock = get('stock') === '' ? 0 : parseInt(get('stock'));
+            if (!name || name.length > 200 || isNaN(price) || price < 0 || isNaN(stock) || stock < 0 || (sizeStock && !SIZE_RE.test(sizeStock))) { skipped++; continue; }
+            if (sizeStock) stock = sizeStock.split(',').reduce((a, x) => a + (parseInt(x.split(':')[1]) || 0), 0);
+            valid.push({ name: name, price: price, category: get('category') || 'Giyim', stock: stock, sizeStock: sizeStock, description: get('description').slice(0, 2000), images: /^https:\/\//i.test(img) ? [img] : [] });
         }
-        batch.commit().then(() => { showToast(`${count} ürün kataloğa aktarıldı!`, 'success'); fileInput.value = ''; loadProducts(); }).catch(err => showToast("Hata: " + err.message, 'error'));
+        if (!valid.length) { showToast("Geçerli ürün satırı bulunamadı (" + skipped + " satır atlandı).", 'error'); return; }
+        const chunks = []; for (let i = 0; i < valid.length; i += 400) chunks.push(valid.slice(i, i + 400));
+        Promise.all(chunks.map(ch => { const batch = db.batch(); ch.forEach(p => batch.set(db.collection("products").doc(), Object.assign({}, p, { createdAt: firebase.firestore.FieldValue.serverTimestamp() }))); return batch.commit(); }))
+          .then(() => { showToast(valid.length + " ürün kataloğa aktarıldı!" + (skipped ? " (" + skipped + " geçersiz satır atlandı)" : ""), 'success'); fileInput.value = ''; loadProducts(); })
+          .catch(err => showToast("Hata: " + err.message, 'error'));
     };
     reader.readAsText(fileInput.files[0]);
 }
+
+/* YAMA-17: ölü kod kaldırıldı: importProductsFromCSV */
 
 let uploadedImages = ["", "", "", ""];
 function previewImageSlot(inputEl, slotIndex) {
@@ -573,7 +566,7 @@ function loadCouponsAdmin() {
         else {
             snap.forEach(doc => {
                 let c = doc.data(); c.id = doc.id; activeCoupons.push(c);
-                html += `<tr class="border-b border-brand-100"><td class="py-2 font-bold">${c.code}</td><td class="py-2">%${c.discount}</td><td class="py-2">${c.usedCount || 0} / ${c.limit}</td><td class="py-2"><button onclick="deleteCoupon('${c.id}')" class="text-red-600 text-xs font-bold hover:underline">Sil</button></td></tr>`;
+                html += `<tr class="border-b border-brand-100"><td class="py-2 font-bold">${escHtml(c.code)}</td><td class="py-2">%${escHtml(c.discount)}</td><td class="py-2">${escHtml(c.usedCount || 0)} / ${escHtml(c.limit)}</td><td class="py-2"><button onclick="deleteCoupon(${escHtml(JSON.stringify(c.id))})" class="text-red-600 text-xs font-bold hover:underline">Sil</button></td></tr>`;
             });
             html += '</tbody></table>';
         }
@@ -619,13 +612,13 @@ function renderBulkTable() {
     allProducts.forEach(prod => {
         html += `
             <tr class="border-b border-brand-100 hover:bg-white transition-colors">
-                <td class="py-3 pl-2"><input type="checkbox" class="product-checkbox" value="${prod.id}"></td>
-                <td class="py-3 font-medium text-xs">${prod.name}</td>
-                <td class="py-3 text-[10px] font-bold text-brand-500 uppercase">${prod.category || 'Diğer'}</td>
-                <td class="py-3"><input type="number" id="bulkPrice_${prod.id}" value="${prod.price}" class="w-20 bg-brand-50 border border-brand-200 rounded p-1.5 text-xs outline-none focus:border-brand-900"></td>
-                <td class="py-3"><input type="number" id="bulkStock_${prod.id}" value="${prod.stock}" class="w-14 bg-brand-50 border border-brand-200 rounded p-1.5 text-xs outline-none focus:border-brand-900"></td>
-                <td class="py-3"><input type="text" id="bulkSizeStock_${prod.id}" value="${prod.sizeStock || ''}" placeholder="S:2, M:0" class="w-32 bg-brand-50 border border-brand-200 rounded p-1.5 text-xs outline-none focus:border-brand-900"></td>
-                <td class="py-3"><button onclick="saveBulkItem('${prod.id}')" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium shadow-sm hover:bg-emerald-700">Kaydet</button></td>
+                <td class="py-3 pl-2"><input type="checkbox" class="product-checkbox" value="${escHtml(prod.id)}"></td>
+                <td class="py-3 font-medium text-xs">${escHtml(prod.name)}</td>
+                <td class="py-3 text-[10px] font-bold text-brand-500 uppercase">${escHtml(prod.category || 'Diğer')}</td>
+                <td class="py-3"><input type="number" id="bulkPrice_${escHtml(prod.id)}" value="${escHtml(prod.price)}" class="w-20 bg-brand-50 border border-brand-200 rounded p-1.5 text-xs outline-none focus:border-brand-900"></td>
+                <td class="py-3"><input type="number" id="bulkStock_${escHtml(prod.id)}" value="${escHtml(prod.stock)}" class="w-14 bg-brand-50 border border-brand-200 rounded p-1.5 text-xs outline-none focus:border-brand-900"></td>
+                <td class="py-3"><input type="text" id="bulkSizeStock_${escHtml(prod.id)}" value="${escHtml(prod.sizeStock || '')}" placeholder="S:2, M:0" class="w-32 bg-brand-50 border border-brand-200 rounded p-1.5 text-xs outline-none focus:border-brand-900"></td>
+                <td class="py-3"><button onclick="saveBulkItem(${escHtml(JSON.stringify(prod.id))})" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium shadow-sm hover:bg-emerald-700">Kaydet</button></td>
             </tr>`;
     });
     tbody.innerHTML = html;
@@ -757,9 +750,7 @@ async function generateEmailItemsHTML(items) {
 
 /* sendShippingUpdateEmail yama-1 ile Worker üzerinden çalışır */
 
-function sendRecoveryEmail(email, name) {
-    showToast(`${email} adresine sepet hatırlatması iletildi.`, 'success');
-}
+/* YAMA-17: ölü kod kaldırıldı: sendRecoveryEmail */
 
 function printInvoice(orderId) {
     let order = allOrders.find(o => o.id === orderId);
@@ -999,32 +990,7 @@ function renderNewGrid() {
     let html = ''; allProducts.slice(0, 4).forEach(prod => { html += createProductCard(prod); }); newGrid.innerHTML = html; 
 }
 
-function createProductCard(prod) { 
-    let isOut = prod.stock <= 0;
-    let stockBadgeHTML = isOut ? `<span class="absolute top-3 right-3 bg-red-600 text-white px-2.5 py-1 text-[10px] font-bold rounded shadow-md z-10 uppercase tracking-widest">Tükendi</span>` : (prod.stock <= 5 ? `<span class="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 text-[10px] font-bold rounded shadow-md z-10 uppercase tracking-widest">Sınırlı Stok</span>` : '');
-    let coverImg = (prod.images && prod.images.length > 0) ? prod.images[0] : (prod.image || 'https://placehold.co/600x800/f1f3f5/a3a3a3?text=BALLIN');
-    let isFav = wishlist.includes(prod.id);
-    let isCompared = compareList.includes(prod.id);
-    
-    return `
-        <div class="group relative flex flex-col cursor-pointer bg-brand-50 rounded-2xl p-4 overflow-hidden border border-brand-100 hover:border-brand-300 transition-all hover:shadow-xl" onclick="openProductDetail('${prod.id}')">
-            ${stockBadgeHTML}
-            <div class="absolute top-3 left-3 z-10 flex flex-col gap-2">
-                <button onclick="toggleWishlist('${prod.id}', event)" class="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center transition-colors ${isFav ? 'text-red-500' : 'text-brand-400 hover:text-red-500'}"><i class="fa-solid fa-heart"></i></button>
-                <input type="checkbox" class="compare-checkbox w-5 h-5 accent-brand-900 cursor-pointer shadow" ${isCompared ? 'checked' : ''} onclick="toggleCompare('${prod.id}', event)" title="Karşılaştır">
-            </div>
-            <div class="relative w-full aspect-[4/5] rounded-xl overflow-hidden mb-4 bg-white">
-                <img src="${coverImg}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${isOut ? 'grayscale brightness-50' : ''}">
-            </div>
-            <div class="flex justify-between items-start mt-2">
-                <div>
-                    <h3 class="text-sm font-medium text-brand-900 font-serif line-clamp-1">${prod.name}</h3>
-                    <p class="text-[10px] text-brand-400 uppercase mt-1 tracking-wider">${prod.category || 'Diğer'}</p>
-                </div>
-                <p class="text-sm font-bold text-brand-900">${(prod.price||0).toLocaleString('tr-TR')} TL</p>
-            </div>
-        </div>`; 
-}
+/* YAMA-17: ölü kod kaldırıldı: createProductCard */
 
 function switchPage(pageId) { 
     if (pageId === 'admin') {
@@ -1069,7 +1035,7 @@ function openProductDetail(id) {
     if(currentSliderImages.length > 1) {
         sliderThumbnails = '<div class="flex gap-2 mt-3 overflow-x-auto pb-2">';
         currentSliderImages.forEach((imgSrc, idx) => {
-            sliderThumbnails += `<img src="${imgSrc}" class="w-16 h-20 object-cover rounded-lg border-2 cursor-pointer transition-all ${idx===0 ? 'border-brand-900' : 'border-brand-200 opacity-60 hover:opacity-100'}" onclick="document.getElementById('activeMainImg').src='${imgSrc}'; document.querySelectorAll('#productDetailContainer .border-brand-900').forEach(el=>el.classList.replace('border-brand-900','border-brand-200')); this.classList.replace('border-brand-200','border-brand-900');">`;
+            sliderThumbnails += `<img src="${escHtml(imgSrc)}" data-src="${escHtml(imgSrc)}" class="w-16 h-20 object-cover rounded-lg border-2 cursor-pointer transition-all ${idx===0 ? 'border-brand-900' : 'border-brand-200 opacity-60 hover:opacity-100'}" onclick="document.getElementById('activeMainImg').src=this.dataset.src; document.querySelectorAll('#productDetailContainer .border-brand-900').forEach(el=>el.classList.replace('border-brand-900','border-brand-200')); this.classList.replace('border-brand-200','border-brand-900');">`;
         });
         sliderThumbnails += '</div>';
     }
@@ -1082,7 +1048,7 @@ function openProductDetail(id) {
             <div>
                 <div class="relative aspect-[4/5] bg-brand-50 rounded-2xl overflow-hidden mb-2 shadow-sm border border-brand-100 zoom-img-container">
                     ${favBtnHtml}
-                    <img src="${currentSliderImages[0]}" id="activeMainImg" class="w-full h-full object-cover">
+                    <img src="${escHtml(currentSliderImages[0])}" id="activeMainImg" class="w-full h-full object-cover">
                 </div>
                 ${sliderThumbnails}
             </div>
@@ -1100,13 +1066,13 @@ function openProductDetail(id) {
         sizeKeys.forEach((sz) => {
             let stCount = parsedSizeStock[sz];
             let isOut = stCount <= 0;
-            sizesHTML += `<button class="px-5 py-2.5 rounded-xl border text-sm font-medium transition-all ${sz === selectedSize && !isOut ? 'border-brand-900 bg-brand-900 text-white shadow-md transform scale-105' : 'border-brand-200 text-brand-700 hover:border-brand-400'} ${isOut ? 'opacity-40 line-through border-red-200 text-red-500 hover:border-red-200' : ''}" onclick="selectSizeOrNotify('${sz}', ${isOut}, this, '${prod.id}', '${prod.name.replace(/'/g, "\\'")}')">${sz} ${isOut ? '<span class="text-[9px] block">Haber Ver</span>' : ''}</button>`;
+            sizesHTML += `<button class="px-5 py-2.5 rounded-xl border text-sm font-medium transition-all ${sz === selectedSize && !isOut ? 'border-brand-900 bg-brand-900 text-white shadow-md transform scale-105' : 'border-brand-200 text-brand-700 hover:border-brand-400'} ${isOut ? 'opacity-40 line-through border-red-200 text-red-500 hover:border-red-200' : ''}" onclick="selectSizeOrNotify(${escHtml(JSON.stringify(sz))}, ${isOut}, this, ${escHtml(JSON.stringify(prod.id))}, ${escHtml(JSON.stringify(prod.name))})">${escHtml(sz)} ${isOut ? '<span class="text-[9px] block">Haber Ver</span>' : ''}</button>`;
         });
         sizesHTML += `</div></div>`;
     }
 
     let isGlobalOut = prod.stock <= 0;
-    let btnStatus = !isGlobalOut ? `<button onclick="addDetailedToCart('${prod.id}', '${prod.name.replace(/'/g, "\\'")}', ${prod.price}, '${currentSliderImages[0]}')" class="w-full bg-brand-900 text-white py-4 rounded-xl font-bold hover:bg-brand-800 transition-colors shadow-xl text-sm uppercase tracking-widest"><i class="fa-solid fa-cart-plus mr-2"></i> Sepete Ekle</button>` : `<button onclick="notifyWhenAvailable('${prod.id}', '${prod.name.replace(/'/g, "\\'")}')" class="w-full bg-brand-100 border border-brand-300 text-brand-700 py-4 rounded-xl font-bold text-sm uppercase tracking-widest"><i class="fa-regular fa-bell mr-2"></i> Stokta Yok - Gelince Haber Ver</button>`;
+    let btnStatus = !isGlobalOut ? `<button onclick="addDetailedToCart(${escHtml(JSON.stringify(prod.id))}, ${escHtml(JSON.stringify(prod.name))}, ${Number(prod.price) || 0}, ${escHtml(JSON.stringify(currentSliderImages[0]))})" class="w-full bg-brand-900 text-white py-4 rounded-xl font-bold hover:bg-brand-800 transition-colors shadow-xl text-sm uppercase tracking-widest"><i class="fa-solid fa-cart-plus mr-2"></i> Sepete Ekle</button>` : `<button onclick="notifyWhenAvailable(${escHtml(JSON.stringify(prod.id))}, ${escHtml(JSON.stringify(prod.name))})" class="w-full bg-brand-100 border border-brand-300 text-brand-700 py-4 rounded-xl font-bold text-sm uppercase tracking-widest"><i class="fa-regular fa-bell mr-2"></i> Stokta Yok - Gelince Haber Ver</button>`;
     
     let descText = prod.description || 'Premium BALLIN koleksiyonuna ait bu özel tasarım ürün, fütüristik çizgileri ve kaliteli yapısıyla tarzınıza eşsiz bir dokunuş katar.';
     let shareBtnHTML = `<button onclick="shareProduct()" class="w-full mt-3 border border-brand-200 text-brand-700 py-3 rounded-xl text-sm font-medium hover:bg-brand-50 transition-colors"><i class="fa-solid fa-share-nodes mr-2"></i> Ürünü Paylaş</button>`;
@@ -1117,12 +1083,12 @@ function openProductDetail(id) {
         crossSellHtml = `<div class="mt-10 border-t border-brand-100 pt-8"><h3 class="font-serif text-lg font-bold text-brand-900 mb-4"><i class="fa-solid fa-wand-magic-sparkles mr-2 text-amber-500"></i>Kombini Tamamla</h3><div class="grid grid-cols-2 gap-4">`;
         others.forEach(o => {
             let img = o.images && o.images.length > 0 ? o.images[0] : (o.image || 'https://placehold.co/300');
-            crossSellHtml += `<div class="cursor-pointer group bg-brand-50 p-3 rounded-xl border border-brand-100 hover:border-brand-300 transition-colors" onclick="openProductDetail('${o.id}')"><img src="${img}" class="w-full h-32 object-cover rounded-lg mb-3 shadow-sm group-hover:opacity-80 transition-opacity"><h4 class="text-xs font-bold font-serif text-brand-900 line-clamp-1">${o.name}</h4><p class="text-xs text-brand-600 mt-1">${(o.price||0).toLocaleString('tr-TR')} TL</p></div>`;
+            crossSellHtml += `<div class="cursor-pointer group bg-brand-50 p-3 rounded-xl border border-brand-100 hover:border-brand-300 transition-colors" onclick="openProductDetail('${o.id}')"><img src="${escHtml(img)}" class="w-full h-32 object-cover rounded-lg mb-3 shadow-sm group-hover:opacity-80 transition-opacity"><h4 class="text-xs font-bold font-serif text-brand-900 line-clamp-1">${escHtml(o.name)}</h4><p class="text-xs text-brand-600 mt-1">${(o.price||0).toLocaleString('tr-TR')} TL</p></div>`;
         });
         crossSellHtml += `</div></div>`;
     }
 
-    let infoHTML = `<span class="text-xs uppercase tracking-widest text-brand-400 font-semibold">${prod.category || 'Koleksiyon'}</span><h2 class="font-serif text-3xl md:text-4xl text-brand-900 mt-2 mb-4">${prod.name}</h2><p class="text-2xl font-bold text-brand-900 mb-6">${(prod.price||0).toLocaleString('tr-TR')} TL</p><p class="text-brand-600 font-light text-sm mb-8 leading-relaxed">${descText}</p>${sizesHTML}<div class="text-xs font-bold mb-5 flex items-center gap-2 ${!isGlobalOut ? 'text-emerald-600' : 'text-red-500'}"><i class="fa-solid ${!isGlobalOut ? 'fa-check' : 'fa-xmark'}"></i> ${!isGlobalOut ? (prod.stock <= 5 ? 'Sadece '+prod.stock+' adet kaldı!' : 'Stokta mevcut') : 'Bu ürün şu an tükendi.'}</div>${btnStatus}${shareBtnHTML}${crossSellHtml}<div class="mt-10 pt-6 border-t border-brand-100 space-y-3 text-xs text-brand-500 font-medium"><p><i class="fa-solid fa-truck-fast text-brand-700 w-5"></i> 3000 TL üzeri kargo bedava</p><p><i class="fa-solid fa-arrow-rotate-left text-brand-700 w-5"></i> 14 gün içinde ücretsiz iade</p><p><i class="fa-solid fa-shield-halved text-brand-700 w-5"></i> 256-bit SSL güvenli alışveriş</p></div></div></div>`;
+    let infoHTML = `<span class="text-xs uppercase tracking-widest text-brand-400 font-semibold">${escHtml(prod.category || 'Koleksiyon')}</span><h2 class="font-serif text-3xl md:text-4xl text-brand-900 mt-2 mb-4">${escHtml(prod.name)}</h2><p class="text-2xl font-bold text-brand-900 mb-6">${(prod.price||0).toLocaleString('tr-TR')} TL</p><p class="text-brand-600 font-light text-sm mb-8 leading-relaxed">${escHtml(descText)}</p>${sizesHTML}<div class="text-xs font-bold mb-5 flex items-center gap-2 ${!isGlobalOut ? 'text-emerald-600' : 'text-red-500'}"><i class="fa-solid ${!isGlobalOut ? 'fa-check' : 'fa-xmark'}"></i> ${!isGlobalOut ? (prod.stock <= 5 ? 'Sadece '+prod.stock+' adet kaldı!' : 'Stokta mevcut') : 'Bu ürün şu an tükendi.'}</div>${btnStatus}${shareBtnHTML}${crossSellHtml}<div class="mt-10 pt-6 border-t border-brand-100 space-y-3 text-xs text-brand-500 font-medium"><p><i class="fa-solid fa-truck-fast text-brand-700 w-5"></i> 3000 TL üzeri kargo bedava</p><p><i class="fa-solid fa-arrow-rotate-left text-brand-700 w-5"></i> 14 gün içinde ücretsiz iade</p><p><i class="fa-solid fa-shield-halved text-brand-700 w-5"></i> 256-bit SSL güvenli alışveriş</p></div></div></div>`;
     
     infoHTML += `
         <div class="mt-16 border-t border-brand-100 pt-10">
@@ -1430,7 +1396,7 @@ function goToCheckout() {
     const sumContainer = document.getElementById('checkoutSummaryItems'); 
     if(!sumContainer) return;
     let total = 0; sumContainer.innerHTML = ''; 
-    cart.forEach(item => { total += (item.price||0); sumContainer.innerHTML += `<div class="flex justify-between border-b border-brand-100 pb-2"><span>1x ${item.name}</span> <span class="font medium">${(item.price||0).toLocaleString('tr-TR')} TL</span></div>`; }); 
+    cart.forEach(item => { total += (item.price||0); sumContainer.innerHTML += `<div class="flex justify-between border-b border-brand-100 pb-2"><span>1x ${escHtml(item.name)}</span> <span class="font medium">${(item.price||0).toLocaleString('tr-TR')} TL</span></div>`; }); 
     
     let discountTotal = total * (1 - appliedDiscountRate);
     let finalTotal = discountTotal - appliedPointsValue;
@@ -1639,7 +1605,22 @@ function updatePasswordSecure() {
     }
 }
 
-function logout() { if(confirm("Çıkış yapmak istediğinize emin misiniz?")) { firebase.auth().signOut(); showToast("Çıkış yapıldı.", 'success'); } }
+function clearAccountUI() {
+    // YAMA-17: çıkışta/oturum kapanınca hesap bilgileri ekranda kalmasın
+    userData = null; appliedPointsValue = 0; appliedDiscountRate = 0; appliedCouponCode = "";
+    ['profName','profSurname','profEmail','profPhone','profAddress','newPasswordInput','profCity','profDistrict'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    const pts = document.getElementById('profilePoints'); if(pts) pts.innerText = '0';
+    const ol = document.getElementById('ordersList'); if(ol) ol.innerHTML = 'Siparişler yükleniyor...';
+    const pa = document.getElementById('checkoutPointsArea'); if(pa) pa.style.display = 'none';
+    const pi = document.getElementById('promoDiscountInfo'); if(pi) pi.style.display = 'none';
+    const vb = document.getElementById('verifyBanner'); if(vb) vb.remove();
+}
+function logout() {
+    if(!confirm("Çıkış yapmak istediğinize emin misiniz?")) return;
+    switchPage('home');      // önce ana sayfaya al: profil bilgileri bir an bile ekranda kalmasın
+    clearAccountUI();
+    firebase.auth().signOut().then(() => showToast("Çıkış yapıldı.", 'success')).catch(() => showToast("Çıkış yapılamadı, tekrar deneyin.", 'error'));
+}
 
 firebase.auth().onAuthStateChanged((user) => {
     const authBtn = document.getElementById('account-status-text'); 
@@ -1660,6 +1641,11 @@ firebase.auth().onAuthStateChanged((user) => {
     } else { 
         currentUser = null; 
         if(authBtn) authBtn.innerText = "Giriş Yap"; 
+        // YAMA-17: oturum kapandıysa (çıkış/oturum süresi dolması) hesap bilgilerini ekrandan temizle,
+        // kullanıcı Hesabım veya Admin sayfasındaysa ana sayfaya al.
+        clearAccountUI();
+        { const _pp = document.getElementById('page-profile'), _pa = document.getElementById('page-admin');
+          if ((_pp && !_pp.classList.contains('hidden')) || (_pa && !_pa.classList.contains('hidden'))) switchPage('home'); }
         if(adminBtn) adminBtn.style.display = "none"; 
     }
 });
@@ -1675,21 +1661,21 @@ function loadUserOrders() {
         let html = ''; 
         orders.forEach(order => { 
             let dStr = (order.orderDate && typeof order.orderDate.toDate === 'function') ? order.orderDate.toDate().toLocaleString('tr-TR') : "Tarih Yok"; 
-            let itemsStr = (order.items||[]).map(i => `1x ${i.name}`).join(', '); 
-            let trackingHTML = order.trackingNumber ? `<div class="mt-3 text-xs bg-brand-50 p-3 rounded-lg border border-brand-100 flex items-center gap-2"><i class="fa-solid fa-truck-fast text-brand-600 text-lg"></i><div><span class="block text-brand-500 font-bold mb-1">Kargo Takip No</span><a href="https://www.araskargo.com.tr" target="_blank" class="text-blue-600 font-bold underline text-sm">${order.trackingNumber}</a></div></div>` : ''; 
+            let itemsStr = (order.items||[]).map(i => `1x ${escHtml(i.name)}`).join(', '); 
+            let trackingHTML = order.trackingNumber ? `<div class="mt-3 text-xs bg-brand-50 p-3 rounded-lg border border-brand-100 flex items-center gap-2"><i class="fa-solid fa-truck-fast text-brand-600 text-lg"></i><div><span class="block text-brand-500 font-bold mb-1">Kargo Takip No</span><a href="https://www.araskargo.com.tr" target="_blank" class="text-blue-600 font-bold underline text-sm">${escHtml(order.trackingNumber)}</a></div></div>` : ''; 
             let cancelHTML = order.status === 'Hazırlanıyor' ? `<button onclick="cancelMyOrder('${order.id}')" class="mt-4 text-xs text-red-600 border border-red-200 px-4 py-2 rounded-xl hover:bg-red-50 font-bold uppercase tracking-wider transition-colors"><i class="fa-solid fa-ban mr-1"></i> Siparişi İptal Et</button>` : '';
             let returnHTML = order.status === 'Tamamlandı' ? `<button onclick="requestReturn('${order.id}')" class="mt-4 text-xs border border-brand-300 text-brand-700 px-4 py-2 rounded-xl hover:bg-red-50 font-bold uppercase tracking-wider transition-colors"><i class="fa-solid fa-arrow-rotate-left mr-1"></i> İade Talebi Oluştur</button>` : '';
             
             let returnNoteHtml = "";
             if (order.status === "İade Onaylanmadı" && order.returnNote) {
-                returnNoteHtml = `<div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700"><strong><i class="fa-solid fa-circle-info mr-1"></i> İade Reddedildi:</strong> ${order.returnNote}</div>`;
+                returnNoteHtml = `<div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700"><strong><i class="fa-solid fa-circle-info mr-1"></i> İade Reddedildi:</strong> ${escHtml(order.returnNote)}</div>`;
             }
 
             // Timeline UI
             let isCanceled = order.status === 'İptal Edildi' || order.status.includes('İade');
             let progressWidth = order.status === 'Hazırlanıyor' ? '0%' : (order.status === 'Kargoya Verildi' ? '50%' : '100%');
             
-            let timelineHTML = isCanceled ? `<div class="text-center font-bold text-red-600 my-4 text-sm">${order.status}</div>` : `
+            let timelineHTML = isCanceled ? `<div class="text-center font-bold text-red-600 my-4 text-sm">${escHtml(order.status)}</div>` : `
             <div class="relative flex items-center justify-between w-full mt-8 mb-8 px-4 sm:px-8">
                 <div class="absolute left-4 right-4 sm:left-8 sm:right-8 top-4 transform -translate-y-1/2 h-1.5 bg-brand-100 z-0 rounded-full"></div>
                 <div class="absolute left-4 sm:left-8 top-4 transform -translate-y-1/2 h-1.5 bg-brand-900 z-0 transition-all duration-700 rounded-full" style="width: calc(${progressWidth} - 2rem)"></div>
@@ -1890,10 +1876,7 @@ window.handleAccountClick = function() {
     else { openModal(); }
 };
 
-function toggleAI() { 
-    const box = document.getElementById('aiChatBox');
-    if(box) box.classList.toggle('hidden'); 
-}
+/* YAMA-17: ölü kod kaldırıldı: toggleAI */
 
 // --- YENİ ADMIN PANEL TAB SİSTEMİ ---
 function switchAdminTab(tabId, el) {
@@ -1981,19 +1964,7 @@ setOrderFilter = function(status, btnEl) {
 
 
 
-function sendAIMessage() {
-    const input = document.getElementById('aiInput'); 
-    if(!input) return;
-    const msg = input.value.trim(); if(!msg) return;
-    const chatBox = document.getElementById('aiMessages');
-    if(!chatBox) return;
-    chatBox.innerHTML += `<div class="flex justify-end"><div class="bg-brand-900 text-white rounded-2xl px-4 py-2">${msg}</div></div>`;
-    input.value = ''; chatBox.scrollTop = chatBox.scrollHeight;
-    setTimeout(() => {
-        chatBox.innerHTML += `<div class="flex items-start"><div class="bg-brand-200 text-brand-900 rounded-2xl px-4 py-2">Size yardımcı olmaktan mutluluk duyarım. Hangi ürünlerimiz hakkında bilgi istersiniz?</div></div>`;
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }, 800);
-}
+/* YAMA-17: ölü kod kaldırıldı: sendAIMessage */
 
 window.addEventListener('DOMContentLoaded', () => {
     initLocationDropdowns();
@@ -3629,11 +3600,5 @@ window.saveEditedProductData = async function(btn) {
     finally { setTimeout(() => { busy = false; }, 1500); }
   };
 
-  /* CSV dışa aktarmada ürün adındaki çift tırnağı kaçır (ikinci güvenlik katmanı) */
-  const _exp = window.exportProductsToCSV;
-  if (_exp) window.exportProductsToCSV = function () {
-    const orig = allProducts;
-    allProducts = orig.map(p => ({ ...p, name: String(p.name || '').replace(/"/g, '""') }));
-    try { return _exp.apply(this, arguments); } finally { allProducts = orig; }
-  };
+  /* (YAMA-17: CSV kaçışı artık exportProductsToCSV içinde yapılıyor; buradaki ikinci katman çift kaçışa yol açacağı için kaldırıldı) */
 })();

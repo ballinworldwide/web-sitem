@@ -478,10 +478,10 @@ function exportProductsToCSV() {
     // YAMA-17: her alan tırnaklanır, içindeki " kaçırılır; =,+,-,@ ile başlayan metinlerin başına ' konur
     // (Excel'de formül olarak çalışmasın). İçe aktarırken bu ' otomatik temizlenir.
     const q = v => { let t = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
-    let csv = "name,price,category,stock,sizeStock,description,image\r\n";
+    let csv = "name,price,category,stock,sizeStock,description,image,id\r\n";
     allProducts.forEach(p => {
         const img = (p.images && p.images[0]) ? p.images[0] : (p.image || '');
-        csv += [q(p.name), Number(p.price) || 0, q(p.category || 'Giyim'), Number(p.stock) || 0, q(p.sizeStock || ''), q(p.description), q(img)].join(',') + "\r\n";
+        csv += [q(p.name), Number(p.price) || 0, q(p.category || 'Giyim'), Number(p.stock) || 0, q(p.sizeStock || ''), q(p.description), q(img), q(p.id)].join(',') + "\r\n";
     });
     const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -522,19 +522,31 @@ function importProductsFromCSV() {
         if (idx('name') < 0 || idx('price') < 0) { showToast("CSV başlığında en az name ve price sütunları olmalı.", 'error'); return; }
         const clean = v => { v = String(v == null ? '' : v).trim(); return /^'[=+\-@]/.test(v) ? v.slice(1) : v; };
         const SIZE_RE = /^\s*[A-Za-z0-9]+\s*:\s*\d+\s*(,\s*[A-Za-z0-9]+\s*:\s*\d+\s*)*$/;
-        const valid = []; let skipped = 0;
+        // YAMA-17b: id sütunu varsa ve ürün mevcutsa GÜNCELLER (yeni ürün eklemez, görsel/eski fiyat/durum/SKU'ya dokunmaz);
+        // id yoksa ve aynı isimde ürün zaten varsa ATLAR (çift kayıt oluşmasın); aksi halde yeni ürün ekler.
+        const byId = new Map(allProducts.map(p => [p.id, p]));
+        const names = new Set(allProducts.map(p => String(p.name || '').trim().toLowerCase()));
+        const ops = []; let skipped = 0, dup = 0, added = 0, updated = 0;
         for (let i = 1; i < rows.length; i++) {
             const r = rows[i], get = k => idx(k) >= 0 ? clean(r[idx(k)]) : '';
-            const name = get('name'), price = parseFloat(get('price')), sizeStock = get('sizestock'), img = get('image');
+            const name = get('name'), price = parseFloat(get('price')), sizeStock = get('sizestock'), img = get('image'), pid = get('id');
             let stock = get('stock') === '' ? 0 : parseInt(get('stock'));
             if (!name || name.length > 200 || isNaN(price) || price < 0 || isNaN(stock) || stock < 0 || (sizeStock && !SIZE_RE.test(sizeStock))) { skipped++; continue; }
             if (sizeStock) stock = sizeStock.split(',').reduce((a, x) => a + (parseInt(x.split(':')[1]) || 0), 0);
-            valid.push({ name: name, price: price, category: get('category') || 'Giyim', stock: stock, sizeStock: sizeStock, description: get('description').slice(0, 2000), images: /^https:\/\//i.test(img) ? [img] : [] });
+            const base = { name: name, price: price, category: get('category') || 'Giyim', stock: stock, sizeStock: sizeStock, description: get('description').slice(0, 2000) };
+            if (pid && byId.has(pid)) { ops.push({ update: true, id: pid, data: base }); updated++; continue; }
+            const key = name.trim().toLowerCase();
+            if (names.has(key)) { dup++; continue; }
+            names.add(key);
+            ops.push({ update: false, data: Object.assign({}, base, { images: /^https:\/\//i.test(img) ? [img] : [] }) }); added++;
         }
-        if (!valid.length) { showToast("Geçerli ürün satırı bulunamadı (" + skipped + " satır atlandı).", 'error'); return; }
-        const chunks = []; for (let i = 0; i < valid.length; i += 400) chunks.push(valid.slice(i, i + 400));
-        Promise.all(chunks.map(ch => { const batch = db.batch(); ch.forEach(p => batch.set(db.collection("products").doc(), Object.assign({}, p, { createdAt: firebase.firestore.FieldValue.serverTimestamp() }))); return batch.commit(); }))
-          .then(() => { showToast(valid.length + " ürün kataloğa aktarıldı!" + (skipped ? " (" + skipped + " geçersiz satır atlandı)" : ""), 'success'); fileInput.value = ''; loadProducts(); })
+        if (!ops.length) { showToast("İşlenecek satır yok (" + dup + " ürün zaten var, " + skipped + " geçersiz satır)", 'error'); return; }
+        const chunks = []; for (let i = 0; i < ops.length; i += 400) chunks.push(ops.slice(i, i + 400));
+        const ts = firebase.firestore.FieldValue.serverTimestamp();
+        Promise.all(chunks.map(ch => { const batch = db.batch();
+            ch.forEach(o => o.update ? batch.update(db.collection("products").doc(o.id), Object.assign({}, o.data, { updatedAt: ts })) : batch.set(db.collection("products").doc(), Object.assign({}, o.data, { createdAt: ts })));
+            return batch.commit(); }))
+          .then(() => { showToast(added + " eklendi, " + updated + " güncellendi" + (dup ? ", " + dup + " zaten vardı (atlandı)" : "") + (skipped ? ", " + skipped + " geçersiz satır" : ""), 'success'); fileInput.value = ''; loadProducts(); })
           .catch(err => showToast("Hata: " + err.message, 'error'));
     };
     reader.readAsText(fileInput.files[0]);

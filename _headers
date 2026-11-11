@@ -4,3 +4,16 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Cross-Origin-Opener-Policy: same-origin-allow-popups
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' https://www.gstatic.com https://cdnjs.cloudflare.com https://www.google.com https://apis.google.com; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://pub-fb968e4cf72747f9b4523edffe3fb703.r2.dev https://placehold.co; connect-src 'self' https://*.googleapis.com https://*.ballinworldw.workers.dev https://www.google.com https://www.gstatic.com; frame-src https://www.google.com https://recaptcha.google.com https://ballinww.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'
+
+/index.html
+  Cache-Control: no-cache
+
+/*.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.css
+  Cache-Control: public, max-age=0, must-revalidate
+
+/images/*
+  Cache-Control: public, max-age=86400

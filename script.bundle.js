@@ -2468,8 +2468,7 @@ window.saveEditedProductData = async function(btn) {
           '<input type="text" id="adminTrack_' + id + '" value="' + esc(o.trackingNumber || '') + '" placeholder="Takip no">' +
           '<button onclick="updateAdminOrder(\'' + id + '\')" class="btn-primary">Kaydet ve Bildir</button></div></div>';
       }).join('') : '<p class="text-xs">Bu filtreye uygun sipariş yok.</p>';
-      reconcile(all);
-    } catch (e) { showToast('Siparişler yüklenemedi: ' + e.message, 'error'); }
+      reconcile(all.filter(o => (['İptal Edildi', 'İade Onaylandı'].includes(o.status) && !o.refundDone) || (o.status === 'Tamamlandı' && !o.pointsCredited)));    } catch (e) { showToast('Siparişler yüklenemedi: ' + e.message, 'error'); }
   };
   window.updateAdminOrder = async function (id) {
     if (!isAdm()) return;

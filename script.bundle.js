@@ -2453,8 +2453,8 @@ window.saveEditedProductData = async function(btn) {
         return '<div class="bg-white p-5 rounded-2xl border border-brand-200 flex flex-col md:flex-row gap-6 flex-wrap">' +
           '<div class="flex-1 min-w-0"><div class="flex items-center gap-2 mb-3"><input type="checkbox" class="order-checkbox" value="' + id + '"><b>#' + esc(o.id.slice(0, 8)) + '</b>' +
           (o.status === 'İade Talebi Alındı' ? ' <span class="bg-red-100 text-red-600 px-2 rounded text-[10px]">İADE TALEBİ</span>' : '') +
-          (bad ? ' <span class="bg-amber-100 text-amber-700 px-2 rounded text-[10px]">⚠ Güncel fiyattan farklı, kontrol et</span>' : '') + '</div>' +
-          '<p class="text-[10px] mb-3">' + esc(d) + '</p>' +
+          (bad ? ' <span class="bg-amber-100 text-amber-700 px-2 rounded text-[10px]">⚠ Güncel fiyattan farklı, kontrol et</span>' : '') +
+          ((o.refundErrors && o.refundErrors.length) ? ' <span class="bg-red-100 text-red-600 px-2 rounded text-[10px]" title="' + o.refundErrors.join(' | ').replace(/[<>"&]/g, '') + '">⚠ İade/stok hatası, elle kontrol et</span>' : '') + '</div>' +          '<p class="text-[10px] mb-3">' + esc(d) + '</p>' +
           '<div class="p-3 rounded-xl border border-brand-100 mb-3 text-xs">' + esc(si.name) + ' ' + esc(si.surname) + ' (' + esc(o.userEmail) + ')<br>' + esc(si.phone) + '<br>' + esc(si.address) + ' - <b>' + esc(si.district) + '/' + esc(si.city) + '</b></div>' +
           '<div class="p-3 rounded-xl border border-brand-100 mb-3 text-xs"><b>Ürünler:</b><br>' + (o.items || []).map(i => '1x ' + esc(i.baseName || i.name) + ' (' + esc(i.size || 'Standart') + ') - ' + tl(i.price) + ' TL').join('<br>') + '</div>' +
           '<p class="text-sm font-bold">Toplam: ' + tl(o.totalAmount) + ' TL' + (o.usedPoints ? ' (puan: -' + tl(o.usedPoints) + ')' : '') + (o.couponCode ? ' · kupon: ' + esc(o.couponCode) : '') + '</p>' +

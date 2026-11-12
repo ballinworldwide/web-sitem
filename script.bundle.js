@@ -259,15 +259,6 @@ function toggleSizeGuide() {
     if(m) m.classList.toggle('hidden'); 
 }
 
-function syncCartToFirebase() {
-    if(currentUser) { 
-        db.collection("users").doc(currentUser.uid).update({ 
-            cartData: cart, 
-            lastActive: firebase.firestore.FieldValue.serverTimestamp() 
-        }).catch(e => {}); 
-    }
-}
-
 function createSlug(text) {
     const trMap = { 'çÇ':'c', 'ğĞ':'g', 'şŞ':'s', 'üÜ':'u', 'ıİ':'i', 'öÖ':'o' };
     for (let key in trMap) {
@@ -281,63 +272,6 @@ function createSlug(text) {
 }
 
 // --- YENİ: Sayfalama (Pagination) ile LoadProducts ---
-function loadProducts(isLoadMore = false) { 
-    if (isLoadingProducts) return;
-    isLoadingProducts = true;
-
-    let query = db.collection("products").orderBy("createdAt", "desc").limit(12);
-
-    if (isLoadMore && lastProductDoc) {
-        query = query.startAfter(lastProductDoc);
-    }
-
-    query.get().then((snap) => {
-        if (snap.empty) {
-            const btn = document.getElementById('loadMoreBtn');
-            if (btn) btn.style.display = 'none';
-            isLoadingProducts = false;
-            return;
-        }
-
-        lastProductDoc = snap.docs[snap.docs.length - 1];
-
-        if (!isLoadMore) {
-            allProducts = []; 
-        }
-
-        snap.forEach(doc => { 
-            let p = doc.data(); 
-            p.id = doc.id; 
-            allProducts.push(p); 
-        }); 
-        
-        renderMainGrid(); filterAndSortProducts(); renderNewGrid(); renderWishlistGrid();
-        loadOrdersAndCalculateStats(); loadCustomersCRM(); updateWishlistBadge(); renderBulkTable(); loadCouponsAdmin(); loadCMSBanner(); loadAbandonedCarts();
-        updateCartBadge();
-        
-        const btn = document.getElementById('loadMoreBtn');
-        if (btn && snap.docs.length === 12) { 
-            btn.style.display = 'block';
-        } else if (btn) {
-             btn.style.display = 'none';
-        }
-
-        isLoadingProducts = false;
-
-        let currentHash = window.location.hash;
-        if (currentHash && currentHash.startsWith('#/')) {
-            let aranacakSlug = currentHash.replace('#/', '');
-            let hedefUrun = allProducts.find(p => createSlug(p.name) === aranacakSlug);
-            if (hedefUrun) {
-                setTimeout(() => { openProductDetail(hedefUrun.id); }, 100);
-            }
-        }
-    }).catch(e => {
-        showToast("Ürünler yüklenemedi: " + e.message, 'error');
-        isLoadingProducts = false;
-    }); 
-}
-
 function toggleMobileMenu() { 
     const m = document.getElementById('mobile-menu');
     if(m) m.classList.toggle('hidden'); 
@@ -587,33 +521,6 @@ function loadCouponsAdmin() {
     }).catch(e=>{});
 }
 
-function addNewCoupon() {
-    if(!isStaffNow(currentUser)) return;
-    let code = document.getElementById('adminCouponCode') ? document.getElementById('adminCouponCode').value.trim().toUpperCase() : "";
-    let discount = document.getElementById('adminCouponDiscount') ? parseFloat(document.getElementById('adminCouponDiscount').value) : NaN;
-    let limit = document.getElementById('adminCouponLimit') ? parseInt(document.getElementById('adminCouponLimit').value) : NaN;
-    let expiry = document.getElementById('adminCouponExpiry') ? document.getElementById('adminCouponExpiry').value : "";
-
-    if(!code || isNaN(discount) || isNaN(limit)) { showToast("Kupon kodu, indirim ve kişi sınırını eksiksiz doldurun.", 'error'); return; }
-
-    db.collection("coupons").add({ 
-        code: code, 
-        discount: discount, 
-        limit: limit, 
-        expiryDate: expiry, 
-        usedCount: 0, 
-        createdAt: firebase.firestore.FieldValue.serverTimestamp() 
-    })
-    .then(() => { 
-        showToast("Kupon başarıyla aktifleştirildi!", 'success'); 
-        if(document.getElementById('adminCouponCode')) document.getElementById('adminCouponCode').value = ''; 
-        if(document.getElementById('adminCouponDiscount')) document.getElementById('adminCouponDiscount').value = ''; 
-        if(document.getElementById('adminCouponLimit')) document.getElementById('adminCouponLimit').value = ''; 
-        if(document.getElementById('adminCouponExpiry')) document.getElementById('adminCouponExpiry').value = ''; 
-        loadCouponsAdmin(); 
-    }).catch(e=> showToast("Hata: " + e.message, 'error'));
-}
-
 function deleteCoupon(id) { db.collection("coupons").doc(id).delete().then(() => { showToast("Kupon silindi.", 'success'); loadCouponsAdmin(); }).catch(e=>{}); }
 
 function renderBulkTable() {
@@ -666,42 +573,6 @@ function saveBulkItem(prodId) {
     let newSizeStock = ssEl ? ssEl.value.trim() : "";
     if(isNaN(newPrice) || isNaN(newStock)) { showToast("Geçersiz fiyat veya stok değeri!", 'error'); return; }
     db.collection("products").doc(prodId).update({ price: newPrice, stock: newStock, sizeStock: newSizeStock }).then(() => { showToast("Stoklar kaydedildi!", 'success'); loadProducts(); }).catch(e=>{});
-}
-
-function loadCustomersCRM() {
-    if(!isStaffNow(currentUser)) return;
-    db.collection("users").get().then((snap) => {
-        allCustomers = [];
-        let html = '<table class="w-full text-left text-sm"><thead><tr class="border-b border-brand-200"><th class="pb-2">Ad Soyad</th><th class="pb-2">E-posta</th><th class="pb-2">Telefon</th><th class="pb-2">Puan</th><th class="pb-2">Şehir</th><th class="pb-2">Kayıt Tarihi</th></tr></thead><tbody>';
-        if(snap.empty) { html = '<p class="text-xs text-brand-400">Müşteri yok.</p>'; }
-        else {
-            snap.forEach(doc => {
-                let u = doc.data();
-                let dStr = (u.lastUpdated && typeof u.lastUpdated.toDate === 'function') ? u.lastUpdated.toDate().toLocaleDateString('tr-TR') : "Bilinmiyor";
-                html += `<tr class="border-b border-brand-100 hover:bg-white"><td class="py-3 font-medium">${u.name || ''} ${u.surname || ''}</td><td class="py-3">${doc.id}</td><td class="py-3">${u.phone || '-'}</td><td class="py-3 font-bold text-amber-500">${u.points || 0}</td><td class="py-3">${u.city ? u.city + '/' + (u.district||'') : '-'}</td><td class="py-3 text-xs text-brand-500">${dStr}</td></tr>`;
-            });
-            html += '</tbody></table>';
-        }
-        const box = document.getElementById('adminCustomersContainer');
-        if(box) box.innerHTML = html;
-    }).catch(e=>{});
-}
-
-function loadAbandonedCarts() {
-    if(!isStaffNow(currentUser)) return;
-    db.collection("users").get().then(snap => {
-        let html = '';
-        snap.forEach(doc => {
-            let u = doc.data();
-            if(u.cartData && Array.isArray(u.cartData) && u.cartData.length > 0) {
-                let total = u.cartData.reduce((s, i) => s + (i.price||0), 0);
-                html += `<div class="flex justify-between items-center bg-white border border-brand-200 p-4 rounded-xl mb-2 shadow-sm"><div><p class="font-bold text-sm">${u.name || ''} ${u.surname || ''} <span class="text-xs text-brand-400 font-normal">(${doc.id})</span></p><p class="text-xs text-brand-500 mt-1">Sepette: ${u.cartData.length} ürün - Toplam: ${total.toLocaleString('tr-TR')} TL</p></div><button onclick="sendRecoveryEmail('${doc.id}', '${u.name||''}')" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-xs font-medium hover:bg-amber-600 shadow-md"><i class="fa-solid fa-paper-plane mr-1"></i> İndirimli E-posta Gönder</button></div>`;
-            }
-        });
-        if(html === '') html = '<p class="text-xs text-brand-400">Terk edilmiş sepet bulunamadı.</p>';
-        const box = document.getElementById('adminAbandonedContainer');
-        if(box) box.innerHTML = html;
-    }).catch(e=>{});
 }
 
 function compressImageForEmail(base64Str) { 
@@ -763,93 +634,6 @@ async function generateEmailItemsHTML(items) {
 /* sendShippingUpdateEmail yama-1 ile Worker üzerinden çalışır */
 
 /* YAMA-17: ölü kod kaldırıldı: sendRecoveryEmail */
-
-function printInvoice(orderId) {
-    let order = allOrders.find(o => o.id === orderId);
-    if(!order) { showToast("Sipariş verisi alınamadı.", 'error'); return; }
-    let shipInfo = order.shippingInfo || {};
-    let orderDate = (order.orderDate && typeof order.orderDate.toDate === 'function') ? order.orderDate.toDate().toLocaleString('tr-TR') : '-';
-    
-    let items = order.items || [];
-    let itemsSubtotal = items.reduce((s, i) => s + (i.price || 0), 0);
-    let usedPts = Number(order.usedPoints) || 0;
-    let finalPaid = Number(order.totalAmount) || 0;
-    
-    let netProductTotal = Math.max(0, itemsSubtotal - usedPts);
-    let shippingFee = Math.max(0, finalPaid - netProductTotal);
-    let shippingText = shippingFee === 0 ? '<span style="color:#10b981; font-weight:bold;">Ücretsiz (0 TL)</span>' : `${shippingFee.toLocaleString('tr-TR')} TL`;
-
-    let printWin = window.open('', '', 'width=800,height=650');
-    printWin.document.write(`
-        <html>
-        <head>
-            <title>Fatura & Kargo - ${orderId}</title>
-            <style>
-                body { font-family:'Segoe UI', Arial, sans-serif; padding:40px; color:#111; }
-                table { width:100%; border-collapse:collapse; margin-top:20px; }
-                th, td { border:1px solid #ccc; padding:12px; text-align:left; }
-                th { background:#f4f4f4; font-size:13px; }
-                .header { border-bottom:3px solid #000; padding-bottom:15px; margin-bottom:25px; display:flex; justify-content:space-between; align-items:center; }
-                .barcode-box { text-align:center; padding:10px 18px; border:2px dashed #000; display:inline-block; }
-                .customer-box { background:#f9f9f9; padding:15px 20px; border:1px solid #ddd; border-radius:6px; margin-top:15px; }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <div>
-                    <h1 style="margin:0; font-size:24px;">BALLIN E-Arşiv Fatura & Kargo Fişi</h1>
-                    <p style="color:#555; margin-top:4px; font-size:13px;">Resmi e-ticaret bilgilendirme belgesidir.</p>
-                </div>
-                <div class="barcode-box">
-                    <h4 style="margin:0 0 3px 0; font-size:11px; color:#555; letter-spacing:1px;">KARGO BARKODU</h4>
-                    <p style="font-family:monospace; font-size:24px; letter-spacing:4px; margin:0; font-weight:bold;">*${orderId.toUpperCase().slice(0,8)}*</p>
-                </div>
-            </div>
-
-            <p style="margin:4px 0; font-size:13px;"><strong>Sipariş No:</strong> #${orderId.toUpperCase()}</p>
-            <p style="margin:4px 0; font-size:13px;"><strong>Tarih:</strong> ${orderDate}</p>
-
-            <div class="customer-box">
-                <h3 style="margin:0 0 6px 0; font-size:15px;">Alıcı & Kargo Bilgileri</h3>
-                <p style="font-size:15px; margin:0 0 4px 0;"><strong>${shipInfo.name || ''} ${shipInfo.surname || ''}</strong></p>
-                <p style="margin:0 0 4px 0; font-size:13px;">${shipInfo.address || ''} - <strong>${shipInfo.district || ''} / ${shipInfo.city || ''}</strong></p>
-                <p style="margin:0; font-size:13px;"><strong>Tel:</strong> ${shipInfo.phone || '-'} | <strong>E-posta:</strong> ${order.userEmail || '-'}</p>
-            </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>Ürün Adı</th>
-                        <th style="width:100px; text-align:center;">Beden</th>
-                        <th style="width:130px; text-align:right;">Tutar</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${items.map(i => `
-                        <tr>
-                            <td><strong>${i.baseName || i.name}</strong></td>
-                            <td style="text-align:center;">${i.size || 'Standart'}</td>
-                            <td style="text-align:right;">${(i.price || 0).toLocaleString('tr-TR')} TL</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-
-            <div style="text-align:right; margin-top:25px; line-height: 1.8;">
-                <div style="font-size:14px; color:#555;">Ara Toplam: <strong>${itemsSubtotal.toLocaleString('tr-TR')} TL</strong></div>
-                ${usedPts > 0 ? `<div style="font-size:14px; color:#d97706; font-weight:bold;">Kullanılan Puan: -${usedPts.toLocaleString('tr-TR')} TL</div>` : ''}
-                <div style="font-size:14px; color:#555;">Kargo Ücreti: <strong>${shippingText}</strong></div>
-                <h1 style="border-top:2px solid #000; padding-top:8px; display:inline-block; margin-top:8px; font-size:24px;">Tahsil Edilen Toplam: ${finalPaid.toLocaleString('tr-TR')} TL</h1>
-            </div>
-
-            <script>
-                setTimeout(() => { window.print(); window.close(); }, 400);
-            <\/script>
-        </body>
-        </html>
-    `);
-    printWin.document.close();
-}
 
 function setDashboardPeriod(period, btnEl) {
     document.querySelectorAll('#accAnalytics button').forEach(b => { b.classList.remove('bg-brand-900', 'text-white'); b.classList.add('bg-brand-200', 'text-brand-800'); });
@@ -1159,69 +943,6 @@ function notifyWhenAvailable(prodId, prodName) {
     } 
 }
 
-function loadProductReviews(prodId) { 
-    db.collection("products").doc(prodId).collection("reviews").orderBy("date", "desc").get().then((snap) => { 
-        const container = document.getElementById('reviewsListContainer'); 
-        const avgContainer = document.getElementById('averageRatingContainer'); 
-        if(!container) return; 
-        if(snap.empty) { 
-            container.innerHTML = '<p class="text-xs text-brand-400">Henüz değerlendirme yapılmamış.</p>'; 
-            if(avgContainer) avgContainer.innerText = ''; 
-            return; 
-        } 
-        let html = ''; 
-        let totalRating = 0; 
-        let count = 0; 
-        snap.forEach(doc => { 
-            let r = doc.data(); 
-            let ratingVal = r.rating || 5; 
-            totalRating += ratingVal; 
-            count++; 
-            let stars = '⭐'.repeat(ratingVal); 
-            let textHtml = r.text ? `<div class="text-xs text-brand-600 mt-1">${r.text}</div>` : ''; 
-            html += `<div class="bg-brand-50 p-4 rounded-xl border border-brand-200"><div class="font-bold text-xs text-brand-900 mb-1">${r.author || 'Müşteri'} <span class="text-amber-500 ml-2">${stars}</span></div>${textHtml}</div>`; 
-        }); 
-        container.innerHTML = html; 
-        if(avgContainer && count > 0) { 
-            let avg = (totalRating / count).toFixed(1); 
-            avgContainer.innerText = `${avg} / 5.0`; 
-        } 
-    }).catch(e=>{}); 
-}
-
-async function submitProductReview() {
-    if (!currentUser) { showToast("Yorum yapabilmek için giriş yapmalısınız.", 'error'); openModal(); return; }
-    let ratingEl = document.getElementById('newReviewRating');
-    let textEl = document.getElementById('newReviewText');
-    let rating = ratingEl ? parseInt(ratingEl.value) : 5;
-    let text = textEl ? textEl.value.trim() : "";
-
-    try {
-        const userOrdersSnap = await db.collection("orders").where("userId", "==", currentUser.uid).get();
-        let hasPurchased = false;
-        userOrdersSnap.forEach(doc => {
-            const order = doc.data();
-            if (order.status !== 'İptal Edildi' && Array.isArray(order.items)) {
-                if(order.items.some(item => item.dbId === activeProductId)) { hasPurchased = true; }
-            }
-        });
-
-        if (!hasPurchased) { showToast("Yalnızca satın almış olduğunuz ürünlere yorum yapabilirsiniz.", 'error'); return; }
-
-        const uDoc = await db.collection("users").doc(currentUser.uid).get();
-        let authorName = uDoc.exists ? (uDoc.data().name + " " + (uDoc.data().surname ? uDoc.data().surname[0] + "." : "")) : "Doğrulanmış Alıcı";
-
-        await db.collection("products").doc(activeProductId).collection("reviews").add({
-            userId: currentUser.uid, author: authorName, rating: rating, text: text, verifiedPurchase: true, date: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        showToast("Değerlendirmeniz başarıyla eklendi!", 'success');
-        if (textEl) textEl.value = '';
-        loadProductReviews(activeProductId);
-
-    } catch (error) { showToast("Yorum gönderilirken hata oluştu.", 'error'); }
-}
-
 function addDetailedToCart(dbId, name, price, image) {
     let prod = allProducts.find(p => p.id === dbId);
     if(prod && prod.sizeStock && prod.sizeStock.trim() !== "") {
@@ -1256,38 +977,6 @@ function removeFromCart(cartId) {
     syncCartToFirebase();
 }
 
-function renderCart() { 
-    const container = document.getElementById('cartItems'); const totalEl = document.getElementById('cartTotal'); 
-    if(!container || !totalEl) return;
-    container.innerHTML = ''; let total = 0; 
-    if (cart.length === 0) { 
-        container.innerHTML = '<div class="text-center mt-20"><i class="fa-solid fa-cart-arrow-down text-4xl text-brand-200 mb-4"></i><p class="text-sm font-medium text-brand-500">Sepetiniz şu an boş.</p></div>'; 
-        const progContainer = document.getElementById('cartShippingProgressContainer');
-        if(progContainer) progContainer.classList.add('hidden');
-    } else { 
-        cart.forEach(item => { 
-            total += (item.price || 0); 
-            container.innerHTML += `<div class="flex gap-4 items-center border-b border-brand-100 pb-4"><img src="${item.image}" class="w-20 h-24 object-cover rounded-xl border border-brand-100"><div class="flex-1"><h4 class="font-serif font-bold text-sm text-brand-900 leading-tight">${item.name}</h4><p class="text-xs text-brand-600 mt-2 font-medium">${(item.price||0).toLocaleString('tr-TR')} TL</p><button onclick="removeFromCart(${item.cartId})" class="text-[10px] text-red-500 font-bold uppercase mt-3 tracking-wider hover:underline">Sepetten Çıkar</button></div></div>`; 
-        }); 
-        
-        const progContainer = document.getElementById('cartShippingProgressContainer');
-        const progBar = document.getElementById('cartShippingBar');
-        const progText = document.getElementById('cartShippingText');
-        if(progContainer) progContainer.classList.remove('hidden');
-        
-        if(total >= FREE_SHIPPING_THRESHOLD) {
-            if(progBar) progBar.style.width = '100%';
-            if(progText) progText.innerHTML = '<i class="fa-solid fa-gift text-emerald-500 mr-1"></i> Tebrikler, kargo bedava!';
-        } else {
-            let percent = (total / FREE_SHIPPING_THRESHOLD) * 100;
-            let remain = FREE_SHIPPING_THRESHOLD - total;
-            if(progBar) progBar.style.width = percent + '%';
-            if(progText) progText.innerHTML = `Ücretsiz kargoya <strong>${remain.toLocaleString('tr-TR')} TL</strong> kaldı!`;
-        }
-    } 
-    totalEl.innerText = (total * (1 - appliedDiscountRate)).toLocaleString('tr-TR') + ' TL'; 
-}
-
 function updateCartBadge() { 
     const badge = document.getElementById('cartBadge'); 
     if(!badge) return;
@@ -1300,35 +989,6 @@ function updateCartBadge() {
     } else { 
         badge.classList.add('hidden'); 
     } 
-}
-
-function applyPromoCode() {
-    let codeEl = document.getElementById('promoCodeInput');
-    let infoEl = document.getElementById('promoDiscountInfo');
-    let code = codeEl ? codeEl.value.trim().toUpperCase() : "";
-    if(!code) { showToast("Kupon kodu giriniz.", 'error'); return; }
-    db.collection("coupons").where("code", "==", code).get().then((snap) => {
-        if(snap.empty) { showToast("Geçersiz kupon kodu!", 'error'); return; }
-        let cDoc = snap.docs[0]; let cData = cDoc.data();
-        
-        if(cData.usedCount >= cData.limit) { showToast("Bu kuponun kullanım limiti dolmuştur!", 'error'); return; }
-        
-        // Süre kontrolü
-        if(cData.expiryDate) {
-            let expDate = new Date(cData.expiryDate);
-            expDate.setHours(23, 59, 59); // Günün sonuna kadar geçerli olsun
-            if(expDate < new Date()) {
-                showToast("Bu kuponun süresi dolmuştur!", 'error'); return;
-            }
-        }
-
-        appliedDiscountRate = cData.discount / 100; appliedCouponCode = cDoc.id;
-        if(infoEl) {
-            infoEl.style.display = 'block'; 
-            infoEl.innerText = `Kupon uygulandı: %${cData.discount} İndirim!`;
-        }
-        showToast(`İndirim uygulandı.`, 'success'); goToCheckout();
-    }).catch(e=> showToast("Kupon uygulanırken hata!", 'error'));
 }
 
 function applyLoyaltyPoints() {
@@ -1424,114 +1084,6 @@ function goToCheckout() {
 }
 
 // --- YENİ: Eş Zamanlı Stok Güncelleme ve Race Condition Koruması ---
-async function processPayment() { 
-    const address = document.getElementById('checkoutAddress') ? document.getElementById('checkoutAddress').value : ""; 
-    const city = document.getElementById('checkoutCity') ? document.getElementById('checkoutCity').value : "";
-    const district = document.getElementById('checkoutDistrict') ? document.getElementById('checkoutDistrict').value : "";
-    const cName = document.getElementById('checkoutName') ? document.getElementById('checkoutName').value : "";
-    const cEmail = currentUser ? currentUser.email : (document.getElementById('checkoutEmail') ? document.getElementById('checkoutEmail').value : "");
-    
-    if(!address || !cName || !cEmail || !city || !district) { 
-        showToast("Ad, İl, İlçe, Açık Adres ve E-posta alanları zorunludur!", 'error'); 
-        return; 
-    } 
-
-    const checkTerms = document.getElementById('checkTerms');
-    const checkKvkk = document.getElementById('checkKvkk');
-    if((checkTerms && !checkTerms.checked) || (checkKvkk && !checkKvkk.checked)) {
-        showToast("Lütfen Mesafeli Satış Sözleşmesi ve KVKK metinlerini onaylayınız.", 'error');
-        return;
-    }
-    
-    const btn = document.getElementById('btnCompletePayment'); 
-    if(btn) { btn.innerText = "İşlem Yapılıyor..."; btn.disabled = true; }
-    
-    let total = cart.reduce((sum, item) => sum + (item.price||0), 0);
-    let discountTotal = total * (1 - appliedDiscountRate);
-    let finalTotal = discountTotal - appliedPointsValue;
-    if(finalTotal < 0) finalTotal = 0;
-    let shipCost = (finalTotal >= FREE_SHIPPING_THRESHOLD || finalTotal === 0) ? 0 : SHIPPING_FEE;
-    finalTotal += shipCost;
-    
-    let earnedPoints = Math.floor(finalTotal * 0.05);
-
-    try {
-        await db.runTransaction(async (transaction) => {
-            let productDocs = [];
-            for (let item of cart) {
-                let productRef = db.collection("products").doc(item.dbId);
-                let pDoc = await transaction.get(productRef);
-                if (!pDoc.exists) throw "Ürün bulunamadı: " + item.name;
-                productDocs.push({ ref: productRef, data: pDoc.data(), cartItem: item });
-            }
-
-            for (let pd of productDocs) {
-                 if (pd.data.stock <= 0) throw `Üzgünüz, '${pd.cartItem.name}' ürünü tükendi.`;
-                 if (pd.cartItem.size && pd.cartItem.size !== "Standart" && pd.data.sizeStock) {
-                     let sizeStockMap = {};
-                     pd.data.sizeStock.split(',').forEach(part => {
-                        let [sz, st] = part.split(':');
-                        if (sz && st) sizeStockMap[sz.trim().toUpperCase()] = parseInt(st.trim()) || 0;
-                     });
-                     if (sizeStockMap[pd.cartItem.size.toUpperCase()] !== undefined && sizeStockMap[pd.cartItem.size.toUpperCase()] <= 0) {
-                         throw `Üzgünüz, '${pd.cartItem.name}' ürününün '${pd.cartItem.size}' bedeni tükendi.`;
-                     }
-                 }
-            }
-
-            for (let pd of productDocs) {
-                let newTotalStock = pd.data.stock - 1;
-                let updatedSizeStock = pd.data.sizeStock || "";
-
-                if(pd.cartItem.size && pd.cartItem.size !== "Standart" && updatedSizeStock !== "") {
-                    let parts = updatedSizeStock.split(',').map(part => {
-                        let [sz, st] = part.split(':');
-                        if(sz && st && sz.trim().toUpperCase() === pd.cartItem.size.toUpperCase()) {
-                            let nextSt = Math.max(0, (parseInt(st.trim()) || 0) - 1);
-                            return `${sz.trim()}:${nextSt}`;
-                        } return part.trim();
-                    });
-                    updatedSizeStock = parts.join(', ');
-                }
-                transaction.update(pd.ref, { stock: newTotalStock, sizeStock: updatedSizeStock });
-            }
-        }); 
-
-        const orderData = { 
-            userId: currentUser ? currentUser.uid : 'guest_' + Date.now(), 
-            userEmail: cEmail, 
-            shippingInfo: { name: cName, surname: document.getElementById('checkoutSurname') ? document.getElementById('checkoutSurname').value : "", phone: document.getElementById('checkoutPhone') ? document.getElementById('checkoutPhone').value : "", city: city, district: district, address: address }, 
-            items: cart, 
-            totalAmount: finalTotal, 
-            usedPoints: appliedPointsValue, 
-            earnedPoints: earnedPoints, 
-            status: "Hazırlanıyor", 
-            trackingNumber: "", 
-            orderDate: firebase.firestore.FieldValue.serverTimestamp() 
-        }; 
-
-        const docRef = await db.collection("orders").add(orderData);
-        sendOrderConfirmationEmail({ ...orderData, orderId: docRef.id });
-
-        if(appliedCouponCode) { db.collection("coupons").doc(appliedCouponCode).update({ usedCount: firebase.firestore.FieldValue.increment(1) }).catch(e=>{}); }
-        
-        if(currentUser && !currentUser.isAnonymous) {
-            let pUpdate = firebase.firestore.FieldValue.increment(earnedPoints - appliedPointsValue);
-            db.collection("users").doc(currentUser.uid).update({ points: pUpdate, cartData: [] }).catch(e=>{});
-        }
-
-        showToast("Siparişiniz başarıyla alındı!", 'success'); 
-        cart = []; appliedDiscountRate = 0; appliedCouponCode = ""; appliedPointsValue = 0; localStorage.removeItem('ballin_cart'); updateCartBadge(); 
-        if(btn) { btn.innerText = "Ödemeyi Tamamla"; btn.disabled = false; }
-        if(currentUser && !currentUser.isAnonymous) { switchPage('profile'); loadUserOrders(); } else { switchPage('home'); }
-        loadProducts(); 
-
-    } catch (error) {
-        showToast(error, 'error'); 
-        if(btn) { btn.innerText = "Ödemeyi Tamamla"; btn.disabled = false; }
-    }
-}
-
 let isLoginMode = true;
 function openModal() { const m = document.getElementById('authModal'); if(m) m.classList.remove('hidden'); } 
 function closeModal() { const m = document.getElementById('authModal'); if(m) m.classList.add('hidden'); }
@@ -1716,37 +1268,6 @@ function loadUserOrders() {
     }).catch(e=>{}); 
 }
 
-function cancelMyOrder(orderId) {
-    if(!confirm("Siparişi iptal etmek istediğinize emin misiniz?")) return;
-    db.collection("orders").doc(orderId).get().then(doc => {
-        if(doc.exists) {
-            let oData = doc.data();
-            if(oData.status === 'Hazırlanıyor') {
-                (oData.items||[]).forEach(item => {
-                    let productRef = db.collection("products").doc(item.dbId);
-                    productRef.get().then(pDoc => {
-                        if(pDoc.exists) {
-                            let pData = pDoc.data();
-                            let newTotalStock = (pData.stock || 0) + 1;
-                            let updatedSizeStock = pData.sizeStock || "";
-                            if(item.size && item.size !== "Standart" && updatedSizeStock !== "") {
-                                let parts = updatedSizeStock.split(',').map(part => {
-                                    let [sz, st] = part.split(':');
-                                    if(sz && st && sz.trim().toUpperCase() === item.size.toUpperCase()) { return `${sz.trim()}:${(parseInt(st.trim()) || 0) + 1}`; }
-                                    return part.trim();
-                                });
-                                updatedSizeStock = parts.join(', ');
-                            }
-                            productRef.update({ stock: newTotalStock, sizeStock: updatedSizeStock });
-                        }
-                    }).catch(e=>{});
-                });
-                db.collection("orders").doc(orderId).update({ status: "İptal Edildi" }).then(() => { showToast("Sipariş iptal edildi, stoklar iade edildi.", 'success'); loadUserOrders(); });
-            } else { showToast("Bu sipariş iptal edilemez.", 'error'); }
-        }
-    }).catch(e=>{}); 
-}
-
 function requestReturn(orderId) { db.collection("orders").doc(orderId).update({ status: "İade Talebi Alındı" }).then(() => { showToast("İade talebiniz iletildi.", 'success'); loadUserOrders(); }).catch(e=>{}); }
 
 // --- YENİ: İade Reddetme ve Müşteriye Not Eklenmesi ---
@@ -1765,109 +1286,7 @@ function rejectReturn(orderId) {
 
 function openAdminPanel() { switchPage('admin'); loadAdminOrders(); loadOrdersAndCalculateStats(); renderBulkTable(); loadCouponsAdmin(); loadCustomersCRM(); loadAbandonedCarts(); }
 
-function addNewProduct() { 
-    if(!isStaffNow(currentUser)) return; 
-    const name = document.getElementById('adminProdName') ? document.getElementById('adminProdName').value.trim() : ""; 
-    const price = document.getElementById('adminProdPrice') ? parseFloat(document.getElementById('adminProdPrice').value) : NaN; 
-    const category = document.getElementById('adminProdCategory') ? document.getElementById('adminProdCategory').value : "Giyim"; 
-    let stock = document.getElementById('adminProdStock') ? (parseInt(document.getElementById('adminProdStock').value) || 10) : 10; 
-    const description = document.getElementById('adminProdDesc') ? document.getElementById('adminProdDesc').value : ""; 
-    const sizeStock = document.getElementById('adminProdSizeStock') ? document.getElementById('adminProdSizeStock').value.trim() : "";
-    
-    const urlImg1 = document.getElementById('adminProdImg1') ? document.getElementById('adminProdImg1').value.trim() : "";
-    const urlImg2 = document.getElementById('adminProdImg2') ? document.getElementById('adminProdImg2').value.trim() : "";
-    const urlImg3 = document.getElementById('adminProdImg3') ? document.getElementById('adminProdImg3').value.trim() : "";
-    const urlImg4 = document.getElementById('adminProdImg4') ? document.getElementById('adminProdImg4').value.trim() : "";
-
-    let finalImages = [];
-    for (let i = 0; i < 4; i++) {
-        let img = uploadedImages[i];
-        if (!img) {
-            if (i === 0 && urlImg1) img = urlImg1;
-            if (i === 1 && urlImg2) img = urlImg2;
-            if (i === 2 && urlImg3) img = urlImg3;
-            if (i === 3 && urlImg4) img = urlImg4;
-        }
-        if (img) finalImages.push(img);
-    }
-
-    if(!name || isNaN(price) || finalImages.length === 0) { 
-        showToast("Lütfen ürün adı, fiyat ve en az 1 görsel ekleyin!", 'error'); 
-        return; 
-    } 
-
-    const btn = document.getElementById('btnUploadProduct'); 
-    if(btn) { btn.innerText = "Kaydediliyor..."; btn.disabled = true; } 
-    
-    db.collection("products").add({ 
-        name: name, price: price, category: category, stock: stock, description: description, sizeStock: sizeStock, images: finalImages, createdAt: firebase.firestore.FieldValue.serverTimestamp() 
-    }).then(() => { 
-        showToast("Ürün eklendi!", 'success'); 
-        if(document.getElementById('adminProdName')) document.getElementById('adminProdName').value = ''; 
-        if(document.getElementById('adminProdPrice')) document.getElementById('adminProdPrice').value = ''; 
-        if(document.getElementById('adminProdStock')) document.getElementById('adminProdStock').value = '10'; 
-        if(document.getElementById('adminProdDesc')) document.getElementById('adminProdDesc').value = ''; 
-        if(document.getElementById('adminProdSizeStock')) document.getElementById('adminProdSizeStock').value = ''; 
-        
-        for(let i = 1; i <= 4; i++) {
-            if(document.getElementById(`adminProdImg${i}`)) document.getElementById(`adminProdImg${i}`).value = '';
-            if(document.getElementById(`fileSlot_${i}`)) document.getElementById(`fileSlot_${i}`).value = '';
-            if(document.getElementById(`previewSlot_${i-1}`)) document.getElementById(`previewSlot_${i-1}`).classList.add('hidden');
-        }
-        uploadedImages = ["", "", "", ""];
-        loadProducts(); 
-        if(btn) { btn.innerText = "Kataloğa Ekle"; btn.disabled = false; } 
-    }).catch(e => { showToast("Hata: " + e.message, 'error'); if(btn) { btn.innerText = "Kataloğa Ekle"; btn.disabled = false; } }); 
-}
-
 // --- YENİ: İade Reddi Admin Panel Görünümü ---
-function loadAdminOrders() { 
-    if(!isStaffNow(currentUser)) return; 
-    const container = document.getElementById('adminOrdersContainer'); 
-    if(!container) return;
-    db.collection("orders").orderBy("orderDate", "desc").get().then((snap) => { 
-        if(snap.empty) { container.innerHTML = '<p class="text-xs text-brand-400">Henüz sipariş yok.</p>'; return; } 
-        let orders = []; snap.forEach(doc => { let d = doc.data(); d.id = doc.id; orders.push(d); }); 
-        
-        let filtered = orders.filter(o => { if(currentOrderFilter === 'all') return true; return o.status === currentOrderFilter; });
-        if(filtered.length === 0) { container.innerHTML = '<p class="text-xs text-brand-400">Bu filtreye uygun sipariş yok.</p>'; return; }
-
-        let html = ''; 
-        filtered.forEach(order => { 
-            let dStr = (order.orderDate && typeof order.orderDate.toDate === 'function') ? order.orderDate.toDate().toLocaleString('tr-TR') : "Belirsiz"; 
-            let itemsStr = (order.items||[]).map(i => `1x ${i.baseName || i.name} (${i.size||'Standart'})`).join('<br>'); 
-            let isReturn = order.status === 'İade Talebi Alındı';
-            let shipInfo = order.shippingInfo || {};
-
-            let returnNoteHtml = "";
-            if (order.status === "İade Onaylanmadı" && order.returnNote) {
-                returnNoteHtml = `<div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 w-full"><strong><i class="fa-solid fa-circle-info mr-1"></i> Müşteriye İletilen Not:</strong> ${order.returnNote}</div>`;
-            }
-
-            html += `<div class="bg-white p-5 rounded-2xl border border-brand-200 shadow-sm flex flex-col md:flex-row gap-6 flex-wrap">
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-3"><input type="checkbox" class="order-checkbox accent-amber-500 w-4 h-4 cursor-pointer" value="${order.id}"><span class="font-bold font-serif text-sm text-amber-600 uppercase tracking-widest">#${order.id.slice(0,8)} ${isReturn ? '<span class="bg-red-100 text-red-600 px-2 py-0.5 rounded text-[10px] ml-2">İADE!</span>' : ''}</span></div>
-                    <p class="text-[10px] text-brand-400 uppercase tracking-widest mb-3">${dStr}</p>
-                    <div class="bg-brand-50 p-3 rounded-xl border border-brand-100 mb-3"><p class="text-xs font-medium text-brand-900 mb-1"><i class="fa-solid fa-user text-brand-400 w-4"></i> ${shipInfo.name||''} ${shipInfo.surname||''} <span class="text-brand-400 font-normal">(${order.userEmail||''})</span></p><p class="text-xs text-brand-700 mb-1"><i class="fa-solid fa-phone text-brand-400 w-4"></i> ${shipInfo.phone||''}</p><p class="text-xs text-brand-700"><i class="fa-solid fa-location-dot text-brand-400 w-4"></i> ${shipInfo.address||''} - <strong>${shipInfo.district||''}/${shipInfo.city||''}</strong></p></div>
-                    <p class="text-xs text-brand-700 font-medium leading-relaxed bg-brand-50 p-3 rounded-xl border border-brand-100 mb-3"><strong>Ürünler:</strong><br>${itemsStr}</p>
-                    <p class="text-sm font-bold text-brand-900 border-t border-brand-100 pt-3">Toplam Tutar: ${(order.totalAmount||0).toLocaleString('tr-TR')} TL</p>
-                </div>
-                <div class="w-full md:w-64 flex flex-col justify-center border-t md:border-t-0 md:border-l border-brand-100 md:pl-6 pt-4 md:pt-0 shrink-0">
-                    <button onclick="printInvoice('${order.id}')" class="w-full mb-4 bg-white border border-brand-300 text-brand-800 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-50 transition-colors shadow-sm"><i class="fa-solid fa-print mr-2"></i> Fatura / Barkod Çıktısı</button>
-                    ${isReturn ? `<button onclick="rejectReturn('${order.id}')" class="w-full mb-4 bg-red-100 border border-red-300 text-red-800 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-200 transition-colors shadow-sm"><i class="fa-solid fa-xmark mr-2"></i> İadeyi Reddet (Not Ekle)</button>` : ''}
-                    <label class="text-[10px] font-bold uppercase tracking-widest text-brand-500 mb-1">Durum Güncelle</label>
-                    <select id="adminStatus_${order.id}" class="w-full bg-brand-50 border border-brand-200 rounded-xl p-2.5 text-xs mb-3 font-medium text-brand-800 outline-none focus:border-brand-900 transition-colors"><option value="Hazırlanıyor" ${order.status === 'Hazırlanıyor' ? 'selected' : ''}>Hazırlanıyor</option><option value="Kargoya Verildi" ${order.status === 'Kargoya Verildi' ? 'selected' : ''}>Kargoya Verildi</option><option value="Tamamlandı" ${order.status === 'Tamamlandı' ? 'selected' : ''}>Tamamlandı</option><option value="İade Onaylandı" ${order.status === 'İade Onaylandı' ? 'selected' : ''}>İade Onaylandı</option><option value="İade Onaylanmadı" ${order.status === 'İade Onaylanmadı' ? 'selected' : ''}>İade Onaylanmadı</option><option value="İptal Edildi" ${order.status === 'İptal Edildi' ? 'selected' : ''}>İptal Edildi</option></select>
-                    <label class="text-[10px] font-bold uppercase tracking-widest text-brand-500 mb-1">Kargo Takip No</label>
-                    <input type="text" id="adminTrack_${order.id}" value="${order.trackingNumber || ''}" placeholder="Örn: 987654321" class="w-full bg-brand-50 border border-brand-200 rounded-xl p-2.5 text-xs mb-4 font-medium outline-none focus:border-brand-900 transition-colors">
-                    <button onclick="updateAdminOrder('${order.id}')" class="w-full bg-amber-500 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-amber-600 transition-colors shadow-lg"><i class="fa-solid fa-floppy-disk mr-2"></i> Kaydet ve Bildir</button>
-                </div>
-                ${returnNoteHtml}
-            </div>`; 
-        }); 
-        container.innerHTML = html; 
-    }).catch(e=>{}); 
-}
-
 function updateAdminOrder(orderId) { 
     const statusEl = document.getElementById(`adminStatus_${orderId}`);
     const trackEl = document.getElementById(`adminTrack_${orderId}`);
@@ -3109,6 +2528,7 @@ window.saveEditedProductData = async function(btn) {
       localStorage.removeItem('ballin_cart'); localStorage.removeItem('ballin_wishlist'); showToast('Hesabınız silindi.', 'success'); setTimeout(() => { location.href = '/'; }, 1200);
     } catch (e) { showToast('Silinemedi: ' + (/wrong-password|invalid-credential/.test(e.code || '') ? 'şifre hatalı.' : e.message), 'error'); }
   };
+  (window.__adminInits = window.__adminInits || []).push(adminUI);  // yama-23: admin paneli geç yüklenince tekrar çalıştırılır
   function init() {
     adminUI();
     const lo = document.querySelector('#page-profile button[onclick="logout()"]');
@@ -3237,6 +2657,7 @@ window.saveEditedProductData = async function(btn) {
     return h;
   };
 
+  (window.__adminInits = window.__adminInits || []).push(adminBtn);  // yama-23: admin paneli geç yüklenince tekrar çalıştırılır
   function init() { adminBtn(); shipText(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
@@ -3312,6 +2733,7 @@ window.saveEditedProductData = async function(btn) {
     if (!confirm(m + ' yetkisi kaldırılsın mı?')) return;
     try { await db.collection('staff').doc(m).delete(); log('yönetici kaldırıldı', m); showToast('Kaldırıldı.', 'success'); loadStaff(); } catch (e) { showToast(e.message, 'error'); }
   }
+  (window.__adminInits = window.__adminInits || []).push(ui);  // yama-23: admin paneli geç yüklenince tekrar çalıştırılır
   function init() { ui(); applyRole(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
@@ -3423,6 +2845,7 @@ window.saveEditedProductData = async function(btn) {
     try { _uds.apply(this, arguments); } finally { allOrders = orig; }
     try { chart(orig); } catch (e) {}
   };
+  (window.__adminInits = window.__adminInits || []).push(init);  // yama-23: admin paneli geç yüklenince tekrar çalıştırılır
   function init() {
     const tab = $('tab-dashboard'); if (!tab || $('dashRange')) return;
     tab.insertAdjacentHTML('afterbegin', '<div style="margin-bottom:12px"><select id="dashRange"><option value="all">Tüm zamanlar</option><option value="1">Bugün</option><option value="7">Son 7 gün</option><option value="30">Son 30 gün</option></select></div>');
@@ -3524,6 +2947,7 @@ window.saveEditedProductData = async function(btn) {
     b.style.display = 'block';
   }
   setInterval(bar, 700);
+  (window.__adminInits = window.__adminInits || []).push(init);  // yama-23: admin paneli geç yüklenince tekrar çalıştırılır
   function init() { const el = $('alertsList'); if (el) new MutationObserver(decorate).observe(el, { childList: true, subtree: true }); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
@@ -3584,6 +3008,7 @@ window.saveEditedProductData = async function(btn) {
     o.innerHTML = '<div style="background:#fff;color:#111;border-radius:14px;max-width:560px;width:100%;max-height:80vh;overflow:auto;padding:20px"><b>Sipariş geçmişi</b>' + (rows ? '<table style="width:100%;margin-top:10px"><thead><tr><th>No</th><th>Tarih</th><th>Durum</th><th>Tutar</th></tr></thead><tbody>' + rows + '</tbody></table>' : '<p style="margin-top:10px">Bu müşterinin (iptal/iade dışında) siparişi yok.</p>') + '<p style="text-align:right;margin-top:12px"><button onclick="this.closest(\'div[style*=fixed]\').remove()" style="border:1px solid #999;border-radius:8px;padding:6px 14px">Kapat</button></p></div>';
     document.body.appendChild(o);
   };
+  (window.__adminInits = window.__adminInits || []).push(init);  // yama-23: admin paneli geç yüklenince tekrar çalıştırılır
   function init() { const el = $('pstatusList'); if (el) new MutationObserver(decorate).observe(el, { childList: true, subtree: true }); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

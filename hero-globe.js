@@ -193,6 +193,7 @@
     grid.parentElement.insertBefore(field, grid);
   }
 
+  (window.__adminInits = window.__adminInits || []).push(ensureAdminKickerField);  // yama-23: admin paneli geç yüklenince tekrar çalıştırılır
   function boot() {
     ensureAdminKickerField();
     // ÖNEMLİ (yama-11 düzeltmesi): içerik (kicker/bar/buton) three.js'in CDN'den

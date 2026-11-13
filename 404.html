@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ballin World Wide // 404</title>
-    <!-- Sitenin ana CSS'i çağrılsa bile aşağıdaki kodlar onu ezecektir -->
     <style>
         /* 404 Özel Kapsayıcı (CSS Reset ve İzolasyon) */
         #bww-error-page {
-            all: initial !important; /* Diğer tüm dış CSS kurallarını sıfırlar */
+            all: initial !important;
             font-family: 'Courier New', Courier, monospace !important;
             background-color: #050505 !important;
             color: #ffffff !important;
@@ -18,7 +17,7 @@
             justify-content: center !important;
             height: 100vh !important;
             width: 100vw !important;
-            position: fixed !important; /* Sayfanın kaymasını engeller */
+            position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             margin: 0 !important;
@@ -43,19 +42,50 @@
             text-transform: uppercase !important;
         }
 
-        /* 404 Krom Efekti */
+        /* 404 Krom Efekti ve Animasyonlar */
         #bww-error-page .error-title {
             font-size: clamp(100px, 20vw, 250px) !important;
             font-weight: 900 !important;
             margin: 0 !important;
             line-height: 1 !important;
-            /* Metalik Parlama Gradienti */
+            
+            /* Metalik Parlama Gradienti ve Animasyon Hazırlığı */
             background: linear-gradient(180deg, #ffffff 0%, #777777 48%, #111111 50%, #888888 55%, #dddddd 100%) !important;
+            background-size: 100% 200% !important; /* Işığın hareket etmesi için arka planı büyütüyoruz */
             -webkit-background-clip: text !important;
             -webkit-text-fill-color: transparent !important;
             filter: drop-shadow(0px 0px 25px rgba(255,255,255,0.15)) !important;
             letter-spacing: -5px !important;
             padding: 0 20px !important;
+            
+            /* İki Animasyonu Aynı Anda Çalıştırma */
+            animation: metalShine 4s infinite alternate ease-in-out, cyberGlitch 5s infinite !important;
+        }
+
+        /* Animasyon 1: Metal Yüzeyde Gezen Işık Parlaması */
+        @keyframes metalShine {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 0% 100%; }
+        }
+
+        /* Animasyon 2: Y2K Siber Glitch (Kırılma) Efekti */
+        @keyframes cyberGlitch {
+            0%, 94%, 98%, 100% { 
+                transform: translate(0, 0) skew(0deg); 
+                filter: drop-shadow(0px 0px 25px rgba(255,255,255,0.15)); 
+            }
+            95% { 
+                transform: translate(-3px, 2px) skew(-2deg); 
+                filter: drop-shadow(3px -2px 0px rgba(255,255,255,0.4)); 
+            }
+            96% { 
+                transform: translate(3px, -2px) skew(2deg); 
+                filter: drop-shadow(-3px 2px 0px rgba(255,255,255,0.4)); 
+            }
+            99% { 
+                transform: translate(-1px, 1px) skew(0deg); 
+                filter: drop-shadow(0px 0px 25px rgba(255,255,255,0.15)); 
+            }
         }
 
         /* Hata Alt Başlığı */
@@ -70,7 +100,7 @@
         }
 
         #bww-error-page .error-text {
-            color: #00bcd4 !important; /* Y2K stili hafif siber mavi bir dokunuş */
+            color: #00bcd4 !important; 
             margin-top: 15px !important;
             font-size: 1.1rem !important;
             letter-spacing: 3px !important;
@@ -101,7 +131,6 @@
         }
     </style>
 </head>
-<!-- Body'deki olası marginleri ve kaydırma çubuğunu gizliyoruz -->
 <body style="margin: 0 !important; padding: 0 !important; overflow: hidden !important; background-color: #050505 !important;">
     
     <div id="bww-error-page">

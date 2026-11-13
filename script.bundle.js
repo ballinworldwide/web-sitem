@@ -1111,6 +1111,9 @@ function continueAsGuest() {
         .catch(() => showToast("Misafir girişi yapılamadı.", "error"));
 }
 
+// YAMA-24: kayıt sonrası doğrulama e-postası için Worker adresi
+const VERIFY_URL = 'https://ballin-verify.ballinworldw.workers.dev';
+
 function handleAuth() { 
     const email = document.getElementById('emailInput') ? document.getElementById('emailInput').value : "";
     const password = document.getElementById('passwordInput') ? document.getElementById('passwordInput').value : ""; 
@@ -1122,9 +1125,23 @@ function handleAuth() {
         const surname = document.getElementById('authSurname') ? document.getElementById('authSurname').value : ""; 
         const phone = document.getElementById('authPhone') ? document.getElementById('authPhone').value : "";
         if(!email || !password || !name || !surname || !phone) { showToast("Tüm alanları doldurmalısınız.", 'error'); return; }
+        let _regCred = null;
         firebase.auth().createUserWithEmailAndPassword(email, password).then((cred) => {
+            _regCred = cred;
             return db.collection("users").doc(cred.user.uid).set({ name: name, surname: surname, phone: phone, address: '', points: 0, cartData: [], lastUpdated: firebase.firestore.FieldValue.serverTimestamp() });
-        }).then(() => { closeModal(); showToast("Aramıza hoş geldiniz!", 'success'); }).catch(e => showToast("Kayıt Hatası: Şifre en az 6 karakter olmalıdır.", 'error')); 
+        }).then(() => {
+            closeModal(); showToast("Aramıza hoş geldiniz!", 'success');
+            // YAMA-24: doğrulama e-postası gönder (sonucu kayıt akışını etkilemez)
+            if (_regCred && _regCred.user) {
+                _regCred.user.getIdToken().then(idToken => {
+                    fetch(VERIFY_URL + '/send-verification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+                        body: JSON.stringify({ name: name })
+                    }).catch(() => {});
+                }).catch(() => {});
+            }
+        }).catch(e => showToast("Kayıt Hatası: Şifre en az 6 karakter olmalıdır.", 'error')); 
     } 
 }
 
@@ -1402,6 +1419,31 @@ window.addEventListener('DOMContentLoaded', () => {
     loadCategories();
     loadProducts();
 });
+
+// --- YAMA-24: E-POSTA DOĞRULAMA BAĞLANTISI (?verify=token) ---
+(function() {
+    function handleVerifyParam() {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('verify');
+        if (!token) return;
+        // URL'yi hemen temizle: sayfa yenilense bile tekrar istek atılmasın
+        params.delete('verify');
+        const qs = params.toString();
+        const newUrl = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
+        window.history.replaceState({}, '', newUrl);
+
+        fetch(VERIFY_URL + '/verify-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: token })
+        }).then(r => r.json().then(data => ({ ok: r.ok, data }))).then(({ ok, data }) => {
+            if (ok) showToast("E-posta adresiniz doğrulandı.", 'success');
+            else showToast((data && data.error) || "Doğrulama bağlantısı geçersiz veya süresi dolmuş.", 'error');
+        }).catch(() => showToast("Doğrulama sırasında bir hata oluştu.", 'error'));
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', handleVerifyParam);
+    else handleVerifyParam();
+})();
 
 // --- KAYAN YAZI (MARQUEE) DİNAMİK KARGO LİMİTİ GÜNCELLEMESİ ---
 (function() {

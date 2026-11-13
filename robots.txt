@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /admin-panel.html
+
+Sitemap: https://ballinworldwide.net/sitemap.xml

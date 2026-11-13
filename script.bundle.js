@@ -610,14 +610,14 @@ async function generateEmailItemsHTML(items) {
             finalImgSrc = rawImg;
         }
         let price = (item.price || 0).toLocaleString('tr-TR') + ' TL';
-        let size = item.size && item.size !== "Standart" ? `<span style="font-size: 11px; color: #868e96; display: block; margin-top: 3px;">Beden: <strong>${item.size}</strong></span>` : '';
+        let size = item.size && item.size !== "Standart" ? `<span style="font-size: 11px; color: #868e96; display: block; margin-top: 3px;">Beden: <strong>${escHtml(item.size)}</strong></span>` : '';
         html += `
         <tr style="border-bottom: 1px solid #f1f3f5; background-color: #ffffff;">
             <td style="padding: 10px; width: 60px; vertical-align: middle;">
-                <img src="${finalImgSrc}" alt="${item.name}" width="50" height="65" style="width: 50px; height: 65px; object-fit: cover; border-radius: 6px; display: block; border: 1px solid #eee;">
+                <img src="${escHtml(finalImgSrc)}" alt="${escHtml(item.name)}" width="50" height="65" style="width: 50px; height: 65px; object-fit: cover; border-radius: 6px; display: block; border: 1px solid #eee;">
             </td>
             <td style="padding: 10px; vertical-align: middle;">
-                <span style="font-size: 13px; font-weight: bold; color: #212529; display: block;">${item.baseName || item.name}</span>
+                <span style="font-size: 13px; font-weight: bold; color: #212529; display: block;">${escHtml(item.baseName || item.name)}</span>
                 ${size}
             </td>
             <td align="right" style="padding: 10px; vertical-align: middle; font-weight: bold; font-size: 13px; color: #212529; white-space: nowrap;">
@@ -1363,7 +1363,7 @@ updateDashboardStats = function() {
          allOrders.slice(0, 5).forEach(o => {
              let sClass = o.status === 'Hazırlanıyor' ? 's-hazir' : (o.status === 'Kargoya Verildi' ? 's-kargo' : (o.status === 'Tamamlandı' ? 's-bitti' : (o.status.includes('İade') ? 's-iade' : 's-yeni')));
              let tutar = (o.totalAmount || 0).toLocaleString('tr-TR');
-             html += `<tr><td>#${o.id.slice(0,6).toUpperCase()}</td><td>${o.shippingInfo?.name || 'Misafir'}</td><td>₺${tutar}</td><td><span class="status ${sClass}">${o.status}</span></td><td><button class="btn-ghost" onclick="switchAdminTab('orders', document.querySelectorAll('.nav-item')[1]); setOrderFilter('all', document.getElementById('adminOrderFilters').children[0])">Detay</button></td></tr>`;
+             html += `<tr><td>#${o.id.slice(0,6).toUpperCase()}</td><td>${escHtml(o.shippingInfo?.name || 'Misafir')}</td><td>₺${tutar}</td><td><span class="status ${sClass}">${escHtml(o.status)}</span></td><td><button class="btn-ghost" onclick="switchAdminTab('orders', document.querySelectorAll('.nav-item')[1]); setOrderFilter('all', document.getElementById('adminOrderFilters').children[0])">Detay</button></td></tr>`;
          });
          if(html === '') html = '<tr><td colspan="5" style="color:var(--mute)">Sipariş bulunamadı.</td></tr>';
          tbody.innerHTML = html;
@@ -1375,7 +1375,7 @@ updateDashboardStats = function() {
         let lowProducts = allProducts.filter(p => p.stock <= 5).sort((a,b) => a.stock - b.stock).slice(0,3);
         let sHtml = '';
         lowProducts.forEach(p => {
-            sHtml += `<div class="row"><span>${p.name}</span><b style="color:var(--accent)">${p.stock} adet</b></div>`;
+            sHtml += `<div class="row"><span>${escHtml(p.name)}</span><b style="color:var(--accent)">${escHtml(p.stock)} adet</b></div>`;
         });
         if(sHtml === '') sHtml = '<p style="color:var(--mute)">Stok sorunu yok.</p>';
         stockContainer.innerHTML = sHtml;

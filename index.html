@@ -315,7 +315,7 @@
     </div>
     <div class="bg-brand-50 rounded-3xl p-8 border border-brand-200 mb-8">
         <h2 class="font-serif text-xl mb-4">Şifre Değiştir</h2>
-        <div class="mb-4"><input type="password" id="newPasswordInput" placeholder="Yeni Şifre (En az 6 karakter)" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+        <form class="mb-4" onsubmit="return false"><input type="password" id="newPasswordInput" placeholder="Yeni Şifre (En az 6 karakter)" autocomplete="new-password" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></form>
         <button onclick="updatePasswordSecure()" class="bg-brand-900 text-white px-6 py-2.5 rounded-xl text-sm font-medium">Şifreyi Güncelle</button>
     </div>
     <div class="bg-brand-50 rounded-3xl p-8 border border-brand-200">
@@ -424,10 +424,10 @@
             </div>
             <div><label class="block text-xs font-bold mb-1">Telefon</label><input type="tel" id="authPhone" class="w-full bg-brand-50 border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>
         </div>
-        <div class="space-y-4 mb-4">
+        <form class="space-y-4 mb-4" onsubmit="return false">
             <div><label class="block text-xs font-bold mb-1">E-posta</label><input type="email" id="emailInput" class="w-full bg-brand-50 border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>
             <div><label class="block text-xs font-bold mb-1">Şifre</label><input type="password" id="passwordInput" class="w-full bg-brand-50 border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>
-        </div>
+        </form>
         <div class="text-right mb-4" id="forgotPassWrapper"><span class="text-xs text-brand-500 underline cursor-pointer" onclick="sendPasswordReset()">Şifremi Unuttum?</span></div>
         <button id="modalActionBtn" onclick="handleAuth()" class="w-full bg-brand-900 text-white py-3.5 rounded-xl font-medium mb-4 hover:bg-brand-800 shadow-lg">Giriş Yap</button>
         <div class="text-center text-xs text-brand-500 cursor-pointer" id="switchAuthText" onclick="toggleAuthMode()">Hesabınız yok mu? <span class="text-brand-900 underline font-bold">Kayıt Olun</span></div>

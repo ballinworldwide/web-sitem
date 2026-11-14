@@ -66,3 +66,27 @@ html { scroll-behavior: smooth; }
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* ===================================================================
+   YAMA-30 — telefon görünümü
+   =================================================================== */
+@media (max-width: 767px) {
+  /* iOS Safari, yazı boyutu 16px altındaki kutuya odaklanınca sayfayı yakınlaştırır */
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select, textarea { font-size: 16px !important; }
+
+  /* Taşma: kutular kalan genişliğe göre daralsın (koleksiyon filtreleri, ödeme kupon satırı) */
+  #page-checkout input, #page-checkout select, #page-checkout textarea { min-width: 0; }
+  #filterSize, #filterPriceRange, #sortSelect { min-width: 0; flex: 1 1 140px; }
+  div:has(> #filterSize) { flex-wrap: wrap; }
+
+  /* Ürün kartı: fiyat ("1.449 TL") iki satıra bölünmesin, uzun isim kısalsın */
+  #mainProductGrid .justify-between > div, #collectionProductGrid .justify-between > div,
+  #newProductGrid .justify-between > div, #wishlistProductGrid .justify-between > div { min-width: 0; }
+  #mainProductGrid p.text-right, #collectionProductGrid p.text-right,
+  #newProductGrid p.text-right, #wishlistProductGrid p.text-right { white-space: nowrap; flex-shrink: 0; padding-left: 8px; }
+
+  /* Dokunma hedefleri: görünüm değişmeden tıklanabilir alan genişler */
+  footer a { display: inline-block; padding: 8px 0; }
+  header button, #cartPanel button { position: relative; }
+  header button::after, #cartPanel button::after { content: ""; position: absolute; inset: -8px; }
+}

@@ -2447,7 +2447,7 @@ window.saveEditedProductData = async function(btn) {
     const s = await db.collection('stock_alerts').limit(200).get();
     b.innerHTML = s.empty ? '<p class="text-xs">Talep yok.</p>' : '<table><thead><tr><th>Ürün</th><th>Beden</th><th>E-posta</th><th>Tarih</th><th></th></tr></thead><tbody>' + s.docs.map(d => { const a = d.data();
       const mail = 'mailto:' + encodeURIComponent(a.email || '') + '?subject=' + encodeURIComponent('BALLIN: ' + (a.productName || 'Ürün') + ' stokta!') + '&body=' + encodeURIComponent('Merhaba, haber vermemizi istediğiniz ürün tekrar stokta: ' + (a.productName || '') + ' ' + (a.size || ''));
-      return '<tr><td>' + E(a.productName) + '</td><td>' + E(a.size || '-') + '</td><td>' + E(a.email) + '</td><td>' + E(dt(a.requestDate)) + '</td><td><a class="btn-ghost" href="' + E(mail) + '">E-posta yaz</a> <button class="btn-ghost" onclick="delAlert(\'' + d.id + '\')">Sil</button></td></tr>'; }).join('') + '</tbody></table>';
+      return '<tr><td>' + E(a.productName) + '</td><td>' + E(a.size || '-') + '</td><td>' + E(a.email) + '</td><td>' + E(dt(a.requestDate)) + '</td><td><a class="btn-ghost" href="' + E(mail) + '">E-posta yaz</a> <button class="btn-ghost" data-aid="' + E(d.id) + '" onclick="delAlert(this.dataset.aid)">Sil</button></td></tr>'; }).join('') + '</tbody></table>';
   }
   window.delAlert = async function (id) { await db.collection('stock_alerts').doc(id).delete().catch(e => showToast(e.message, 'error')); loadAlerts(); };
   async function loadLogs() {
@@ -2918,8 +2918,10 @@ window.saveEditedProductData = async function(btn) {
     const el = $('alertsList'); if (!el) return;
     el.querySelectorAll('tr').forEach(tr => {
       const del = tr.querySelector('[onclick^="delAlert("]'); if (!del || tr.querySelector('.ntf')) return;
-      const m = /delAlert\('([^']+)'/.exec(del.getAttribute('onclick')); if (!m) return;
-      del.insertAdjacentHTML('beforebegin', '<button class="btn-ghost ntf" onclick="notifyAlert(\'' + m[1] + '\')">Stokta maili gönder</button> ');
+      const aid = del.dataset.aid; if (!aid) return;   // YAMA-34: ID'yi JS metnine değil data niteliğine koy (kod enjeksiyonu olmasın)
+      const nb = document.createElement('button'); nb.className = 'btn-ghost ntf'; nb.textContent = 'Stokta maili gönder';
+      nb.addEventListener('click', () => notifyAlert(aid));
+      del.before(nb, ' ');
     });
   }
   window.notifyAlert = async function (id) {

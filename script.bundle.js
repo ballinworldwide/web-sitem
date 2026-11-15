@@ -2006,7 +2006,14 @@ window.saveEditedProductData = async function(btn) {
     const r = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas');
     c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
     c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-    return new Promise(res => c.toBlob(res, 'image/webp', 0.82));
+    if (typeof src !== 'string') URL.revokeObjectURL(url);   // YAMA-33: iPhone'da bellek şişmesin
+    const enc = (t, q) => new Promise(res => c.toBlob(res, t, q));
+    let blob = await enc('image/webp', 0.82);
+    if (!blob || blob.type !== 'image/webp') {   // YAMA-33: Safari/iOS WebP kodlayamaz, sessizce PNG döndürür (büyük, 2 MB sınırını aşar) -> JPEG'e düş
+      const x = c.getContext('2d'); x.globalCompositeOperation = 'destination-over'; x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);   // şeffaf alan siyah olmasın
+      for (const q of [0.85, 0.7, 0.55]) { blob = await enc('image/jpeg', q); if (blob && blob.size < 1800000) break; }
+    }
+    return blob;
   }
   const NO_WORKER = UPLOAD_URL.includes('BURAYA');
   async function upload(src) {
@@ -2573,7 +2580,14 @@ window.saveEditedProductData = async function(btn) {
     const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Görsel okunamadı.')); i.src = url; });
     const r = Math.min(1, 1200 / Math.max(img.width, img.height)), c = document.createElement('canvas');
     c.width = Math.round(img.width * r); c.height = Math.round(img.height * r); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-    return new Promise(res => c.toBlob(res, 'image/webp', 0.82));
+    if (typeof src !== 'string') URL.revokeObjectURL(url);   // YAMA-33: iPhone'da bellek şişmesin
+    const enc = (t, q) => new Promise(res => c.toBlob(res, t, q));
+    let blob = await enc('image/webp', 0.82);
+    if (!blob || blob.type !== 'image/webp') {   // YAMA-33: Safari/iOS WebP kodlayamaz, sessizce PNG döndürür (büyük, 2 MB sınırını aşar) -> JPEG'e düş
+      const x = c.getContext('2d'); x.globalCompositeOperation = 'destination-over'; x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);   // şeffaf alan siyah olmasın
+      for (const q of [0.85, 0.7, 0.55]) { blob = await enc('image/jpeg', q); if (blob && blob.size < 1800000) break; }
+    }
+    return blob;
   }
   async function up(src) {
     const blob = await toWebp(src), tok = await currentUser.getIdToken();

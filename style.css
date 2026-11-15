@@ -90,3 +90,43 @@ html { scroll-behavior: smooth; }
   header button, #cartPanel button { position: relative; }
   header button::after, #cartPanel button::after { content: ""; position: absolute; inset: -8px; }
 }
+
+/* ===================================================================
+   YAMA-32 — admin paneli telefon görünümü
+   Yalnızca ≤767px. Masaüstü görünümü ve HTML/JS aynen kalır.
+   =================================================================== */
+@media (max-width: 767px) {
+  /* Menü: sol sütun yerine üstte yatay kayan şerit (100vh yerine üst katmanın yüksekliği: iOS adres çubuğu sorunu yok) */
+  #page-admin .admin-layout { flex-direction: column; height: 100%; }
+  #page-admin .admin-sidebar { width: 100%; flex-direction: row; align-items: center; gap: 4px; padding: 6px 10px; border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; flex-shrink: 0; -webkit-overflow-scrolling: touch; }
+  #page-admin .admin-logo { padding: 0 12px 0 4px; font-size: 16px; flex-shrink: 0; }
+  #page-admin .nav-item { flex-shrink: 0; white-space: nowrap; padding: 10px 12px; border-left: 0; border-bottom: 2px solid transparent; }
+  #page-admin .nav-item.active { border-bottom-color: #d9dce2; }
+  #page-admin .nav-bottom { margin: 0 0 0 auto; padding: 0 0 0 8px; border-top: 0; border-left: 1px solid var(--line); flex-shrink: 0; }
+
+  /* İçerik alanı: dar kenarlar, tek sütun, kendi içinde kayar (min-height:0 olmadan kaymaz) */
+  #page-admin .admin-main { flex: 1 1 0; min-height: 0; padding: 14px 12px calc(24px + env(safe-area-inset-bottom)); gap: 14px; }
+  #page-admin .topbar { margin-bottom: 0; }
+  #page-admin .topbar h1 { font-size: 20px; }
+  #page-admin .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  #page-admin .kpi-value { font-size: 22px; }
+  #page-admin .grid-2 { grid-template-columns: minmax(0, 1fr); }
+  #page-admin .card { padding: 14px; }
+  #page-admin .row { flex-wrap: wrap; }
+
+  /* Yan yana dizilen düğme/kutu grupları sığmazsa alt satıra insin */
+  #page-admin .admin-main .flex { flex-wrap: wrap; }
+  #page-admin .admin-main .flex.justify-between { gap: 4px 12px; }
+  #page-admin #csvFileInput { max-width: 100%; }
+
+  /* Geniş tablolar sayfayı değil kendi kutusunu yatay kaydırsın */
+  #page-admin :has(> table) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  #page-admin td:last-child { white-space: nowrap; }   /* işlem düğmeleri alt alta yığılmasın */
+
+  /* iOS Safari, 16px altındaki kutuya odaklanınca sayfayı yakınlaştırır */
+  #page-admin .admin-main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),
+  #page-admin .admin-main select, #page-admin .admin-main textarea { font-size: 16px !important; }
+
+  /* Dokunma hedefleri */
+  #page-admin .btn-ghost, #page-admin .btn-primary { min-height: 40px; }
+}

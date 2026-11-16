@@ -512,7 +512,7 @@ function loadCouponsAdmin() {
         else {
             snap.forEach(doc => {
                 let c = doc.data(); c.id = doc.id; activeCoupons.push(c);
-                html += `<tr class="border-b border-brand-100"><td class="py-2 font-bold">${escHtml(c.code)}</td><td class="py-2">%${escHtml(c.discount)}</td><td class="py-2">${escHtml(c.usedCount || 0)} / ${escHtml(c.limit)}</td><td class="py-2"><button onclick="deleteCoupon(${escHtml(JSON.stringify(c.id))})" class="text-red-600 text-xs font-bold hover:underline">Sil</button></td></tr>`;
+                html += `<tr class="border-b border-brand-100"><td class="py-2 font-bold">${escHtml(c.code)}</td><td class="py-2">%${escHtml(c.discount)}</td><td class="py-2">${escHtml(c.usedCount || 0)} / ${escHtml(c.limit)}<span class="block text-[10px] text-brand-400">${c.oncePerUser === false ? 'hesap başına sınırsız' : 'hesap başına 1 kez'}</span></td><td class="py-2"><button onclick="deleteCoupon(${escHtml(JSON.stringify(c.id))})" class="text-red-600 text-xs font-bold hover:underline">Sil</button></td></tr>`;
             });
             html += '</tbody></table>';
         }
@@ -1742,7 +1742,7 @@ window.saveEditedProductData = async function(btn) {
       const [cs, us] = await Promise.all([cr.get(), cr.collection('uses').doc(currentUser.uid).get()]);
       if (!cs.exists) return showToast('Geçersiz kupon kodu!', 'error');
       const c = cs.data();
-      if (us.exists) return showToast('Bu kuponu daha önce kullandınız.', 'error');
+      if (us.exists && c.oncePerUser !== false) return showToast('Bu kuponu daha önce kullandınız.', 'error');
       if ((c.usedCount || 0) >= c.limit) return showToast('Kuponun kullanım limiti dolmuş!', 'error');
       if (c.expiryDate && new Date(c.expiryDate + 'T23:59:59') < new Date()) return showToast('Kuponun süresi dolmuş!', 'error');
       appliedDiscountRate = c.discount / 100; appliedCouponCode = cs.id;
@@ -2472,13 +2472,13 @@ window.saveEditedProductData = async function(btn) {
   window.addNewCoupon = async function () {
     if (!isAdm()) return;
     const v = id => $(id) ? $(id).value.trim() : '';
-    const code = v('adminCouponCode').toUpperCase(), discount = parseFloat(v('adminCouponDiscount')), limit = parseInt(v('adminCouponLimit')), expiry = v('adminCouponExpiry'), min = parseFloat(v('adminCouponMin')) || 0;
+    const code = v('adminCouponCode').toUpperCase(), discount = parseFloat(v('adminCouponDiscount')), limit = parseInt(v('adminCouponLimit')), expiry = v('adminCouponExpiry'), min = parseFloat(v('adminCouponMin')) || 0, once = $('adminCouponOnce') ? $('adminCouponOnce').checked : true;   // YAMA-38
     if (!/^[A-Z0-9_-]{3,30}$/.test(code) || !(discount >= 1 && discount <= 100) || !(limit >= 1)) return showToast('Kod (3-30 harf/rakam/-/_), %1-100 indirim ve kişi sınırı girin.', 'error');
     try {
       const ref = db.collection('coupons').doc(code); if ((await ref.get()).exists) return showToast('Bu kupon kodu zaten var.', 'error');
-      await ref.set({ code, discount, limit, expiryDate: expiry, minCart: min, usedCount: 0, createdAt: FV.serverTimestamp() });
-      log('kupon oluşturuldu', code + ' %' + discount + (min ? ', min ' + min + ' TL' : '')); showToast('Kupon oluşturuldu.', 'success');
-      ['adminCouponCode', 'adminCouponDiscount', 'adminCouponLimit', 'adminCouponExpiry', 'adminCouponMin'].forEach(i => { if ($(i)) $(i).value = ''; }); loadCouponsAdmin();
+      await ref.set({ code, discount, limit, expiryDate: expiry, minCart: min, oncePerUser: once, usedCount: 0, createdAt: FV.serverTimestamp() });
+      log('kupon oluşturuldu', code + ' %' + discount + (min ? ', min ' + min + ' TL' : '') + (once ? '' : ', hesap başına sınırsız')); showToast('Kupon oluşturuldu.', 'success');
+      ['adminCouponCode', 'adminCouponDiscount', 'adminCouponLimit', 'adminCouponExpiry', 'adminCouponMin'].forEach(i => { if ($(i)) $(i).value = ''; }); if ($('adminCouponOnce')) $('adminCouponOnce').checked = true; loadCouponsAdmin();
     } catch (e) { showToast(e.message, 'error'); }
   };
   window.applyPromoCode = async function () {
@@ -2489,7 +2489,7 @@ window.saveEditedProductData = async function(btn) {
       const cr = db.collection('coupons').doc(code), [cs, us] = await Promise.all([cr.get(), cr.collection('uses').doc(currentUser.uid).get()]);
       if (!cs.exists) return showToast('Geçersiz kupon kodu!', 'error');
       const c = cs.data(), sub = cart.reduce((s, i) => s + (i.price || 0), 0);
-      if (us.exists) return showToast('Bu kuponu daha önce kullandınız.', 'error');
+      if (us.exists && c.oncePerUser !== false) return showToast('Bu kuponu daha önce kullandınız.', 'error');
       if ((c.usedCount || 0) >= c.limit) return showToast('Kuponun kullanım limiti dolmuş!', 'error');
       if (c.expiryDate && new Date(c.expiryDate + 'T23:59:59') < new Date()) return showToast('Kuponun süresi dolmuş!', 'error');
       if (c.minCart && sub < c.minCart) return showToast('Bu kupon için minimum sepet tutarı ' + tl(c.minCart) + ' TL.', 'error');

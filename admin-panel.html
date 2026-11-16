@@ -179,6 +179,10 @@
                 <div><label class="block text-xs mb-1" style="color:var(--mute)">Kişi Sınırı</label><input type="number" id="adminCouponLimit" class="w-full" /></div>
                 <div><label class="block text-xs mb-1" style="color:var(--mute)">Son Kullanma</label><input type="date" id="adminCouponExpiry" class="w-full" /></div>
             </div>
+            <label class="flex items-start gap-2 text-xs mb-4" style="color:var(--mute); cursor:pointer;">
+                <input type="checkbox" id="adminCouponOnce" checked style="margin-top:2px; flex-shrink:0;" />
+                <span><b style="color:var(--text)">Hesap başına 1 kez kullanılabilsin</b><br>İşaretliyse her hesap bu kodu yalnızca bir defa kullanabilir. İşaretli değilse aynı hesap kodu tekrar tekrar kullanabilir; bu durumda &ldquo;Kişi Sınırı&rdquo; kodun toplam kaç kez kullanılabileceğini belirler.</span>
+            </label>
             <button onclick="addNewCoupon()" class="btn-primary">Kupon Oluştur</button>
         </div>
         <div class="card">

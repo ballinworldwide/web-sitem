@@ -13,14 +13,14 @@
 	<meta property="og:image" content="https://ballinworldwide.net/images/ballin.png">
 	<meta property="og:url" content="https://ballinworldwide.net/">
 	<meta name="twitter:card" content="summary_large_image">
-	<link rel="icon" type="image/png" href="images/ballin.png">
+	<link rel="icon" type="image/png" href="/images/ballin.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link rel="stylesheet" href="tailwind.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/tailwind.css">
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body class="bg-white text-brand-900 font-sans antialiased overflow-x-hidden flex flex-col min-h-screen">
 <style>
@@ -79,12 +79,12 @@
                 </button>
             </div>
 <nav class="hidden lg:flex space-x-8 relative z-30">
-                <a href="#home" onclick="switchPage('home');" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Ana Sayfa</a> 
-                <a href="#collection" onclick="switchPage('collection');" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Koleksiyon</a> 
-                <a href="#new" onclick="switchPage('new');" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Yeni Gelenler</a> 
+                <a href="/" onclick="switchPage('home'); return false;" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Ana Sayfa</a> 
+                <a href="/collection" onclick="switchPage('collection'); return false;" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Koleksiyon</a> 
+                <a href="/new" onclick="switchPage('new'); return false;" class="text-sm font-medium text-brand-600 hover:text-brand-950 transition-colors">Yeni Gelenler</a> 
             </nav>
             <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20" onclick="switchPage('home')">
-                <img src="images/ballin.png" alt="BALLIN" class="w-32 sm:w-44 md:w-56 h-auto max-h-14 object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300 drop-shadow-md" />
+                <img src="/images/ballin.png" alt="BALLIN" class="w-32 sm:w-44 md:w-56 h-auto max-h-14 object-contain mix-blend-multiply hover:scale-105 transition-transform duration-300 drop-shadow-md" />
             </div>
             <div class="flex items-center justify-end space-x-4 sm:space-x-6 lg:flex-1 relative z-30">
                 <button onclick="switchPage('wishlist')" class="text-brand-600 hover:text-brand-900 transition-colors relative flex items-center" title="Favoriler"> 
@@ -105,11 +105,11 @@
     </div>
     <div id="mobile-menu" class="hidden bg-white border-t border-brand-100 absolute w-full shadow-lg z-40">
         <div class="px-4 pt-2 pb-6 space-y-1">
-            <a href="#home" onclick="toggleMobileMenu(); switchPage('home');" class="block px-3 py-3 text-base font-medium text-brand-800 border-b border-brand-50">Anasayfa</a> 
-            <a href="#collection" onclick="toggleMobileMenu(); switchPage('collection');" class="block px-3 py-3 text-base font-medium text-brand-800 border-b border-brand-50">Koleksiyon</a> 
-            <a href="#new" onclick="toggleMobileMenu(); switchPage('new');" class="block px-3 py-3 text-base font-medium text-brand-800 border-b border-brand-50">Yeni Gelenler</a> 
-            <a href="#wishlist" onclick="toggleMobileMenu(); switchPage('wishlist');" class="block px-3 py-3 text-base font-medium text-brand-800 border-b border-brand-50">Favorilerim</a> 
-            <a href="#about" onclick="toggleMobileMenu(); switchPage('about');" class="block px-3 py-3 text-base font-medium text-brand-800">Hakkımızda</a>
+            <a href="/" onclick="toggleMobileMenu(); switchPage('home'); return false;" class="block px-3 py-3 text-base font-medium text-brand-800 border-b border-brand-50">Anasayfa</a> 
+            <a href="/collection" onclick="toggleMobileMenu(); switchPage('collection'); return false;" class="block px-3 py-3 text-base font-medium text-brand-800 border-b border-brand-50">Koleksiyon</a> 
+            <a href="/new" onclick="toggleMobileMenu(); switchPage('new'); return false;" class="block px-3 py-3 text-base font-medium text-brand-800 border-b border-brand-50">Yeni Gelenler</a> 
+            <a href="/wishlist" onclick="toggleMobileMenu(); switchPage('wishlist'); return false;" class="block px-3 py-3 text-base font-medium text-brand-800 border-b border-brand-50">Favorilerim</a> 
+            <a href="/about" onclick="toggleMobileMenu(); switchPage('about'); return false;" class="block px-3 py-3 text-base font-medium text-brand-800">Hakkımızda</a>
         </div>
     </div>
 </header>
@@ -463,8 +463,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
-<script src="script.bundle.js"></script>
-<script src="yamalar.js"></script>
+<script src="/script.bundle.js"></script>
+<script src="/yamalar.js"></script>
 	
 
 <!-- ÜRÜN DÜZENLEME MODALI (DARK MODE) -->

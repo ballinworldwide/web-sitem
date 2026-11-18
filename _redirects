@@ -1,0 +1,15 @@
+# YAMA-31: gerçek adresler. Bu yollar ana sayfayı (index.html) gösterir, adres çubuğu değişmez.
+# /urun/* ve /sitemap.xml functions/ klasöründeki kodla üretilir (aşağıdaki /urun/* satırı yedek).
+/about                  / 200
+/checkout               / 200
+/collection             / 200
+/compare                / 200
+/destek-merkezi         / 200
+/gizlilik-politikasi    / 200
+/iade-sartlari          / 200
+/kargo-teslimat         / 200
+/new                    / 200
+/profile                / 200
+/wishlist               / 200
+/admin                  / 200
+/urun/*                 / 200

@@ -803,7 +803,8 @@ function switchPage(pageId) {
     const mobileMenu = document.getElementById('mobile-menu');
     if(mobileMenu) mobileMenu.classList.add('hidden');
     if (pageId !== 'product-detail') {
-        window.history.pushState({}, '', '/#' + pageId);
+        const path = pageId === 'home' ? '/' : '/' + pageId;   // YAMA-31: # yerine gerçek adres
+        if (location.pathname !== path || location.hash) window.history.pushState({}, '', path);
     }
 }
 
@@ -903,7 +904,8 @@ function openProductDetail(id) {
     switchPage('product-detail');
     
     let urunSlug = createSlug(prod.name);
-    window.history.pushState({ id: prod.id }, prod.name, `/#/${urunSlug}`);
+    const urunYolu = '/urun/' + (urunSlug || prod.id);   // YAMA-31: # yerine gerçek adres
+    if (location.pathname !== urunYolu) window.history.pushState({ id: prod.id }, prod.name, urunYolu);
     
     loadProductReviews(prod.id);
 }
@@ -2000,14 +2002,31 @@ window.saveEditedProductData = async function(btn) {
   window.toggleCompare = function (id, e) { if (e) e.stopPropagation(); };
 
   /* ---------- Geri tuşu ve doğrudan sayfa linkleri ---------- */
+  /* YAMA-31: adresler artık gerçek yol (/collection, /urun/<ad>); eski #'li linkler (gönderilmiş mailler dahil) yeni adrese çevrilir */
+  (function eskiHashLinki() {
+    const h = location.hash;
+    if (/^#\/[A-Za-z0-9-]+$/.test(h)) history.replaceState(null, '', '/urun/' + h.slice(2));
+    else if (/^#[a-z-]+$/.test(h) && $('page-' + h.slice(1))) history.replaceState(null, '', h === '#home' ? '/' : '/' + h.slice(1));
+  })();
+  window.findProductBySlug = s => (allProducts || []).find(p => createSlug(String(p.name || '')) === s) || (allProducts || []).find(p => p.id === s);
+  const yol = () => {
+    const p = location.pathname.replace(/\/+$/, ''), m = p.match(/^\/urun\/([A-Za-z0-9-]+)$/);
+    return m ? { urun: m[1] } : { sayfa: p.replace(/^\//, '') || 'home' };
+  };
+  const sessiz = fn => { const ps = history.pushState; history.pushState = function () {}; try { fn(); } finally { history.pushState = ps; } };
   function route() {
-    const h = location.hash.replace(/^#\/?/, '') || 'home';
+    const r = yol();
+    if (r.urun) { const t = window.findProductBySlug(r.urun); if (t) sessiz(() => openProductDetail(t.id)); return; }
+    const h = r.sayfa;
     if (!$('page-' + h) || ['admin', 'checkout', 'product-detail'].includes(h)) return;
-    const ps = history.pushState; history.pushState = function () {};
-    try { switchPage(h); } finally { history.pushState = ps; }
+    sessiz(() => switchPage(h));
   }
   window.addEventListener('popstate', route);
-  window.addEventListener('load', () => { if (/^#[a-z-]+$/.test(location.hash)) setTimeout(route, 400); });
+  window.addEventListener('load', () => {
+    const r = yol(); if (r.urun || r.sayfa === 'home') return;          // ürün linki ürünler yüklenince açılır
+    if (!$('page-' + r.sayfa) || ['admin', 'checkout', 'product-detail'].includes(r.sayfa)) { history.replaceState(null, '', '/'); return; }
+    setTimeout(route, 400);
+  });
 
   /* ---------- Görsel: küçült (WebP, 1200px) + R2'ye yükle ---------- */
   async function toWebp(src, max = 1200) {
@@ -2792,8 +2811,8 @@ window.saveEditedProductData = async function(btn) {
       updateCartBadge();
       const btn = $('loadMoreBtn'); if (btn) btn.style.display = 'none';      // "Daha fazla yükle" artık gerekmiyor
       isLoadingProducts = false;
-      const h = window.location.hash;
-      if (h && h.startsWith('#/')) { const t = allProducts.find(p => createSlug(p.name) === h.replace('#/', '')); if (t) setTimeout(() => openProductDetail(t.id), 100); }
+      const m = location.pathname.match(/^\/urun\/([A-Za-z0-9-]+)\/?$/);   // YAMA-31: /urun/<ad> linki
+      if (m) { const t = window.findProductBySlug(m[1]); if (t) setTimeout(() => openProductDetail(t.id), 100); else history.replaceState(null, '', '/'); }
     };
     if (cached) return done(cached);
     isLoadingProducts = true;

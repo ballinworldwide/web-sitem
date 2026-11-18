@@ -2767,7 +2767,10 @@ window.saveEditedProductData = async function(btn) {
   function writeCache(list) {
     try { const s = JSON.stringify({ t: Date.now(), p: list }); if (s.length < 2000000) sessionStorage.setItem(CACHE_KEY, s); } catch (e) {}
   }
-  const plain = d => { const p = d.data(); p.id = d.id; if (p.createdAt && p.createdAt.toMillis) p.createdAt = p.createdAt.toMillis(); if (p.updatedAt && p.updatedAt.toMillis) p.updatedAt = p.updatedAt.toMillis(); return p; };
+  // YAMA-39: eski r2.dev görsel adreslerini kendi alan adımıza (img.ballinworldwide.net) çevir
+  const IMG_OLD = 'https://pub-fb968e4cf72747f9b4523edffe3fb703.r2.dev/', IMG_NEW = 'https://img.ballinworldwide.net/';
+  const fixImg = u => (typeof u === 'string' && u.indexOf(IMG_OLD) === 0) ? IMG_NEW + u.slice(IMG_OLD.length) : u;
+  const plain = d => { const p = d.data(); p.id = d.id; if (Array.isArray(p.images)) p.images = p.images.map(fixImg); if (p.image) p.image = fixImg(p.image); if (p.createdAt && p.createdAt.toMillis) p.createdAt = p.createdAt.toMillis(); if (p.updatedAt && p.updatedAt.toMillis) p.updatedAt = p.updatedAt.toMillis(); return p; };
 
   window.loadProducts = function () {
     if (isLoadingProducts) return;

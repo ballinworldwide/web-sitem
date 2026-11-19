@@ -1167,9 +1167,10 @@ function handleAuth() {
         const phone = normPhoneTR(document.getElementById('authPhone') ? document.getElementById('authPhone').value : "");
         if(!email || !password || !name || !surname || !phone) { showToast("Tüm alanları doldurmalısınız.", 'error'); return; }
         if(!isValidPhoneTR(phone)) { showToast("Telefon numarası 0 dahil 11 haneli olmalıdır.", 'error'); return; }
+        if(password.length < 8) { showToast("Şifre en az 8 karakter olmalıdır.", 'error'); return; }
         firebase.auth().createUserWithEmailAndPassword(email, password).then((cred) => {
             return db.collection("users").doc(cred.user.uid).set({ name: name, surname: surname, phone: phone, address: '', points: 0, cartData: [], lastUpdated: firebase.firestore.FieldValue.serverTimestamp() });
-        }).then(() => { closeModal(); showToast("Aramıza hoş geldiniz!", 'success'); }).catch(e => showToast("Kayıt Hatası: Şifre en az 6 karakter olmalıdır.", 'error')); 
+        }).then(() => { closeModal(); showToast("Aramıza hoş geldiniz!", 'success'); }).catch(e => showToast(e && e.code === 'auth/email-already-in-use' ? "Kayıt Hatası: Bu e-posta adresi zaten kayıtlı." : (e && e.code === 'auth/weak-password' ? "Kayıt Hatası: Şifre en az 8 karakter olmalıdır." : "Kayıt Hatası: Bilgilerinizi kontrol edip tekrar deneyin."), 'error')); 
     } 
 }
 
@@ -1210,7 +1211,7 @@ async function saveProfile() {
 
 function updatePasswordSecure() { 
     let newPass = document.getElementById('newPasswordInput') ? document.getElementById('newPasswordInput').value : ""; 
-    if(!newPass || newPass.length < 6) { showToast("Şifre en az 6 karakter olmalıdır.", 'error'); return; } 
+    if(!newPass || newPass.length < 8) { showToast("Şifre en az 8 karakter olmalıdır.", 'error'); return; } 
     if(currentUser) {
         currentUser.updatePassword(newPass).then(() => { showToast("Şifreniz değiştirildi.", 'success'); if(document.getElementById('newPasswordInput')) document.getElementById('newPasswordInput').value = ''; }).catch(e => { showToast("Hata: Yeniden giriş yapmanız gerekebilir.", 'error'); }); 
     }

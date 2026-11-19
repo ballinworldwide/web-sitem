@@ -472,7 +472,7 @@ function importProductsFromCSV() {
             const key = name.trim().toLowerCase();
             if (names.has(key)) { dup++; continue; }
             names.add(key);
-            ops.push({ update: false, data: Object.assign({}, base, { images: /^https:\/\//i.test(img) ? [img] : [] }) }); added++;
+            ops.push({ update: false, data: Object.assign({}, base, { status: 'published', images: /^https:\/\//i.test(img) ? [img] : [] }) }); added++;   // YAMA-54: yeni ürün varsayılan Yayında
         }
         if (!ops.length) { showToast("İşlenecek satır yok (" + dup + " ürün zaten var, " + skipped + " geçersiz satır)", 'error'); return; }
         const chunks = []; for (let i = 0; i < ops.length; i += 400) chunks.push(ops.slice(i, i + 400));
@@ -2108,7 +2108,7 @@ window.saveEditedProductData = async function(btn) {
     const btn = $('btnUploadProduct'); if (btn) { btn.innerText = 'Görseller yükleniyor...'; btn.disabled = true; }
     try {
       const images = []; for (const s of srcs) images.push(await toUrl(s));
-      await db.collection('products').add({ name, price, category: g('adminProdCategory') || 'Giyim', stock, description: g('adminProdDesc'), sizeStock: Object.entries(sizes).map(([k, v]) => k + ':' + v).join(', '), images, createdAt: FV.serverTimestamp() });
+      await db.collection('products').add({ status: 'published', name, price, category: g('adminProdCategory') || 'Giyim', stock, description: g('adminProdDesc'), sizeStock: Object.entries(sizes).map(([k, v]) => k + ':' + v).join(', '), images, createdAt: FV.serverTimestamp() });
       showToast('Ürün eklendi!', 'success');
       ['adminProdName', 'adminProdPrice', 'adminProdDesc', 'adminProdSizeStock'].forEach(i => { if ($(i)) $(i).value = ''; });
       if ($('adminProdStock')) $('adminProdStock').value = '10';
@@ -2855,12 +2855,23 @@ window.saveEditedProductData = async function(btn) {
     };
     if (cached) return done(cached);
     isLoadingProducts = true;
-    db.collection('products').orderBy('createdAt', 'desc').limit(500).get()
-      .then(snap => { const list = snap.docs.map(plain); if (!isStaff()) writeCache(list); done(list); })
+    /* YAMA-54: ziyaretçi yalnız yayındaki ürünleri sorgular (kurallar taslak/arşivi zaten okutmaz); sıralama tarayıcıda.
+       Personel tüm ürünleri (taslak/arşiv dahil) görür. */
+    const staffNow = isStaff();
+    (staffNow ? db.collection('products').orderBy('createdAt', 'desc').limit(500) : db.collection('products').where('status', '==', 'published').limit(500)).get()
+      .then(snap => { const list = snap.docs.map(plain); if (!staffNow) { list.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0)); writeCache(list); } done(list); })
       .catch(e => { isLoadingProducts = false; console.warn('ürünler yüklenemedi', e); });
   };
   // Yönetici bir şeyi kaydedince önbellek temizlensin (ziyaretçiler en geç 3 dk içinde yeni halini görür)
   try { sessionStorage.removeItem(CACHE_KEY); } catch (e) {}
+  /* YAMA-54: personel girişi netleşince (rol sorgusu birkaç saniye sürebilir) taslak/arşiv dahil tam liste bir kez yeniden yüklenir */
+  let staffFull = false;
+  firebase.auth().onAuthStateChanged(() => {
+    if (staffFull && !isStaff() && !isLoadingProducts) { staffFull = false; window.loadProducts(null, true); }   // çıkışta taslaklar listeden düşer
+    let n = 0;
+    const tick = () => { if (staffFull || n++ > 8) return; if (isStaff()) { if (isLoadingProducts) return setTimeout(tick, 700); staffFull = true; window.loadProducts(null, true); } else setTimeout(tick, 700); };
+    setTimeout(tick, 300);
+  });
 })();
 /* ===================================================================
    YAMA-5 — admin siparişleri: arama, tarih filtresi, sayfalama, iç not;

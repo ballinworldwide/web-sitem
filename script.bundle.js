@@ -1089,7 +1089,7 @@ function goToCheckout() {
     let finalTotal = discountTotal - appliedPointsValue;
     if(finalTotal < 0) finalTotal = 0;
 
-    let shipCost = (finalTotal >= FREE_SHIPPING_THRESHOLD || finalTotal === 0) ? 0 : SHIPPING_FEE;
+    let shipCost = finalTotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;   // YAMA-50: %100 kuponda da kargo alınır (sunucuyla aynı)
     finalTotal += shipCost;
 
     if(document.getElementById('checkoutSubtotal')) document.getElementById('checkoutSubtotal').innerText = total.toLocaleString('tr-TR') + ' TL';

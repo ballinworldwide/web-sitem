@@ -1011,10 +1011,22 @@ function applyLoyaltyPoints() {
     goToCheckout();
 }
 
+/* YAMA-47: kullanıcı belgesini güvenli oku. Girişte e-posta için yazılan 'merge' kaydı (onAuthStateChanged) henüz sunucuya
+   işlenmeden okuma yapılırsa belge yalnızca {email} olarak dönüyordu (Hesabım ve ödeme bilgileri boş görünüyordu).
+   Bekleyen yazma varsa bitmesini bekleyip yeniden okur. */
+async function readUserDoc(uid) {
+    for (let i = 0; i < 3; i++) {
+        const d = await db.collection('users').doc(uid).get({ source: 'server' });
+        if (!d.metadata.hasPendingWrites) return d;
+        try { await db.waitForPendingWrites(); } catch (e) {}
+    }
+    return db.collection('users').doc(uid).get({ source: 'server' });
+}
+window.readUserDoc = readUserDoc;
+
 function loadProfileData(_retry) { 
     if(!currentUser) return; 
-    /* YAMA-47: sunucudan oku (source:'server'). Girişte e-posta için yazılan yerel 'merge' kaydı yüzünden önbellekten yalnızca {email} dönüyor, profil boş görünüyordu */
-    db.collection("users").doc(currentUser.uid).get({ source: 'server' }).then((doc) => { 
+    readUserDoc(currentUser.uid).then((doc) => { 
         if (doc.exists) { 
             userData = doc.data(); 
             if(document.getElementById('profName')) document.getElementById('profName').value = userData.name || ''; 
@@ -1045,7 +1057,7 @@ function goToCheckout() {
     if(cartPanel && !cartPanel.classList.contains('translate-x-full')) toggleCart();
     switchPage('checkout'); 
     if(currentUser) {
-        db.collection("users").doc(currentUser.uid).get({ source: 'server' }).then((doc) => { 
+        readUserDoc(currentUser.uid).then((doc) => { 
             if (doc.exists) { 
                 userData = doc.data(); 
                 if(document.getElementById('checkoutName')) document.getElementById('checkoutName').value = userData.name || ''; 
@@ -1795,7 +1807,7 @@ window.saveEditedProductData = async function(btn) {
       const os = await db.collection('orders').where('userId', '==', currentUser.uid).get();
       const o = os.docs.find(d => { const x = d.data(); return x.status !== 'İptal Edildi' && (x.productIds || []).includes(activeProductId); });
       if (!o) return showToast('Yalnızca satın aldığınız ürünlere yorum yapabilirsiniz.', 'error');
-      const u = await db.collection('users').doc(currentUser.uid).get({ source: 'server' }), d = u.exists ? u.data() : {};
+      const u = await readUserDoc(currentUser.uid), d = u.exists ? u.data() : {};
       const author = ((d.name || 'Müşteri') + ' ' + (d.surname ? d.surname[0] + '.' : '')).trim().slice(0, 60);
       await db.collection('products').doc(activeProductId).collection('reviews').doc(currentUser.uid)
         .set({ userId: currentUser.uid, author, rating, text, verifiedPurchase: true, orderId: o.id, date: FV.serverTimestamp() });
@@ -2573,7 +2585,7 @@ window.saveEditedProductData = async function(btn) {
   /* ---------- Hesabım: verilerimi indir / hesabı sil ---------- */
   window.downloadMyData = async function () {
     if (!currentUser || currentUser.isAnonymous) return;
-    const u = await db.collection('users').doc(currentUser.uid).get({ source: 'server' }), os = await db.collection('orders').where('userId', '==', currentUser.uid).get();
+    const u = await readUserDoc(currentUser.uid), os = await db.collection('orders').where('userId', '==', currentUser.uid).get();
     const data = { hesap: { email: currentUser.email, uid: currentUser.uid }, profil: u.exists ? u.data() : {}, siparisler: os.docs.map(d => ({ id: d.id, ...d.data() })) };
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })); a.download = 'ballin-verilerim.json'; a.click();
   };

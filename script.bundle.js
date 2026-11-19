@@ -455,7 +455,7 @@ function importProductsFromCSV() {
         const idx = k => head.indexOf(k);
         if (idx('name') < 0 || idx('price') < 0) { showToast("CSV başlığında en az name ve price sütunları olmalı.", 'error'); return; }
         const clean = v => { v = String(v == null ? '' : v).trim(); return /^'[=+\-@]/.test(v) ? v.slice(1) : v; };
-        const SIZE_RE = /^\s*[A-Za-z0-9]+\s*:\s*\d+\s*(,\s*[A-Za-z0-9]+\s*:\s*\d+\s*)*$/;
+        const SIZE_RE = /^\s*[A-Za-z0-9]{1,6}\s*:\s*\d+\s*(,\s*[A-Za-z0-9]{1,6}\s*:\s*\d+\s*)*$/;   // YAMA-53: beden en fazla 6 karakter
         // YAMA-17b: id sütunu varsa ve ürün mevcutsa GÜNCELLER (yeni ürün eklemez, görsel/eski fiyat/durum/SKU'ya dokunmaz);
         // id yoksa ve aynı isimde ürün zaten varsa ATLAR (çift kayıt oluşmasın); aksi halde yeni ürün ekler.
         const byId = new Map(allProducts.map(p => [p.id, p]));
@@ -571,8 +571,9 @@ function saveBulkItem(prodId) {
     let newPrice = pEl ? parseFloat(pEl.value) : 0;
     let newStock = sEl ? parseInt(sEl.value) : 0;
     let newSizeStock = ssEl ? ssEl.value.trim() : "";
-    if(isNaN(newPrice) || isNaN(newStock)) { showToast("Geçersiz fiyat veya stok değeri!", 'error'); return; }
-    db.collection("products").doc(prodId).update({ price: newPrice, stock: newStock, sizeStock: newSizeStock }).then(() => { showToast("Stoklar kaydedildi!", 'success'); loadProducts(); }).catch(e=>{});
+    if(isNaN(newPrice) || isNaN(newStock) || newPrice < 0 || newStock < 0) { showToast("Geçersiz fiyat veya stok değeri!", 'error'); return; }
+    if(newSizeStock && !/^\s*[A-Za-z0-9]{1,6}\s*:\s*\d+\s*(,\s*[A-Za-z0-9]{1,6}\s*:\s*\d+\s*)*$/.test(newSizeStock)) { showToast("Beden formatı: S:5, M:3 (beden en fazla 6 harf/rakam)", 'error'); return; }   // YAMA-53
+    db.collection("products").doc(prodId).update({ price: newPrice, stock: newStock, sizeStock: newSizeStock }).then(() => { showToast("Stoklar kaydedildi!", 'success'); loadProducts(); }).catch(e => showToast("Kaydedilemedi: " + e.message, 'error'));
 }
 
 function compressImageForEmail(base64Str) { 
@@ -838,7 +839,7 @@ function openProductDetail(id) {
     }
 
     let isFavDetail = wishlist.includes(prod.id);
-    let favBtnHtml = `<button onclick="toggleWishlist('${prod.id}', event); if(activeProductId === '${prod.id}') openProductDetail('${prod.id}');" class="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center transition-colors ${isFavDetail ? 'text-red-500' : 'text-brand-400 hover:text-red-500'}"><i class="fa-solid fa-heart text-lg"></i></button>`;
+    let favBtnHtml = `<button data-v="${escHtml(prod.id)}" onclick="toggleWishlist(this.dataset.v, event); if(activeProductId === this.dataset.v) openProductDetail(this.dataset.v);" class="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center transition-colors ${isFavDetail ? 'text-red-500' : 'text-brand-400 hover:text-red-500'}"><i class="fa-solid fa-heart text-lg"></i></button>`;
 
     let sliderHTML = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -880,7 +881,7 @@ function openProductDetail(id) {
         crossSellHtml = `<div class="mt-10 border-t border-brand-100 pt-8"><h3 class="font-serif text-lg font-bold text-brand-900 mb-4"><i class="fa-solid fa-wand-magic-sparkles mr-2 text-amber-500"></i>Kombini Tamamla</h3><div class="grid grid-cols-2 gap-4">`;
         others.forEach(o => {
             let img = o.images && o.images.length > 0 ? o.images[0] : (o.image || 'https://placehold.co/300');
-            crossSellHtml += `<div class="cursor-pointer group bg-brand-50 p-3 rounded-xl border border-brand-100 hover:border-brand-300 transition-colors" onclick="openProductDetail('${o.id}')"><img src="${escHtml(img)}" class="w-full h-32 object-cover rounded-lg mb-3 shadow-sm group-hover:opacity-80 transition-opacity"><h4 class="text-xs font-bold font-serif text-brand-900 line-clamp-1">${escHtml(o.name)}</h4><p class="text-xs text-brand-600 mt-1">${(o.price||0).toLocaleString('tr-TR')} TL</p></div>`;
+            crossSellHtml += `<div class="cursor-pointer group bg-brand-50 p-3 rounded-xl border border-brand-100 hover:border-brand-300 transition-colors" data-v="${escHtml(o.id)}" onclick="openProductDetail(this.dataset.v)"><img src="${escHtml(img)}" class="w-full h-32 object-cover rounded-lg mb-3 shadow-sm group-hover:opacity-80 transition-opacity"><h4 class="text-xs font-bold font-serif text-brand-900 line-clamp-1">${escHtml(o.name)}</h4><p class="text-xs text-brand-600 mt-1">${(o.price||0).toLocaleString('tr-TR')} TL</p></div>`;
         });
         crossSellHtml += `</div></div>`;
     }
@@ -1275,8 +1276,8 @@ function loadUserOrders() {
             let dStr = (order.orderDate && typeof order.orderDate.toDate === 'function') ? order.orderDate.toDate().toLocaleString('tr-TR') : "Tarih Yok"; 
             let itemsStr = (order.items||[]).map(i => `1x ${escHtml(i.name)}`).join(', '); 
             let trackingHTML = order.trackingNumber ? `<div class="mt-3 text-xs bg-brand-50 p-3 rounded-lg border border-brand-100 flex items-center gap-2"><i class="fa-solid fa-truck-fast text-brand-600 text-lg"></i><div><span class="block text-brand-500 font-bold mb-1">Kargo Takip No</span><a href="https://www.araskargo.com.tr" target="_blank" class="text-blue-600 font-bold underline text-sm">${escHtml(order.trackingNumber)}</a></div></div>` : ''; 
-            let cancelHTML = order.status === 'Hazırlanıyor' ? `<button onclick="cancelMyOrder('${order.id}')" class="mt-4 text-xs text-red-600 border border-red-200 px-4 py-2 rounded-xl hover:bg-red-50 font-bold uppercase tracking-wider transition-colors"><i class="fa-solid fa-ban mr-1"></i> Siparişi İptal Et</button>` : '';
-            let returnHTML = order.status === 'Tamamlandı' ? `<button onclick="requestReturn('${order.id}')" class="mt-4 text-xs border border-brand-300 text-brand-700 px-4 py-2 rounded-xl hover:bg-red-50 font-bold uppercase tracking-wider transition-colors"><i class="fa-solid fa-arrow-rotate-left mr-1"></i> İade Talebi Oluştur</button>` : '';
+            let cancelHTML = order.status === 'Hazırlanıyor' ? `<button data-v="${escHtml(order.id)}" onclick="cancelMyOrder(this.dataset.v)" class="mt-4 text-xs text-red-600 border border-red-200 px-4 py-2 rounded-xl hover:bg-red-50 font-bold uppercase tracking-wider transition-colors"><i class="fa-solid fa-ban mr-1"></i> Siparişi İptal Et</button>` : '';
+            let returnHTML = order.status === 'Tamamlandı' ? `<button data-v="${escHtml(order.id)}" onclick="requestReturn(this.dataset.v)" class="mt-4 text-xs border border-brand-300 text-brand-700 px-4 py-2 rounded-xl hover:bg-red-50 font-bold uppercase tracking-wider transition-colors"><i class="fa-solid fa-arrow-rotate-left mr-1"></i> İade Talebi Oluştur</button>` : '';
             
             let returnNoteHtml = "";
             if (order.status === "İade Onaylanmadı" && order.returnNote) {
@@ -1644,7 +1645,7 @@ window.saveEditedProductData = async function(btn) {
   const FV = firebase.firestore.FieldValue;
   const isAdm = () => isStaffNow(currentUser);
   const sizeKey = i => (i.size && i.size !== 'Standart') ? String(i.size).toUpperCase() : null;
-  const parseSS = s => { const m = {}; String(s || '').split(',').forEach(x => { const [a, b] = x.split(':'); if (a && b) m[a.trim().toUpperCase()] = parseInt(b) || 0; }); return m; };
+  const parseSS = s => { const m = {}; String(s || '').split(',').forEach(x => { const [a, b] = x.split(':'); if (a && b && /^[A-Z0-9]{1,6}$/.test(a.trim().toUpperCase())) m[a.trim().toUpperCase()] = parseInt(b) || 0; }); return m; };   // YAMA-53: beden anahtarı 1-6 harf/rakam
   const joinSS = m => Object.entries(m).map(([a, b]) => a + ':' + b).join(', ');
   const groupCart = items => { const n = {}; items.forEach(i => { const g = n[i.dbId] = n[i.dbId] || { t: 0, s: {} }; g.t++; const z = sizeKey(i); if (z) g.s[z] = (g.s[z] || 0) + 1; }); return n; };
 
@@ -1927,13 +1928,13 @@ window.saveEditedProductData = async function(btn) {
           '<p class="text-sm font-bold">Toplam: ' + tl(o.totalAmount) + ' TL' + (o.usedPoints ? ' (puan: -' + tl(o.usedPoints) + ')' : '') + (o.couponCode ? ' · kupon: ' + esc(o.couponCode) : '') + '</p>' +
           (o.returnNote ? '<p class="mt-2 text-xs text-red-700">Not: ' + esc(o.returnNote) + '</p>' : '') + '</div>' +
           '<div class="w-full md:w-64 flex flex-col justify-center shrink-0 gap-2">' +
-          '<button onclick="printInvoice(\'' + id + '\')" class="btn-ghost">Sipariş / Kargo Fişi</button>' +
-          (o.status === 'İade Talebi Alındı' ? '<button onclick="rejectReturn(\'' + id + '\')" class="btn-ghost" style="color:#ff7a7a">İadeyi Reddet (Not)</button>' : '') +
+          '<button data-v="' + escHtml(id) + '" onclick="printInvoice(this.dataset.v)" class="btn-ghost">Sipariş / Kargo Fişi</button>' +
+          (o.status === 'İade Talebi Alındı' ? '<button data-v="' + escHtml(id) + '" onclick="rejectReturn(this.dataset.v)" class="btn-ghost" style="color:#ff7a7a">İadeyi Reddet (Not)</button>' : '') +
           '<select id="adminStatus_' + id + '"' + (closed ? ' disabled title="Bu sipariş kapatıldı, durumu değiştirilemez"' : '') + '>' + opt(states, o.status) + '</select>' +
           (closed ? '<p class="text-[10px]" style="opacity:.6">🔒 Kapatılmış sipariş: durum değiştirilemez</p>' : '') +
           '<select id="adminCarrier_' + id + '"><option value="">Kargo firması seç</option>' + opt(Object.keys(CARRIERS), o.carrier) + '</select>' +
           '<input type="text" id="adminTrack_' + id + '" value="' + esc(o.trackingNumber || '') + '" placeholder="Takip no">' +
-          '<button onclick="updateAdminOrder(\'' + id + '\')" class="btn-primary">Kaydet ve Bildir</button></div></div>';
+          '<button data-v="' + escHtml(id) + '" onclick="updateAdminOrder(this.dataset.v)" class="btn-primary">Kaydet ve Bildir</button></div></div>';
       }).join('') : '<p class="text-xs">Bu filtreye uygun sipariş yok.</p>';
       reconcile(all.filter(o => (['İptal Edildi', 'İade Onaylandı'].includes(o.status) && !o.refundDone) || (o.status === 'Tamamlandı' && !o.pointsCredited)));    } catch (e) { showToast('Siparişler yüklenemedi: ' + e.message, 'error'); }
   };
@@ -2020,7 +2021,7 @@ window.saveEditedProductData = async function(btn) {
   const $ = id => document.getElementById(id);
   const FV = firebase.firestore.FieldValue;
   const isAdm = () => isStaffNow(currentUser);
-  const parseSS = s => { const m = {}; String(s || '').split(',').forEach(x => { const [a, b] = x.split(':'); if (a && b && !isNaN(parseInt(b))) m[a.trim().toUpperCase()] = parseInt(b); }); return m; };
+  const parseSS = s => { const m = {}; String(s || '').split(',').forEach(x => { const [a, b] = x.split(':'); if (a && b && !isNaN(parseInt(b)) && /^[A-Z0-9]{1,6}$/.test(a.trim().toUpperCase())) m[a.trim().toUpperCase()] = parseInt(b); }); return m; };   // YAMA-53: beden anahtarı 1-6 harf/rakam
   const sum = m => Object.values(m).reduce((a, b) => a + b, 0);
 
   /* ---------- Stil: mobil admin, tablo taşması, sahte asistanı gizle ---------- */
@@ -2097,7 +2098,7 @@ window.saveEditedProductData = async function(btn) {
     if (!isAdm()) return showToast('Yönetici hesabıyla (doğrulanmış e-posta) giriş yapmalısınız.', 'error');
     const g = id => $(id) ? $(id).value.trim() : '';
     const name = g('adminProdName'), price = parseFloat(g('adminProdPrice')), sizeStock = g('adminProdSizeStock'), sizes = parseSS(sizeStock);
-    if (sizeStock && !Object.keys(sizes).length) return showToast('Beden formatı: S:5, M:3', 'error');
+    if (sizeStock && sizeStock.split(',').filter(x => x.trim()).length !== Object.keys(sizes).length) return showToast('Beden formatı: S:5, M:3 (beden en fazla 6 harf/rakam)', 'error');   // YAMA-53
     let stock = parseInt(g('adminProdStock')); stock = isNaN(stock) ? 10 : stock;       // 0 artık 0 kalır
     if (Object.keys(sizes).length) stock = sum(sizes);                                    // toplam stok bedenlerden gelir
     const srcs = [0, 1, 2, 3].map(i => uploadedImages[i] || g('adminProdImg' + (i + 1))).filter(Boolean);
@@ -2105,7 +2106,7 @@ window.saveEditedProductData = async function(btn) {
     const btn = $('btnUploadProduct'); if (btn) { btn.innerText = 'Görseller yükleniyor...'; btn.disabled = true; }
     try {
       const images = []; for (const s of srcs) images.push(await toUrl(s));
-      await db.collection('products').add({ name, price, category: g('adminProdCategory') || 'Giyim', stock, description: g('adminProdDesc'), sizeStock, images, createdAt: FV.serverTimestamp() });
+      await db.collection('products').add({ name, price, category: g('adminProdCategory') || 'Giyim', stock, description: g('adminProdDesc'), sizeStock: Object.entries(sizes).map(([k, v]) => k + ':' + v).join(', '), images, createdAt: FV.serverTimestamp() });
       showToast('Ürün eklendi!', 'success');
       ['adminProdName', 'adminProdPrice', 'adminProdDesc', 'adminProdSizeStock'].forEach(i => { if ($(i)) $(i).value = ''; });
       if ($('adminProdStock')) $('adminProdStock').value = '10';
@@ -2128,7 +2129,7 @@ window.saveEditedProductData = async function(btn) {
   };
   window.saveEditedProductData = async function (btn) {
     const id = $('editProdId').value, sizeStock = $('editProdSizeStock').value.trim(), sizes = parseSS(sizeStock);
-    if (sizeStock && !Object.keys(sizes).length) return showToast('Beden formatı: S:5, M:3', 'error');
+    if (sizeStock && sizeStock.split(',').filter(x => x.trim()).length !== Object.keys(sizes).length) return showToast('Beden formatı: S:5, M:3 (beden en fazla 6 harf/rakam)', 'error');   // YAMA-53
     const stock = Object.keys(sizes).length ? sum(sizes) : (Number($('editProdStock').value) || 0);
     const t = btn.innerText; btn.innerText = 'Kaydediliyor...'; btn.disabled = true;
     try {
@@ -2140,7 +2141,7 @@ window.saveEditedProductData = async function(btn) {
       if (!images.length) throw new Error('En az 1 görsel gerekli.');
       await db.collection('products').doc(id).update({
         name: $('editProdName').value.trim(), price: Number($('editProdPrice').value), category: $('editProdCategory').value,
-        stock, sizeStock, sizes: FV.delete(), description: $('editProdDesc').value, images, updatedAt: FV.serverTimestamp()
+        stock, sizeStock: Object.entries(sizes).map(([k, v]) => k + ':' + v).join(', '), sizes: FV.delete(),   /* YAMA-53: standart biçim */ description: $('editProdDesc').value, images, updatedAt: FV.serverTimestamp()
       });
       showToast('Ürün güncellendi!', 'success'); closeEditModal(); loadProducts();
     } catch (e) { showToast(e.message, 'error'); }
@@ -2273,7 +2274,7 @@ window.saveEditedProductData = async function(btn) {
   const $ = id => document.getElementById(id);
   const E = s => (window.esc ? window.esc(s) : String(s));
   const tl = n => (Number(n) || 0).toLocaleString('tr-TR');
-  const parseSS = s => { const m = {}; String(s || '').split(',').forEach(x => { const [a, b] = x.split(':'); if (a && b && !isNaN(parseInt(b))) m[a.trim().toUpperCase()] = parseInt(b); }); return m; };
+  const parseSS = s => { const m = {}; String(s || '').split(',').forEach(x => { const [a, b] = x.split(':'); if (a && b && !isNaN(parseInt(b)) && /^[A-Z0-9]{1,6}$/.test(a.trim().toUpperCase())) m[a.trim().toUpperCase()] = parseInt(b); }); return m; };   // YAMA-53: beden anahtarı 1-6 harf/rakam
   const prodOf = id => allProducts.find(p => p.id === id);
   const limitFor = (p, size) => { const m = parseSS(p.sizeStock); return Object.keys(m).length ? (m[String(size).toUpperCase()] || 0) : (p.stock || 0); };
   const countIn = (id, size) => cart.filter(i => i.dbId === id && i.size === size).length;
@@ -2293,10 +2294,10 @@ window.saveEditedProductData = async function(btn) {
     const out = prod.stock <= 0, fav = wishlist.includes(prod.id);
     const badge = out ? '<span class="absolute top-3 right-3 bg-red-600 text-white px-2.5 py-1 text-[10px] font-bold rounded shadow-md z-10 uppercase tracking-widest">Tükendi</span>'
       : (prod.stock <= 5 ? '<span class="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 text-[10px] font-bold rounded shadow-md z-10 uppercase tracking-widest">Son ' + prod.stock + ' Ürün</span>' : '');
-    return '<div class="group relative flex flex-col cursor-pointer bg-brand-50 rounded-2xl p-4 overflow-hidden border border-brand-100 hover:border-brand-300 transition-all hover:shadow-xl" onclick="openProductDetail(\'' + prod.id + '\')">' + badge +
-      '<div class="absolute top-3 left-3 z-10"><button onclick="toggleWishlist(\'' + prod.id + '\', event)" aria-label="Favorilere ekle" class="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center transition-colors ' + (fav ? 'text-red-500' : 'text-brand-400 hover:text-red-500') + '"><i class="fa-solid fa-heart"></i></button></div>' +
+    return '<div class="group relative flex flex-col cursor-pointer bg-brand-50 rounded-2xl p-4 overflow-hidden border border-brand-100 hover:border-brand-300 transition-all hover:shadow-xl" data-v="' + escHtml(prod.id) + '" onclick="openProductDetail(this.dataset.v)">' + badge +
+      '<div class="absolute top-3 left-3 z-10"><button data-v="' + escHtml(prod.id) + '" onclick="toggleWishlist(this.dataset.v, event)" aria-label="Favorilere ekle" class="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center transition-colors ' + (fav ? 'text-red-500' : 'text-brand-400 hover:text-red-500') + '"><i class="fa-solid fa-heart"></i></button></div>' +
       '<div class="relative w-full aspect-[4/5] rounded-xl overflow-hidden mb-4 bg-white">' + (prod.oldPrice > prod.price ? '<span class="absolute top-12 left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded z-10">%' + Math.round((1 - prod.price / prod.oldPrice) * 100) + ' İNDİRİM</span>' : '') + '<img loading="lazy" alt="' + E(prod.name) + '" src="' + E(cover(prod)) + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ' + (out ? 'grayscale brightness-50' : '') + '">' +
-      '<button ' + (out ? 'disabled' : 'onclick="quickAdd(\'' + prod.id + '\', event)"') + ' class="absolute bottom-2 left-2 right-2 ' + (out ? 'bg-brand-300 cursor-not-allowed' : 'bg-brand-900 hover:bg-black') + ' text-white text-xs font-bold py-2.5 rounded-lg shadow-lg z-10">' + (out ? 'Tükendi' : '<i class="fa-solid fa-bag-shopping mr-1"></i> Sepete Ekle') + '</button></div>' +
+      '<button ' + (out ? 'disabled' : 'data-v="' + escHtml(prod.id) + '" onclick="quickAdd(this.dataset.v, event)"') + ' class="absolute bottom-2 left-2 right-2 ' + (out ? 'bg-brand-300 cursor-not-allowed' : 'bg-brand-900 hover:bg-black') + ' text-white text-xs font-bold py-2.5 rounded-lg shadow-lg z-10">' + (out ? 'Tükendi' : '<i class="fa-solid fa-bag-shopping mr-1"></i> Sepete Ekle') + '</button></div>' +
       '<div class="flex justify-between items-start mt-2"><div><h3 class="text-sm font-medium text-brand-900 font-serif line-clamp-1">' + E(prod.name) + '</h3><p class="text-[10px] text-brand-400 uppercase mt-1 tracking-wider">' + E(prod.category || 'Diğer') + '</p></div>' +
       '<p class="text-sm font-bold text-brand-900 text-right">' + (prod.oldPrice > prod.price ? '<span class="block text-[10px] text-brand-400 line-through font-normal">' + tl(prod.oldPrice) + ' TL</span>' : '') + tl(prod.price) + ' TL</p></div></div>';
   };
@@ -2316,7 +2317,7 @@ window.saveEditedProductData = async function(btn) {
     o.innerHTML = '<div style="background:#fff;width:100%;max-width:420px;border-radius:20px 20px 0 0;padding:22px 20px 26px">' +
       '<div style="display:flex;gap:12px;align-items:center;margin-bottom:14px"><img src="' + E(cover(p)) + '" style="width:56px;height:70px;object-fit:cover;border-radius:10px"><div style="flex:1"><div style="font-weight:700;font-size:14px">' + E(p.name) + '</div><div style="font-size:13px;color:#666">' + tl(p.price) + ' TL</div></div><button onclick="closePick()" style="font-size:22px;border:0;background:none;cursor:pointer">&times;</button></div>' +
       '<div style="font-size:12px;font-weight:700;margin-bottom:8px">Beden seçin</div><div style="display:flex;flex-wrap:wrap;gap:8px">' +
-      sizes.map(z => { const n = m[z], dis = n <= 0 || countIn(id, z) >= n; return '<button ' + (dis ? 'disabled' : 'onclick="pickSize(\'' + id + '\',\'' + E(z) + '\')"') + ' style="min-width:52px;padding:10px 14px;border-radius:10px;border:1px solid ' + (dis ? '#ddd' : '#212529') + ';background:#fff;color:' + (dis ? '#bbb' : '#212529') + ';font-weight:700;' + (dis ? 'text-decoration:line-through;cursor:not-allowed' : 'cursor:pointer') + '">' + E(z) + '</button>'; }).join('') + '</div></div>';
+      sizes.map(z => { const n = m[z], dis = n <= 0 || countIn(id, z) >= n; return '<button ' + (dis ? 'disabled' : 'data-v="' + E(id) + '" data-z="' + E(z) + '" onclick="pickSize(this.dataset.v, this.dataset.z)"') + ' style="min-width:52px;padding:10px 14px;border-radius:10px;border:1px solid ' + (dis ? '#ddd' : '#212529') + ';background:#fff;color:' + (dis ? '#bbb' : '#212529') + ';font-weight:700;' + (dis ? 'text-decoration:line-through;cursor:not-allowed' : 'cursor:pointer') + '">' + E(z) + '</button>'; }).join('') + '</div></div>';
     document.body.appendChild(o);
   };
   function closePick() { const o = $('sizePickModal'); if (o) o.remove(); }
@@ -2346,13 +2347,13 @@ window.saveEditedProductData = async function(btn) {
     } else {
       const g = {}; cart.forEach(i => { const k = i.dbId + '|' + i.size; (g[k] = g[k] || { it: i, n: 0 }).n++; total += i.price || 0; });
       box.innerHTML = Object.values(g).map(({ it, n }) => {
-        const a = "'" + E(it.dbId) + "','" + E(it.size) + "'", b = 'style="width:28px;height:28px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer;font-weight:700"';
+        const dv = 'data-v="' + E(it.dbId) + '" data-z="' + E(it.size) + '"', a = 'this.dataset.v,this.dataset.z', b = dv + ' style="width:28px;height:28px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer;font-weight:700"';
         return '<div class="flex gap-4 items-center border-b border-brand-100 pb-4"><img src="' + E(it.image) + '" class="w-20 h-24 object-cover rounded-xl border border-brand-100"><div class="flex-1">' +
           '<h4 class="font-serif font-bold text-sm text-brand-900 leading-tight">' + E(it.baseName || it.name) + '</h4>' +
           '<p class="text-[11px] text-brand-400 mt-1">' + (it.size && it.size !== 'Standart' ? 'Beden: ' + E(it.size) + ' · ' : '') + tl(it.price) + ' TL</p>' +
           '<div style="display:flex;align-items:center;gap:10px;margin-top:8px"><button ' + b + ' onclick="cartMinus(' + a + ')">−</button><b style="min-width:18px;text-align:center">' + n + '</b><button ' + b + ' onclick="cartPlus(' + a + ')">+</button>' +
           '<span class="text-sm font-bold text-brand-900" style="margin-left:auto">' + tl((it.price || 0) * n) + ' TL</span></div></div>' +
-          '<button onclick="cartRemoveGroup(' + a + ')" aria-label="Sil" class="text-brand-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button></div>';
+          '<button ' + dv + ' onclick="cartRemoveGroup(' + a + ')" aria-label="Sil" class="text-brand-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button></div>';
       }).join('');
       const pc = $('cartShippingProgressContainer'), bar = $('cartShippingBar'), tx = $('cartShippingText');
       if (pc) pc.classList.remove('hidden');
@@ -2473,7 +2474,7 @@ window.saveEditedProductData = async function(btn) {
     const img = p => (p.images && p.images[0]) || p.image || '';
     const cats = [...new Set(list.map(p => p.category).filter(Boolean))].slice(0, 4), tile = 'relative rounded-2xl overflow-hidden cursor-pointer group bg-brand-100';
     w.innerHTML = '<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16"><h2 class="font-serif text-3xl md:text-4xl text-brand-900 mb-8 text-center">Yeni Gelenler</h2><div class="grid grid-cols-2 lg:grid-cols-4 gap-4">' +
-      list.slice(0, 4).map(p => '<div class="' + tile + ' aspect-[4/5]" onclick="openProductDetail(\'' + p.id + '\')"><img loading="lazy" alt="' + E(p.name) + '" src="' + E(img(p)) + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"><div class="absolute inset-x-0 bottom-0 p-3 text-white" style="background:linear-gradient(transparent,rgba(0,0,0,.7))"><div class="text-sm font-serif line-clamp-1">' + E(p.name) + '</div><div class="text-xs font-bold">' + tl(p.price) + ' TL</div></div></div>').join('') + '</div>' +
+      list.slice(0, 4).map(p => '<div class="' + tile + ' aspect-[4/5]" data-v="' + escHtml(p.id) + '" onclick="openProductDetail(this.dataset.v)"><img loading="lazy" alt="' + E(p.name) + '" src="' + E(img(p)) + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"><div class="absolute inset-x-0 bottom-0 p-3 text-white" style="background:linear-gradient(transparent,rgba(0,0,0,.7))"><div class="text-sm font-serif line-clamp-1">' + E(p.name) + '</div><div class="text-xs font-bold">' + tl(p.price) + ' TL</div></div></div>').join('') + '</div>' +
       (cats.length > 1 ? '<h2 class="font-serif text-3xl md:text-4xl text-brand-900 mt-16 mb-8 text-center">Kategoriler</h2><div class="grid grid-cols-2 lg:grid-cols-4 gap-4">' + cats.map((c, i) => '<div class="' + tile + ' aspect-[16/10]" data-cat="' + i + '"><img loading="lazy" alt="' + E(c) + '" src="' + E(img(list.find(x => x.category === c))) + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"><div class="absolute inset-0 flex items-center justify-center text-white font-serif text-xl" style="background:rgba(0,0,0,.35)">' + E(c) + '</div></div>').join('') + '</div>' : '') + '</div>';
     w.querySelectorAll('[data-cat]').forEach(el => el.onclick = () => goCat(cats[el.dataset.cat]));
   }
@@ -2500,7 +2501,7 @@ window.saveEditedProductData = async function(btn) {
     const b = $('pstatusList'); b.innerHTML = 'Yükleniyor...';
     const s = await db.collection('products').get(), op = (st, v, t) => '<option value="' + v + '"' + (st === v ? ' selected' : '') + '>' + t + '</option>';
     b.innerHTML = '<table><thead><tr><th>Ürün</th><th>Fiyat</th><th>Eski fiyat</th><th>Durum</th><th></th></tr></thead><tbody>' + s.docs.map(d => { const p = d.data(), st = p.status || 'published';
-      return '<tr><td>' + E(p.name) + '</td><td>' + tl(p.price) + ' TL</td><td><input type="number" id="op_' + d.id + '" value="' + (p.oldPrice || '') + '" style="width:90px"></td><td><select id="st_' + d.id + '">' + op(st, 'published', 'Yayında') + op(st, 'draft', 'Taslak') + op(st, 'archived', 'Arşiv') + '</select></td><td><button class="btn-primary" onclick="savePStatus(\'' + d.id + '\')">Kaydet</button></td></tr>'; }).join('') + '</tbody></table>';
+      return '<tr><td>' + E(p.name) + '</td><td>' + tl(p.price) + ' TL</td><td><input type="number" id="op_' + d.id + '" value="' + (p.oldPrice || '') + '" style="width:90px"></td><td><select id="st_' + d.id + '">' + op(st, 'published', 'Yayında') + op(st, 'draft', 'Taslak') + op(st, 'archived', 'Arşiv') + '</select></td><td><button class="btn-primary" data-v="' + escHtml(d.id) + '" onclick="savePStatus(this.dataset.v)">Kaydet</button></td></tr>'; }).join('') + '</tbody></table>';
   }
   window.savePStatus = async function (id) {
     const o = parseFloat($('op_' + id).value), st = $('st_' + id).value;
@@ -2526,7 +2527,7 @@ window.saveEditedProductData = async function(btn) {
     if (!isAdm()) return;
     db.collection('users').get().then(s => { const b = $('adminCustomersContainer'); if (!b) return;
       b.innerHTML = s.empty ? '<p class="text-xs">Müşteri yok.</p>' : '<table><thead><tr><th>Ad Soyad</th><th>E-posta</th><th>Telefon</th><th>Puan</th><th>Şehir</th><th></th></tr></thead><tbody>' +
-        s.docs.map(d => { const u = d.data(); return '<tr><td>' + E(u.name || '') + ' ' + E(u.surname || '') + '</td><td>' + E(u.email || '-') + '</td><td>' + E(u.phone || '-') + '</td><td>' + tl(u.points) + '</td><td>' + E(u.city ? u.city + '/' + (u.district || '') : '-') + '</td><td><button class="btn-ghost" onclick="adjustPoints(\'' + d.id + '\')">Puan düzelt</button></td></tr>'; }).join('') + '</tbody></table>'; }).catch(() => {});
+        s.docs.map(d => { const u = d.data(); return '<tr><td>' + E(u.name || '') + ' ' + E(u.surname || '') + '</td><td>' + E(u.email || '-') + '</td><td>' + E(u.phone || '-') + '</td><td>' + tl(u.points) + '</td><td>' + E(u.city ? u.city + '/' + (u.district || '') : '-') + '</td><td><button class="btn-ghost" data-v="' + escHtml(d.id) + '" onclick="adjustPoints(this.dataset.v)">Puan düzelt</button></td></tr>'; }).join('') + '</tbody></table>'; }).catch(() => {});
   };
   window.adjustPoints = async function (uid) {
     const n = parseInt(prompt('Puan değişimi (ör. 50 veya -50):')); if (!n) return; const why = prompt('Gerekçe:') || '';
@@ -2898,7 +2899,7 @@ window.saveEditedProductData = async function(btn) {
     try { const s = await db.collection('order_notes').get(); notes = {}; s.forEach(d => { notes[d.id] = d.data().note || ''; }); } catch (e) {}
     [...box.children].forEach(card => {
       const cb = card.querySelector('.order-checkbox'); if (!cb || card.querySelector('.ordNote')) return; const id = cb.value;
-      card.insertAdjacentHTML('beforeend', '<div class="ordNote w-full" style="display:flex;gap:8px;align-items:flex-start;border-top:1px dashed #ccc;padding-top:10px"><textarea id="note_' + E(id) + '" rows="2" placeholder="İç not (müşteri görmez)" style="flex:1"></textarea><button class="btn-ghost" onclick="saveOrderNote(\'' + E(id) + '\')">Notu kaydet</button></div>');
+      card.insertAdjacentHTML('beforeend', '<div class="ordNote w-full" style="display:flex;gap:8px;align-items:flex-start;border-top:1px dashed #ccc;padding-top:10px"><textarea id="note_' + E(id) + '" rows="2" placeholder="İç not (müşteri görmez)" style="flex:1"></textarea><button class="btn-ghost" data-v="' + E(id) + '" onclick="saveOrderNote(this.dataset.v)">Notu kaydet</button></div>');
       $('note_' + id).value = notes[id] || '';
     });
   }
@@ -3081,7 +3082,7 @@ window.saveEditedProductData = async function(btn) {
       os.forEach(d => { const o = d.data(); if (['İptal Edildi', 'İade Onaylandı'].includes(o.status)) return; const a = agg[o.userId] = agg[o.userId] || { n: 0, t: 0, list: [] }; a.n++; a.t += o.totalAmount || 0; a.list.push({ id: d.id, ...o }); });
       b.innerHTML = us.empty ? '<p class="text-xs">Müşteri yok.</p>' : '<table><thead><tr><th>Ad Soyad</th><th>E-posta</th><th>Telefon</th><th>Puan</th><th>Sipariş</th><th>Toplam harcama</th><th></th></tr></thead><tbody>' +
         us.docs.map(d => { const u = d.data(), a = agg[d.id] || { n: 0, t: 0 };
-          return '<tr><td>' + E(u.name || '') + ' ' + E(u.surname || '') + '</td><td>' + E(u.email || '-') + '</td><td>' + E(u.phone || '-') + '</td><td>' + tl(u.points) + '</td><td>' + a.n + '</td><td>' + tl(a.t) + ' TL</td><td><button class="btn-ghost" onclick="custHistory(\'' + d.id + '\')">Geçmiş</button> <button class="btn-ghost" onclick="adjustPoints(\'' + d.id + '\')">Puan düzelt</button></td></tr>'; }).join('') + '</tbody></table>';
+          return '<tr><td>' + E(u.name || '') + ' ' + E(u.surname || '') + '</td><td>' + E(u.email || '-') + '</td><td>' + E(u.phone || '-') + '</td><td>' + tl(u.points) + '</td><td>' + a.n + '</td><td>' + tl(a.t) + ' TL</td><td><button class="btn-ghost" data-v="' + escHtml(d.id) + '" onclick="custHistory(this.dataset.v)">Geçmiş</button> <button class="btn-ghost" data-v="' + escHtml(d.id) + '" onclick="adjustPoints(this.dataset.v)">Puan düzelt</button></td></tr>'; }).join('') + '</tbody></table>';
     } catch (e) { console.warn('müşteriler', e); }
   };
   window.custHistory = function (uid) {

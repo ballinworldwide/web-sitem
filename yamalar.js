@@ -59,7 +59,7 @@ try {
     }
     const g = {}; cart.forEach(i => { const k = i.dbId + '|' + i.size; (g[k] = g[k] || { it: i, n: 0 }).n++; total += i.price || 0; });
     box.innerHTML = Object.values(g).map(({ it, n }) => {
-      const a = "'" + E(it.dbId) + "','" + E(it.size) + "'", b = 'style="width:28px;height:28px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer;font-weight:700"';
+      const dv = 'data-v="' + E(it.dbId) + '" data-z="' + E(it.size) + '"', a = 'this.dataset.v,this.dataset.z', b = dv + ' style="width:28px;height:28px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer;font-weight:700"';
       const discHtml = it.oldPrice > it.price
         ? ' <span class="discTag" style="text-decoration:line-through;opacity:.5;margin-left:6px">' + tl(it.oldPrice) + ' TL</span>' +
           ' <span style="color:#dc2626;font-weight:700;margin-left:4px">(-' + tl(it.oldPrice - it.price) + ' TL)</span>'
@@ -69,7 +69,7 @@ try {
         '<p class="text-[11px] text-brand-400 mt-1">' + (it.size && it.size !== 'Standart' ? 'Beden: ' + E(it.size) + ' · ' : '') + tl(it.price) + ' TL' + discHtml + '</p>' +
         '<div style="display:flex;align-items:center;gap:10px;margin-top:8px"><button ' + b + ' onclick="cartMinus(' + a + ')">−</button><b style="min-width:18px;text-align:center">' + n + '</b><button ' + b + ' onclick="cartPlus(' + a + ')">+</button>' +
         '<span class="text-sm font-bold text-brand-900" style="margin-left:auto">' + tl((it.price || 0) * n) + ' TL</span></div></div>' +
-        '<button onclick="cartRemoveGroup(' + a + ')" aria-label="Sil" class="text-brand-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button></div>';
+        '<button ' + dv + ' onclick="cartRemoveGroup(' + a + ')" aria-label="Sil" class="text-brand-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button></div>';
     }).join('');
     const pc = $('cartShippingProgressContainer'), bar = $('cartShippingBar'), tx = $('cartShippingText');
     if (pc) pc.classList.remove('hidden');

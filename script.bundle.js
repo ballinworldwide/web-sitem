@@ -2862,8 +2862,8 @@ window.saveEditedProductData = async function(btn) {
       .then(snap => { const list = snap.docs.map(plain); if (!staffNow) { list.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0)); writeCache(list); } done(list); })
       .catch(e => { isLoadingProducts = false; console.warn('ürünler yüklenemedi', e); });
   };
-  // Yönetici bir şeyi kaydedince önbellek temizlensin (ziyaretçiler en geç 3 dk içinde yeni halini görür)
-  try { sessionStorage.removeItem(CACHE_KEY); } catch (e) {}
+  // YAMA-59: önbellek artık her sayfa açılışında silinmiyor (önceden her ziyaret ~ürün sayısı kadar okuma yapıyordu).
+  // Personel önbelleği hiç kullanmaz; ziyaretçiler yönetici değişikliğini en geç 3 dk içinde görür.
   /* YAMA-54: personel girişi netleşince (rol sorgusu birkaç saniye sürebilir) taslak/arşiv dahil tam liste bir kez yeniden yüklenir */
   let staffFull = false;
   firebase.auth().onAuthStateChanged(() => {

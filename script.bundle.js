@@ -1019,7 +1019,7 @@ function loadProfileData() {
             if(document.getElementById('profName')) document.getElementById('profName').value = userData.name || ''; 
             if(document.getElementById('profSurname')) document.getElementById('profSurname').value = userData.surname || ''; 
             if(document.getElementById('profEmail')) document.getElementById('profEmail').value = currentUser.email || ''; 
-            if(document.getElementById('profPhone')) document.getElementById('profPhone').value = userData.phone || ''; 
+            if(document.getElementById('profPhone')) document.getElementById('profPhone').value = normPhoneTR(userData.phone || ''); 
             if(document.getElementById('profAddress')) document.getElementById('profAddress').value = userData.address || ''; 
             
             if(userData.city && document.getElementById('profCity')) {
@@ -1050,7 +1050,7 @@ function goToCheckout() {
                 if(document.getElementById('checkoutName')) document.getElementById('checkoutName').value = userData.name || ''; 
                 if(document.getElementById('checkoutSurname')) document.getElementById('checkoutSurname').value = userData.surname || ''; 
                 if(document.getElementById('checkoutEmail')) document.getElementById('checkoutEmail').value = currentUser.email || ''; 
-                if(document.getElementById('checkoutPhone')) document.getElementById('checkoutPhone').value = userData.phone || ''; 
+                if(document.getElementById('checkoutPhone')) document.getElementById('checkoutPhone').value = normPhoneTR(userData.phone || ''); 
                 if(document.getElementById('checkoutAddress')) document.getElementById('checkoutAddress').value = userData.address || ''; 
                 
                 if(userData.city && document.getElementById('checkoutCity')) {
@@ -1123,6 +1123,25 @@ function continueAsGuest() {
         .catch(() => showToast("Misafir girişi yapılamadı.", "error"));
 }
 
+/* YAMA-46 — telefon alanları: başında 0 otomatik, 0 dahil en fazla 11 hane, yalnız rakam */
+function normPhoneTR(raw) {
+    var d = String(raw == null ? '' : raw).replace(/\D/g, '');
+    if (!d) return '';
+    d = d.replace(/^0+/, '');
+    if (!d) return '0';
+    if (d.length >= 12 && d.indexOf('90') === 0) d = d.slice(2);   // +90 / 0090 ile gelen uzun girişler (yapıştırma, otomatik doldurma)
+    return ('0' + d).slice(0, 11);
+}
+function isValidPhoneTR(v) { return /^0\d{10}$/.test(String(v == null ? '' : v)); }
+window.normPhoneTR = normPhoneTR; window.isValidPhoneTR = isValidPhoneTR;
+(function () {
+    var IDS = { profPhone: 1, checkoutPhone: 1, authPhone: 1 };
+    var isPh = function (el) { return !!(el && el.id && IDS[el.id] === 1); };
+    document.addEventListener('input', function (e) { var el = e.target; if (!isPh(el)) return; var n = normPhoneTR(el.value); if (n !== el.value) el.value = n; }, true);
+    document.addEventListener('focusin', function (e) { var el = e.target; if (isPh(el) && !el.value) el.value = '0'; });
+    document.addEventListener('focusout', function (e) { var el = e.target; if (isPh(el) && el.value === '0') el.value = ''; });
+})();
+
 function handleAuth() { 
     const email = document.getElementById('emailInput') ? document.getElementById('emailInput').value : "";
     const password = document.getElementById('passwordInput') ? document.getElementById('passwordInput').value : ""; 
@@ -1132,8 +1151,9 @@ function handleAuth() {
     } else { 
         const name = document.getElementById('authName') ? document.getElementById('authName').value : ""; 
         const surname = document.getElementById('authSurname') ? document.getElementById('authSurname').value : ""; 
-        const phone = document.getElementById('authPhone') ? document.getElementById('authPhone').value : "";
+        const phone = normPhoneTR(document.getElementById('authPhone') ? document.getElementById('authPhone').value : "");
         if(!email || !password || !name || !surname || !phone) { showToast("Tüm alanları doldurmalısınız.", 'error'); return; }
+        if(!isValidPhoneTR(phone)) { showToast("Telefon numarası 0 dahil 11 haneli olmalıdır.", 'error'); return; }
         firebase.auth().createUserWithEmailAndPassword(email, password).then((cred) => {
             return db.collection("users").doc(cred.user.uid).set({ name: name, surname: surname, phone: phone, address: '', points: 0, cartData: [], lastUpdated: firebase.firestore.FieldValue.serverTimestamp() });
         }).then(() => { closeModal(); showToast("Aramıza hoş geldiniz!", 'success'); }).catch(e => showToast("Kayıt Hatası: Şifre en az 6 karakter olmalıdır.", 'error')); 
@@ -1160,10 +1180,12 @@ function handleGoogleLogin() {
 async function saveProfile() { 
     if(!currentUser) return; 
     const newEmail = document.getElementById('profEmail') ? document.getElementById('profEmail').value.trim() : "";
+    const profPhoneVal = normPhoneTR(document.getElementById('profPhone') ? document.getElementById('profPhone').value : "");
+    if(profPhoneVal && !isValidPhoneTR(profPhoneVal)) { showToast("Telefon numarası 0 dahil 11 haneli olmalıdır.", 'error'); return; }
     try {
         if(newEmail && newEmail !== currentUser.email) await currentUser.updateEmail(newEmail);
         const profileData = { 
-            name: document.getElementById('profName') ? document.getElementById('profName').value : "", surname: document.getElementById('profSurname') ? document.getElementById('profSurname').value : "", phone: document.getElementById('profPhone') ? document.getElementById('profPhone').value : "", city: document.getElementById('profCity') ? document.getElementById('profCity').value : "", district: document.getElementById('profDistrict') ? document.getElementById('profDistrict').value : "", address: document.getElementById('profAddress') ? document.getElementById('profAddress').value : "", lastUpdated: firebase.firestore.FieldValue.serverTimestamp() 
+            name: document.getElementById('profName') ? document.getElementById('profName').value : "", surname: document.getElementById('profSurname') ? document.getElementById('profSurname').value : "", phone: profPhoneVal, city: document.getElementById('profCity') ? document.getElementById('profCity').value : "", district: document.getElementById('profDistrict') ? document.getElementById('profDistrict').value : "", address: document.getElementById('profAddress') ? document.getElementById('profAddress').value : "", lastUpdated: firebase.firestore.FieldValue.serverTimestamp() 
         }; 
         await db.collection("users").doc(currentUser.uid).set(profileData, { merge: true });
         showToast("Bilgileriniz başarıyla güncellendi.", 'success');

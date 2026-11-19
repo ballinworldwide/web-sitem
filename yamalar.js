@@ -462,6 +462,7 @@ try {
     const email = (currentUser && currentUser.email) || v('checkoutEmail');
     if (!name || !surname || !phone || !city || !district || !address || !/^\S+@\S+\.\S+$/.test(email))
       return showToast('Ad, soyad, telefon, geçerli e-posta, il, ilçe ve adres zorunludur.', 'error');
+    if (!window.isValidPhoneTR(phone)) return showToast('Telefon numarası 0 dahil 11 haneli olmalıdır.', 'error');
     if (!$('checkTerms').checked || !$('checkKvkk').checked) return showToast('Lütfen sözleşme ve KVKK metinlerini onaylayın.', 'error');
     if (!cart.length) return showToast('Sepetiniz boş!', 'error');
     if (unverified(currentUser)) return showToast('Bu işlem için e-posta adresinizi doğrulayın (Hesabım sayfası).', 'error');

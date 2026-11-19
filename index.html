@@ -301,7 +301,7 @@
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div><label class="block text-xs font-bold mb-1">E-posta</label> <input type="email" id="profEmail" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm font-medium text-brand-900" /></div>
-            <div><label class="block text-xs font-bold mb-1">Telefon</label> <input type="tel" id="profPhone" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+            <div><label class="block text-xs font-bold mb-1">Telefon</label> <input type="tel" id="profPhone" inputmode="numeric" autocomplete="tel-national" placeholder="05XX XXX XX XX" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div><label class="block text-xs font-bold mb-1">İl</label><select id="profCity" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" onchange="populateDistricts('profCity', 'profDistrict')"></select></div>
@@ -336,7 +336,7 @@
                     <div><label class="block text-xs font-bold mb-1">Soyad</label><input type="text" id="checkoutSurname" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
                 </div>
                 <div class="mb-4"><label class="block text-xs font-bold mb-1">E-posta</label><input type="email" id="checkoutEmail" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
-                <div class="mb-4"><label class="block text-xs font-bold mb-1">Telefon</label><input type="tel" id="checkoutPhone" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+                <div class="mb-4"><label class="block text-xs font-bold mb-1">Telefon</label><input type="tel" id="checkoutPhone" inputmode="numeric" autocomplete="tel-national" placeholder="05XX XXX XX XX" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div><label class="block text-xs font-bold mb-1">İl</label><select id="checkoutCity" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" onchange="populateDistricts('checkoutCity', 'checkoutDistrict')"></select></div>
                     <div><label class="block text-xs font-bold mb-1">İlçe</label><select id="checkoutDistrict" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm"></select></div>
@@ -422,7 +422,7 @@
                 <div><label class="block text-xs font-bold mb-1">Ad</label><input type="text" id="authName" class="w-full bg-brand-50 border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>
                 <div><label class="block text-xs font-bold mb-1">Soyad</label><input type="text" id="authSurname" class="w-full bg-brand-50 border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>
             </div>
-            <div><label class="block text-xs font-bold mb-1">Telefon</label><input type="tel" id="authPhone" class="w-full bg-brand-50 border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>
+            <div><label class="block text-xs font-bold mb-1">Telefon</label><input type="tel" id="authPhone" inputmode="numeric" autocomplete="tel-national" placeholder="05XX XXX XX XX" class="w-full bg-brand-50 border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>
         </div>
         <form class="space-y-4 mb-4" onsubmit="return false">
             <div><label class="block text-xs font-bold mb-1">E-posta</label><input type="email" id="emailInput" class="w-full bg-brand-50 border border-brand-200 rounded-lg p-2.5 text-sm outline-none focus:border-brand-900" /></div>

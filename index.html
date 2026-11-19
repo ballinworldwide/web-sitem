@@ -450,21 +450,14 @@
     </div>
 </footer>
 
-<div class="fixed bottom-5 left-5 z-40">
-    <div id="aiChatBox" class="hidden flex-col bg-white border border-brand-200 shadow-2xl w-[90vw] max-w-[360px] sm:w-96 rounded-2xl overflow-hidden mb-4">
-        <div class="bg-brand-900 text-white px-4 py-3 flex justify-between items-center text-sm font-serif font-bold"><span>BALLIN Asistan</span><button onclick="toggleAI()">✕</button></div>
-        <div id="aiMessages" class="p-4 bg-brand-50 h-72 overflow-y-auto space-y-3 text-sm flex flex-col"><div class="bg-brand-200 text-brand-900 rounded-2xl px-4 py-2 max-w-[85%]">Merhaba! Size nasıl yardımcı olabilirim?</div></div>
-        <div class="p-3 bg-white border-t border-brand-100 flex gap-2"><input type="text" id="aiInput" placeholder="Bir şeyler sorun..." class="flex-1 bg-brand-50 rounded-xl px-4 py-2.5 text-sm outline-none" onkeypress="if(event.key==='Enter') sendAIMessage()" /><button onclick="sendAIMessage()" class="bg-brand-900 text-white px-4 rounded-xl text-sm">Gönder</button></div>
-    </div>
-    <button onclick="toggleAI()" class="bg-brand-900 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-xl hover:scale-105 transition-transform"><i class="fa-solid fa-robot"></i></button>
-</div>
+<!-- YAMA-63: kullanılmayan yapay zekâ sohbet kutusu kaldırıldı -->
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" integrity="sha384-ajMUFBUFMCyjh8uxJg6bkGcKe9RTolyjwbxB3yES0QQMenP3Oztj/W9vA2SJPcIh" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" integrity="sha384-xD1t9dGSVKobUztxDkv6xUI0H4AnFz0NxwlgDJJ7FDlblG9xxr1Z9iauCZuJYj6p" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" integrity="sha384-XMIl1b2Ez9tKAM0R5q67/iLdfnlLBl9kfo40X5WMtCPb+3OLplrjnOxZTYCg1SKY" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js" integrity="sha384-HTm9DHQcJ0avSI5BWVmeKtm3+YULHbl/wgtLQaMGgYEZLQ8cINY+UF+ZsliUaBvK" crossorigin="anonymous"></script>
-<script src="/script.bundle.js?v=62"></script>
-<script src="/yamalar.js?v=62"></script>
+<script src="/script.bundle.js?v=63"></script>
+<script src="/yamalar.js?v=63"></script>
 	
 
 <!-- ÜRÜN DÜZENLEME MODALI (DARK MODE) -->

@@ -1700,77 +1700,7 @@ window.saveEditedProductData = async function(btn) {
     }, { merge: true }).catch(() => {});
   };
 
-  /* ---------- Ödeme / sipariş (tek transaction: stok + sipariş + puan + kupon) ---------- */
-  window.processPayment = async function () {
-    const v = id => ($(id) && $(id).value || '').trim();
-    const name = v('checkoutName'), surname = v('checkoutSurname'), phone = v('checkoutPhone'),
-      city = v('checkoutCity'), district = v('checkoutDistrict'), address = v('checkoutAddress');
-    const email = (currentUser && currentUser.email) || v('checkoutEmail');
-    if (!name || !surname || !phone || !city || !district || !address || !/^\S+@\S+\.\S+$/.test(email))
-      return showToast('Ad, soyad, telefon, geçerli e-posta, il, ilçe ve adres zorunludur.', 'error');
-    if (!$('checkTerms').checked || !$('checkKvkk').checked) return showToast('Lütfen sözleşme ve KVKK metinlerini onaylayın.', 'error');
-    if (!cart.length) return showToast('Sepetiniz boş!', 'error');
-    const btn = $('btnCompletePayment'); btn.disabled = true; btn.innerText = 'İşlem yapılıyor...';
-    try {
-      await ensureAuth();
-      const uid = currentUser.uid, named = !currentUser.isAnonymous;
-      let rate = 0, code = '', pts = 0;
-      if (appliedCouponCode) {
-        if (!named) throw new Error('Kupon için hesabınızla giriş yapın.');
-        const cr = db.collection('coupons').doc(appliedCouponCode);
-        const [cs, us] = await Promise.all([cr.get(), cr.collection('uses').doc(uid).get()]);
-        const c = cs.exists && cs.data();
-        if (!c || us.exists || (c.usedCount || 0) >= c.limit || (c.expiryDate && new Date(c.expiryDate + 'T23:59:59') < new Date()))
-          throw new Error('Kupon artık geçerli değil. Kuponu kaldırıp tekrar deneyin.');
-        rate = c.discount / 100; code = cs.id;
-      }
-      if (named && appliedPointsValue > 0) {
-        const ud = await db.collection('users').doc(uid).get();
-        pts = Math.min(Math.floor(appliedPointsValue), (ud.data() || {}).points || 0);
-      }
-      const need = groupCart(cart), ids = Object.keys(need), oref = db.collection('orders').doc();
-      let order;
-      await db.runTransaction(async tx => {
-        const snaps = await Promise.all(ids.map(id => tx.get(db.collection('products').doc(id))));
-        const price = {}, writes = [];
-        snaps.forEach((s, k) => {
-          const n = need[ids[k]];
-          if (!s.exists) throw new Error('Sepetteki bir ürün artık satışta değil.');
-          const p = s.data(); price[ids[k]] = Number(p.price) || 0;
-          if ((p.stock || 0) < n.t) throw new Error('"' + p.name + '" için yeterli stok yok.');
-          let ss = p.sizeStock || '';
-          if (ss && Object.keys(n.s).length) {
-            const m = parseSS(ss);
-            Object.keys(n.s).forEach(z => { if (m[z] === undefined || m[z] < n.s[z]) throw new Error('"' + p.name + '" ' + z + ' bedeni yeterli değil.'); m[z] -= n.s[z]; });
-            ss = joinSS(m);
-          }
-          writes.push([s.ref, { stock: p.stock - n.t, sizeStock: ss }]);
-        });
-        const items = cart.map(i => ({ cartId: i.cartId, dbId: i.dbId, baseName: i.baseName, name: i.name, size: i.size, price: price[i.dbId], image: String(i.image || '').startsWith('data:') ? '' : (i.image || '') }));
-        const disc = items.reduce((s, i) => s + i.price, 0) * (1 - rate);
-        const use = Math.min(pts, Math.max(0, Math.floor(disc - 1)));
-        let fin = Math.max(0, disc - use); fin += (fin >= FREE_SHIPPING_THRESHOLD || fin === 0) ? 0 : SHIPPING_FEE;
-        order = { userId: uid, userEmail: email, shippingInfo: { name, surname, phone, city, district, address }, items, productIds: ids,
-          totalAmount: Math.round(fin * 100) / 100, usedPoints: use, status: 'Hazırlanıyor', trackingNumber: '', carrier: '', couponCode: code, orderDate: FV.serverTimestamp() };
-        writes.forEach(([r, d]) => tx.update(r, d));
-        tx.set(oref, order);
-        if (use > 0) tx.update(db.collection('users').doc(uid), { points: FV.increment(-use) });
-        if (code) {
-          const cr = db.collection('coupons').doc(code);
-          tx.update(cr, { usedCount: FV.increment(1) });
-          tx.set(cr.collection('uses').doc(uid), { at: FV.serverTimestamp() });
-        }
-      });
-      sendOrderConfirmationEmail({ ...order, orderId: oref.id });
-      showToast('Siparişiniz alındı!', 'success');
-      if (!named) alert('Sipariş numaranız:\n' + oref.id + '\n\nLütfen saklayın.');
-      cart = []; appliedDiscountRate = 0; appliedCouponCode = ''; appliedPointsValue = 0;
-      localStorage.removeItem('ballin_cart'); updateCartBadge(); syncCartToFirebase();
-      if (named) { switchPage('profile'); loadUserOrders(); } else switchPage('home');
-      loadProducts();
-    } catch (e) { showToast(e.message || String(e), 'error'); }
-    btn.disabled = false; btn.innerText = 'Ödemeyi Tamamla';
-  };
+  /* YAMA-63: eski istemci taraflı processPayment kaldırıldı (sipariş yamalar.js → ballin-order Worker) */
 
   /* YAMA-56: iptal ve iade/puan mutabakatı sunucuda (ballin-order Worker, tek transaction) */
   const ORDER_API = 'https://ballin-order.ballinworldw.workers.dev';
@@ -2374,21 +2304,7 @@ window.saveEditedProductData = async function(btn) {
   window.loadUserOrders = function () { _lo.apply(this, arguments); refreshTrk().then(fixLinks); };
   const oc = $('ordersList'); if (oc) new MutationObserver(fixLinks).observe(oc, { childList: true, subtree: true });
 
-  /* 3) Sipariş sorgula sayfası (misafirler için): sipariş no + e-posta */
-  window.lookupOrder = async function () {
-    const id = ($('lkId').value || '').trim(), mail = ($('lkMail').value || '').trim().toLowerCase(), out = $('lkResult');
-    const notFound = '<p class="text-red-600">Sipariş bulunamadı veya e-posta eşleşmiyor.</p>';
-    if (!/^[A-Za-z0-9]{10,40}$/.test(id) || !/^\S+@\S+\.\S+$/.test(mail)) { out.innerHTML = notFound; return; }
-    out.innerHTML = '<p>Sorgulanıyor...</p>';
-    try {
-      const s = await db.collection('orders').doc(id).get();
-      if (!s.exists || String(s.data().userEmail || '').toLowerCase() !== mail) { out.innerHTML = notFound; return; }
-      const o = s.data(), d = o.orderDate && o.orderDate.toDate ? o.orderDate.toDate().toLocaleString('tr-TR') : '-';
-      const trackLine = o.trackingNumber ? '<p><b>Kargo:</b> ' + E(o.carrier || '') + ' · Takip No: ' + (o.trackingUrl ? '<a class="underline font-bold" target="_blank" rel="noopener noreferrer" href="' + E(o.trackingUrl) + '">' + E(o.trackingNumber) + '</a>' : E(o.trackingNumber)) + '</p>' : '';
-      out.innerHTML = '<div class="bg-brand-50 border border-brand-200 rounded-2xl p-5 space-y-2"><p><b>Sipariş:</b> #' + E(id.slice(0, 8)) + ' · ' + E(d) + '</p><p><b>Durum:</b> ' + E(o.status) + '</p>' + trackLine +
-        '<p><b>Ürünler:</b> ' + (o.items || []).map(i => E(i.baseName || i.name) + (i.size && i.size !== 'Standart' ? ' (' + E(i.size) + ')' : '')).join(', ') + '</p><p><b>Toplam:</b> ' + tl(o.totalAmount) + ' TL</p></div>';
-    } catch (e) { out.innerHTML = notFound; }
-  };
+  /* 3) Sipariş sorgula sayfası (misafirler için). YAMA-63: eski Firestore'dan okuyan lookupOrder kaldırıldı; yamalar.js'teki Worker sürümü kullanılır */
   function init() {
     const ref = $('page-destek-merkezi'); if (!ref || $('page-siparis-sorgula')) return;
     const el = document.createElement('section'); el.id = 'page-siparis-sorgula'; el.className = 'page-section hidden max-w-4xl mx-auto px-4 py-16';
@@ -2537,7 +2453,7 @@ window.saveEditedProductData = async function(btn) {
     if (unverified(u)) { const k = 'ballin_ver_' + u.uid; try { if (!localStorage.getItem(k)) { u.sendEmailVerification().catch(() => {}); localStorage.setItem(k, '1'); } } catch (e) {} }
     setTimeout(banner, 300);
   });
-  ['processPayment', 'submitProductReview'].forEach(n => { const o = window[n];
+  ['submitProductReview'].forEach(n => { const o = window[n];   // YAMA-63: processPayment yamalar.js'te kendi kontrolünü yapıyor
     window[n] = function () { if (unverified(currentUser)) return showToast('Bu işlem için e-posta adresinizi doğrulayın (Hesabım sayfası).', 'error'); return o.apply(this, arguments); }; });
 
   /* ---------- Hesabım: verilerimi indir / hesabı sil ---------- */

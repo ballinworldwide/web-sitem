@@ -27,13 +27,7 @@ try {
   const E = s => (window.esc ? window.esc(s) : String(s));
   const tl = n => (Number(n) || 0).toLocaleString('tr-TR');
 
-  /* 1) Ödeme bitince profil verisini (puan dahil) hemen tazele */
-  const _pp = window.processPayment;
-  window.processPayment = async function () {
-    const r = await _pp.apply(this, arguments);
-    if (currentUser && !currentUser.isAnonymous) { try { await loadProfileData(); } catch (e) {} }
-    return r;
-  };
+  /* 1) YAMA-63: ödeme sarmalayıcısı kaldırıldı (aşağıdaki processPayment profil verisini kendisi tazeliyor) */
 
   /* 2) Sepete eklerken ürünün eski fiyatını satıra taşı (varsa) */
   const _add = window.addToCart;

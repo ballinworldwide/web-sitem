@@ -36,7 +36,7 @@ const ADMIN_EMAIL = "ballinworldw@gmail.com";
 let STAFF_ROLE = null; // yama-3: "siparis" | "urun" | "yonetici" | null
 /* YAMA-17: HTML'e veri basarken kullanılan güvenli kaçış yardımcısı (kategori, ürün adı, kupon kodu vb.) */
 function escHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-function isStaffNow(u) { return !!(u && !u.isAnonymous && (u.email === ADMIN_EMAIL || STAFF_ROLE)); }
+function isStaffNow(u) { return !!(u && !u.isAnonymous && u.emailVerified && (u.email === ADMIN_EMAIL || STAFF_ROLE)); }   // YAMA-62: doğrulanmış e-posta şart
  
 
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
@@ -1172,7 +1172,7 @@ function handleAuth() {
         if(!isValidPhoneTR(phone)) { showToast("Telefon numarası 0 dahil 11 haneli olmalıdır.", 'error'); return; }
         if(password.length < 8) { showToast("Şifre en az 8 karakter olmalıdır.", 'error'); return; }
         firebase.auth().createUserWithEmailAndPassword(email, password).then((cred) => {
-            return db.collection("users").doc(cred.user.uid).set({ name: name, surname: surname, phone: phone, address: '', points: 0, cartData: [], lastUpdated: firebase.firestore.FieldValue.serverTimestamp() });
+            return db.collection("users").doc(cred.user.uid).set({ name: name, surname: surname, phone: phone, address: '', points: 0, cartData: [], lastUpdated: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });   // YAMA-62
         }).then(() => { closeModal(); showToast("Aramıza hoş geldiniz!", 'success'); }).catch(e => showToast(e && e.code === 'auth/email-already-in-use' ? "Kayıt Hatası: Bu e-posta adresi zaten kayıtlı." : (e && e.code === 'auth/weak-password' ? "Kayıt Hatası: Şifre en az 8 karakter olmalıdır." : "Kayıt Hatası: Bilgilerinizi kontrol edip tekrar deneyin."), 'error')); 
     } 
 }
@@ -1187,7 +1187,7 @@ function handleGoogleLogin() {
                 let nameParts = (user.displayName || "").split(" ");
                 let name = nameParts[0] || "";
                 let surname = nameParts.slice(1).join(" ") || "";
-                db.collection("users").doc(user.uid).set({ name: name, surname: surname, phone: user.phoneNumber || "", address: '', points: 0, cartData: [], lastUpdated: firebase.firestore.FieldValue.serverTimestamp() });
+                db.collection("users").doc(user.uid).set({ name: name, surname: surname, phone: user.phoneNumber || "", address: '', points: 0, cartData: [], lastUpdated: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });   // YAMA-62
             }
         });
         closeModal(); showToast("Google ile başarıyla giriş yapıldı.", 'success'); 
@@ -1234,7 +1234,13 @@ function logout() {
     if(!confirm("Çıkış yapmak istediğinize emin misiniz?")) return;
     switchPage('home');      // önce ana sayfaya al: profil bilgileri bir an bile ekranda kalmasın
     clearAccountUI();
-    firebase.auth().signOut().then(() => showToast("Çıkış yapıldı.", 'success')).catch(() => showToast("Çıkış yapılamadı, tekrar deneyin.", 'error'));
+    firebase.auth().signOut().then(() => {
+        // YAMA-62: çıkışta bu cihazdaki sepet ve favoriler temizlenir (hesaptaki kopya Firebase'de kalır, girişte geri gelir)
+        cart = []; wishlist = [];
+        try { localStorage.removeItem('ballin_cart'); localStorage.removeItem('ballin_wishlist'); } catch (e) {}
+        try { if (typeof renderCart === 'function') renderCart(); if (typeof updateCartBadge === 'function') updateCartBadge(); updateWishlistBadge(); } catch (e) {}
+        showToast("Çıkış yapıldı.", 'success');
+    }).catch(() => showToast("Çıkış yapılamadı, tekrar deneyin.", 'error'));
 }
 
 firebase.auth().onAuthStateChanged((user) => {
@@ -1923,9 +1929,10 @@ window.saveEditedProductData = async function(btn) {
       '<h2>BALLIN - Sipariş ve Kargo Fişi</h2><p>Sipariş No: <b>' + esc(o.id) + '</b><br>Tarih: ' + esc(d) + '</p>' +
       '<p><b>Alıcı:</b> ' + esc(si.name) + ' ' + esc(si.surname) + '<br>' + esc(si.phone) + '<br>' + esc(si.address) + '<br>' + esc(si.district) + ' / ' + esc(si.city) + '</p>' +
       '<table><tr><th>Ürün</th><th>Beden</th><th>Fiyat</th></tr>' + (o.items || []).map(i => '<tr><td>' + esc(i.baseName || i.name) + '</td><td>' + esc(i.size || 'Standart') + '</td><td>' + tl(i.price) + ' TL</td></tr>').join('') + '</table>' +
+      (o.subtotal != null ? '<p>Ara toplam: ' + tl(o.subtotal) + ' TL<br>Kargo ücreti: ' + (Number(o.shippingFee) > 0 ? tl(o.shippingFee) + ' TL' : 'Ücretsiz') + (Number(o.usedPoints) > 0 ? '<br>Kullanılan puan: ' + tl(o.usedPoints) : '') + (o.couponCode ? '<br>Kupon: ' + esc(o.couponCode) : '') + '</p>' : '') +   /* YAMA-62 */
       '<p><b>Toplam: ' + tl(o.totalAmount) + ' TL</b></p><div class="box">Kargo: ' + esc(o.carrier || '-') + '<br>Takip No: ' + esc(o.trackingNumber || '-') + '</div>' +
-      '<p style="font-size:11px;color:#666">Bu belge resmi fatura yerine geçmez.</p><script>onload=function(){print()}<\/script>');
-    w.document.close();
+      '<p style="font-size:11px;color:#666">Bu belge resmi fatura yerine geçmez.</p>');
+    w.document.close(); w.focus(); setTimeout(() => { try { w.print(); } catch (e) {} }, 300);   // YAMA-62: satır içi script CSP'ye takılıyordu
   };
 
   /* ---------- Admin: müşteriler, terk edilen sepetler, dashboard ---------- */

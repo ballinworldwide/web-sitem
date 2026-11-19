@@ -497,6 +497,7 @@ try {
         appliedDiscountRate = 0; appliedCouponCode = ''; const pi = $('promoDiscountInfo'); if (pi) pi.style.display = 'none';
         goToCheckout(); return showToast(j.message, 'error');
       }
+      if (r.status >= 400 && r.status < 500) { reqId = null; lastSig = ''; }   // YAMA-62: sunucu reddettiyse sipariş oluşmadı; sonraki deneme yeni istek no ile
       if (!r.ok || !j.orderId) throw new Error(j.message || ('Sipariş oluşturulamadı (' + r.status + ')'));
 
       reqId = null; lastSig = '';

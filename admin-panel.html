@@ -176,12 +176,12 @@
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
                 <div><label class="block text-xs mb-1" style="color:var(--mute)">Kupon Kodu</label><input type="text" id="adminCouponCode" class="w-full" /></div>
                 <div><label class="block text-xs mb-1" style="color:var(--mute)">İndirim (%)</label><input type="number" id="adminCouponDiscount" class="w-full" /></div>
-                <div><label class="block text-xs mb-1" style="color:var(--mute)">Kişi Sınırı</label><input type="number" id="adminCouponLimit" class="w-full" /></div>
+                <div><label class="block text-xs mb-1" style="color:var(--mute)">Kullanım Sınırı</label><input type="number" id="adminCouponLimit" class="w-full" /></div>
                 <div><label class="block text-xs mb-1" style="color:var(--mute)">Son Kullanma</label><input type="date" id="adminCouponExpiry" class="w-full" /></div>
             </div>
             <label class="flex items-start gap-2 text-xs mb-4" style="color:var(--mute); cursor:pointer;">
                 <input type="checkbox" id="adminCouponOnce" checked style="margin-top:2px; flex-shrink:0;" />
-                <span><b style="color:var(--text)">Hesap başına 1 kez kullanılabilsin</b><br>İşaretliyse her hesap bu kodu yalnızca bir defa kullanabilir. İşaretli değilse aynı hesap kodu tekrar tekrar kullanabilir; bu durumda &ldquo;Kişi Sınırı&rdquo; kodun toplam kaç kez kullanılabileceğini belirler.</span>
+                <span><b style="color:var(--text)">Hesap başına 1 kez kullanılabilsin</b><br>İşaretliyse her hesap bu kodu yalnızca bir defa kullanabilir. İşaretli değilse aynı hesap kodu tekrar tekrar kullanabilir; bu durumda &ldquo;Kullanım Sınırı&rdquo; kodun toplam kaç kez kullanılabileceğini belirler.</span>
             </label>
             <button onclick="addNewCoupon()" class="btn-primary">Kupon Oluştur</button>
         </div>

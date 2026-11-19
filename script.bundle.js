@@ -716,7 +716,7 @@ function updateDashboardStats() {
             let html = '<div class="space-y-2">';
             sortedProducts.slice(0, 5).forEach((pName, index) => {
                 let qty = productSalesCount[pName]; let rev = productRevenueMap[pName];
-                html += `<div class="flex justify-between text-xs border-b border-brand-100 pb-2"><span><strong>#${index + 1}</strong> ${pName}</span> <span class="text-brand-500">Satış: <strong>${qty}</strong> | Ciro: <strong>${rev.toLocaleString('tr-TR')} TL</strong></span></div>`;
+                html += `<div class="flex justify-between text-xs border-b border-brand-100 pb-2"><span><strong>#${index + 1}</strong> ${escHtml(pName)}</span> <span class="text-brand-500">Satış: <strong>${qty}</strong> | Ciro: <strong>${rev.toLocaleString('tr-TR')} TL</strong></span></div>`;
             });
             topContainer.innerHTML = html + '</div>';
         }
@@ -1005,7 +1005,7 @@ function applyLoyaltyPoints() {
         let maxUsable = Math.min(userData.points, discountTotal - 1);
         if(maxUsable <= 0) { showToast("Sepet tutarı puan kullanımına uygun değil.", 'error'); return; }
         appliedPointsValue = maxUsable;
-        if(document.getElementById('checkoutPointsText')) document.getElementById('checkoutPointsText').innerText = appliedPointsValue + " Puan İndirimi İptal Et";
+        if(document.getElementById('checkoutPointsText')) document.getElementById('checkoutPointsText').innerText = appliedPointsValue + " Puan İndirimini İptal Et";
         showToast(`Sepetinize ${appliedPointsValue} TL değerinde puan indirimi uygulandı.`, 'success');
     }
     goToCheckout();
@@ -2502,7 +2502,7 @@ window.saveEditedProductData = async function(btn) {
     if (!isAdm()) return;
     const v = id => $(id) ? $(id).value.trim() : '';
     const code = v('adminCouponCode').toUpperCase(), discount = parseFloat(v('adminCouponDiscount')), limit = parseInt(v('adminCouponLimit')), expiry = v('adminCouponExpiry'), min = parseFloat(v('adminCouponMin')) || 0, once = $('adminCouponOnce') ? $('adminCouponOnce').checked : true;   // YAMA-38
-    if (!/^[A-Z0-9_-]{3,30}$/.test(code) || !(discount >= 1 && discount <= 100) || !(limit >= 1)) return showToast('Kod (3-30 harf/rakam/-/_), %1-100 indirim ve kişi sınırı girin.', 'error');
+    if (!/^[A-Z0-9_-]{3,30}$/.test(code) || !(discount >= 1 && discount <= 100) || !(limit >= 1)) return showToast('Kod (3-30 harf/rakam/-/_), %1-100 indirim ve kullanım sınırı girin.', 'error');
     try {
       const ref = db.collection('coupons').doc(code); if ((await ref.get()).exists) return showToast('Bu kupon kodu zaten var.', 'error');
       await ref.set({ code, discount, limit, expiryDate: expiry, minCart: min, oncePerUser: once, usedCount: 0, createdAt: FV.serverTimestamp() });

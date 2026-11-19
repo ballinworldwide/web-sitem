@@ -9,7 +9,10 @@ export async function onRequestGet(ctx) {
   const p = list && (list.find(x => x.slug === slug) || list.find(x => x.id === slug));
   if (!p) {
     if (!list) return res;   // ürün listesi alınamadıysa sayfayı olduğu gibi ver
-    return new HTMLRewriter().on('head', { element(e) { e.append('<meta name="robots" content="noindex">', { html: true }); } }).transform(res);
+    /* YAMA-47: ürün yok/kaldırılmış → 404 sayfası (HTTP durumu da 404) */
+    let nf = await env.ASSETS.fetch(new URL('/404.html', request.url), { redirect: 'follow' });
+    if (nf.ok) return new Response(nf.body, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
+    return new Response('Ürün bulunamadı', { status: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Robots-Tag': 'noindex' } });
   }
   const url = SITE + '/urun/' + p.slug, fiyat = Number(p.price) || 0;
   const title = p.name + ' | BALLIN', desc = (p.description || (p.name + ' — ' + fiyat.toLocaleString('tr-TR') + ' TL. BALLIN lüks sokak giyim.')).slice(0, 300);

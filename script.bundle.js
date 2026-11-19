@@ -1279,7 +1279,7 @@ function loadUserOrders() {
             let itemsStr = (order.items||[]).map(i => `1x ${escHtml(i.name)}`).join(', '); 
             let trackingHTML = order.trackingNumber ? `<div class="mt-3 text-xs bg-brand-50 p-3 rounded-lg border border-brand-100 flex items-center gap-2"><i class="fa-solid fa-truck-fast text-brand-600 text-lg"></i><div><span class="block text-brand-500 font-bold mb-1">Kargo Takip No</span><a href="https://www.araskargo.com.tr" target="_blank" class="text-blue-600 font-bold underline text-sm">${escHtml(order.trackingNumber)}</a></div></div>` : ''; 
             let cancelHTML = order.status === 'Hazırlanıyor' ? `<button data-v="${escHtml(order.id)}" onclick="cancelMyOrder(this.dataset.v)" class="mt-4 text-xs text-red-600 border border-red-200 px-4 py-2 rounded-xl hover:bg-red-50 font-bold uppercase tracking-wider transition-colors"><i class="fa-solid fa-ban mr-1"></i> Siparişi İptal Et</button>` : '';
-            let returnHTML = order.status === 'Tamamlandı' ? `<button data-v="${escHtml(order.id)}" onclick="requestReturn(this.dataset.v)" class="mt-4 text-xs border border-brand-300 text-brand-700 px-4 py-2 rounded-xl hover:bg-red-50 font-bold uppercase tracking-wider transition-colors"><i class="fa-solid fa-arrow-rotate-left mr-1"></i> İade Talebi Oluştur</button>` : '';
+            let returnHTML = order.status === 'Tamamlandı' && (!order.orderDate || !order.orderDate.toMillis || Date.now() - order.orderDate.toMillis() < 30 * 864e5) ? `<button data-v="${escHtml(order.id)}" onclick="requestReturn(this.dataset.v)" class="mt-4 text-xs border border-brand-300 text-brand-700 px-4 py-2 rounded-xl hover:bg-red-50 font-bold uppercase tracking-wider transition-colors"><i class="fa-solid fa-arrow-rotate-left mr-1"></i> İade Talebi Oluştur</button>` : '';
             
             let returnNoteHtml = "";
             if (order.status === "İade Onaylanmadı" && order.returnNote) {
@@ -2502,16 +2502,14 @@ window.saveEditedProductData = async function(btn) {
     const code = ($('promoCodeInput').value || '').trim().toUpperCase();
     if (!code) return showToast('Kupon kodu giriniz.', 'error');
     if (!currentUser || currentUser.isAnonymous) { showToast('Kupon için hesabınızla giriş yapın.', 'error'); return openModal(); }
-    try {
-      const cr = db.collection('coupons').doc(code), [cs, us] = await Promise.all([cr.get(), cr.collection('uses').doc(currentUser.uid).get()]);
-      if (!cs.exists) return showToast('Geçersiz kupon kodu!', 'error');
-      const c = cs.data(), sub = cart.reduce((s, i) => s + (i.price || 0), 0);
-      if (us.exists && c.oncePerUser !== false) return showToast('Bu kuponu daha önce kullandınız.', 'error');
-      if ((c.usedCount || 0) >= c.limit) return showToast('Kuponun kullanım limiti dolmuş!', 'error');
-      if (c.expiryDate && new Date(c.expiryDate + 'T23:59:59') < new Date()) return showToast('Kuponun süresi dolmuş!', 'error');
-      if (c.minCart && sub < c.minCart) return showToast('Bu kupon için minimum sepet tutarı ' + tl(c.minCart) + ' TL.', 'error');
-      appliedDiscountRate = c.discount / 100; appliedCouponCode = cs.id;
-      const i = $('promoDiscountInfo'); i.style.display = 'block'; i.innerText = 'Kupon uygulandı: %' + Number(c.discount) + ' indirim!';
+    try {   // YAMA-60: kupon sunucuda kontrol edilir (müşteri kupon belgesini doğrudan okuyamaz)
+      const sub = cart.reduce((s, i) => s + (i.price || 0), 0), tok = await currentUser.getIdToken();
+      let ac = ''; try { ac = (await firebase.appCheck().getToken()).token; } catch (e) {}
+      const r = await fetch('https://ballin-order.ballinworldw.workers.dev/coupon-check', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok, 'X-Firebase-AppCheck': ac }, body: JSON.stringify({ code, subtotal: sub }) });
+      let j = {}; try { j = await r.json(); } catch (e) {}
+      if (!r.ok || !j.ok) return showToast(j.message || 'Kupon uygulanamadı.', 'error');
+      appliedDiscountRate = Number(j.discount) / 100; appliedCouponCode = j.code;
+      const i = $('promoDiscountInfo'); i.style.display = 'block'; i.innerText = 'Kupon uygulandı: %' + Number(j.discount) + ' indirim!';
       showToast('İndirim uygulandı.', 'success'); goToCheckout();
     } catch (e) { showToast('Kupon uygulanamadı.', 'error'); }
   };

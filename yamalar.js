@@ -500,7 +500,7 @@ try {
       if (!r.ok || !j.orderId) throw new Error(j.message || ('Sipariş oluşturulamadı (' + r.status + ')'));
 
       reqId = null; lastSig = '';
-      try { sendOrderConfirmationEmail({ orderId: j.orderId }); } catch (e) {}
+      // YAMA-61: onay maili yalnız sipariş Worker'ından gider (istemciden ikinci çağrı kaldırıldı)
       showToast('Siparişiniz alındı!', 'success');
       if (!named) alert('Sipariş numaranız:\n' + j.orderId + '\n\nLütfen saklayın.');
       cart = []; appliedDiscountRate = 0; appliedCouponCode = ''; appliedPointsValue = 0;

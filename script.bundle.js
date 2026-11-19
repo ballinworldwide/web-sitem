@@ -1112,16 +1112,16 @@ function toggleAuthMode() {
 function sendPasswordReset() { 
     const email = document.getElementById('emailInput') ? document.getElementById('emailInput').value : ""; 
     if(!email) { showToast("Lütfen e-posta alanını doldurun.", 'error'); return; } 
-    // YAMA-43: önce markalı mail (ballin-mail Worker); olmazsa Firebase'in kendi maili (yedek)
-    const viaFirebase = () => firebase.auth().sendPasswordResetEmail(email).then(() => { showToast("Sıfırlama bağlantısı gönderildi.", 'success'); closeModal(); }).catch(e => { showToast("Hata: " + e.message, 'error'); });
+    // YAMA-43: markalı mail (ballin-mail Worker). YAMA-51: Firebase'in kendi maili yedek olarak artık kullanılmaz (sınırları atlatıyordu)
     (async () => {
         try {
             let ac = ''; try { ac = (await firebase.appCheck().getToken()).token; } catch (e) {}
             const r = await fetch('https://ballin-mail.ballinworldw.workers.dev/password-reset', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Firebase-AppCheck': ac }, body: JSON.stringify({ email: email.trim() }) });
             if (r.status === 429) { showToast("Çok fazla deneme yapıldı. Lütfen biraz bekleyip tekrar deneyin.", 'error'); return; }
+            if (r.status === 400) { showToast("Geçerli bir e-posta adresi girin.", 'error'); return; }
             if (!r.ok) throw new Error('worker ' + r.status);
             showToast("Sıfırlama bağlantısı gönderildi.", 'success'); closeModal();
-        } catch (e) { viaFirebase(); }
+        } catch (e) { showToast("Sıfırlama bağlantısı şu an gönderilemedi. Lütfen biraz sonra tekrar deneyin.", 'error'); }
     })();
 }
 

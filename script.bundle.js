@@ -917,13 +917,15 @@ function shareProduct() {
 }
 
 // --- YENİ: Haber Ver Veritabanı Kaydı ---
+// YAMA-55: stok talebi için oturum gerekir; giriş yapılmamışsa misafir (anonim) oturum açılır
+function withAlertAuth(fn) { return (firebase.auth().currentUser ? Promise.resolve() : firebase.auth().signInAnonymously()).then(fn); }
 function selectSizeOrNotify(sz, isOut, btnEl, prodId, prodName) { 
     if(isOut) { 
         let userMail = currentUser && currentUser.email ? currentUser.email : prompt(`${sz} bedeni stoğa girdiğinde haber almak için e-posta adresinizi girin:`); 
         if(userMail && userMail.includes('@')) { 
-            db.collection("stock_alerts").add({
+            withAlertAuth(() => db.collection("stock_alerts").add({
                 email: userMail, productId: prodId || "Bilinmiyor", productName: prodName || "Bilinmiyor", size: sz, status: "bekliyor", requestDate: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => { showToast(`(${sz} Bedeni) Talebiniz alındı. Stok güncellendiğinde e-posta alacaksınız.`, 'success'); }).catch(e => { showToast("Talep kaydedilemedi, tekrar deneyin.", 'error'); }); 
+            })).then(() => { showToast(`(${sz} Bedeni) Talebiniz alındı. Stok güncellendiğinde e-posta alacaksınız.`, 'success'); }).catch(e => { showToast("Talep kaydedilemedi, tekrar deneyin.", 'error'); }); 
         } else if (userMail) { showToast("Geçerli bir e-posta adresi giriniz.", 'error'); } 
         return; 
     } 
@@ -940,9 +942,9 @@ function selectSizeOrNotify(sz, isOut, btnEl, prodId, prodName) {
 function notifyWhenAvailable(prodId, prodName) { 
     let userMail = currentUser && currentUser.email ? currentUser.email : prompt("Ürün stoğa girdiğinde haber almak için e-posta adresinizi girin:"); 
     if(userMail && userMail.includes('@')) { 
-        db.collection("stock_alerts").add({
+        withAlertAuth(() => db.collection("stock_alerts").add({
             email: userMail, productId: prodId || "Bilinmiyor", productName: prodName || "Bilinmiyor", size: "Standart / Tümü", status: "bekliyor", requestDate: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => { showToast("Talebiniz başarıyla alındı!", 'success'); }); 
+        })).then(() => { showToast("Talebiniz başarıyla alındı!", 'success'); }).catch(e => { showToast("Talep kaydedilemedi, tekrar deneyin.", 'error'); }); 
     } 
 }
 

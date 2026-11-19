@@ -5,6 +5,8 @@ const SAYFALAR = [''];
 const x = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 export async function onRequestGet(ctx) {
   let list = null; try { list = await urunler(ctx); } catch (e) {}
+  /* YAMA-65: ürün listesi alınamazsa (Worker kapalı vb.) boş sitemap verme — Google ürün adreslerini silmesin; 503 ile sonra tekrar denesin */
+  if (!list) return new Response('Gecici olarak kullanilamiyor', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '3600', 'Cache-Control': 'no-store' } });
   const u = [];
   for (const s of SAYFALAR) u.push('<url><loc>' + SITE + '/' + s + '</loc>' + (s ? '' : '<priority>1.0</priority>') + '</url>');
   for (const p of list || []) {

@@ -11,8 +11,10 @@ export async function onRequestGet(ctx) {
     if (!list) return res;   // ürün listesi alınamadıysa sayfayı olduğu gibi ver
     /* YAMA-47: ürün yok/kaldırılmış → 404 sayfası (HTTP durumu da 404) */
     let nf = await env.ASSETS.fetch(new URL('/404.html', request.url), { redirect: 'follow' });
-    if (nf.ok) return new Response(nf.body, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
-    return new Response('Ürün bulunamadı', { status: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Robots-Tag': 'noindex' } });
+    /* YAMA-65: 404 yanıtı da sitenin güvenlik başlıklarını (CSP, X-Frame-Options, HSTS…) taşır */
+    const h = new Headers(res.headers); h.delete('Content-Length'); h.delete('ETag'); h.set('Cache-Control', 'no-store'); h.set('X-Robots-Tag', 'noindex');
+    if (nf.ok) { h.set('Content-Type', 'text/html; charset=utf-8'); return new Response(nf.body, { status: 404, headers: h }); }
+    h.set('Content-Type', 'text/plain; charset=utf-8'); return new Response('Ürün bulunamadı', { status: 404, headers: h });
   }
   const url = SITE + '/urun/' + p.slug, fiyat = Number(p.price) || 0;
   const title = p.name + ' | BALLIN', desc = (p.description || (p.name + ' — ' + fiyat.toLocaleString('tr-TR') + ' TL. BALLIN lüks sokak giyim.')).slice(0, 300);

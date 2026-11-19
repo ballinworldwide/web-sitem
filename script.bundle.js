@@ -1945,7 +1945,7 @@ window.saveEditedProductData = async function(btn) {
     if (status === 'Kargoya Verildi' && (!carrier || !track)) return showToast('Kargoya vermek için firma ve takip numarası girin.', 'error');
     try {
       const o = allOrders.find(x => x.id === id) || {};
-      await db.collection('orders').doc(id).update({ status, carrier, trackingNumber: track, trackingUrl: carrier && track ? (CARRIERS[carrier] || '') + encodeURIComponent(track) : '' });
+      await db.collection('orders').doc(id).update({ status, carrier, trackingNumber: track, trackingUrl: carrier && track && CARRIERS[carrier] ? CARRIERS[carrier] + encodeURIComponent(track) : '' });   // YAMA-52: yalnız bilinen (https) firma adresi
       if (status === 'Kargoya Verildi' && (o.status !== status || o.trackingNumber !== track)) sendShippingUpdateEmail(id, o.userEmail, (o.shippingInfo || {}).name || 'Müşteri', track, o.items);
       showToast('Sipariş güncellendi!', 'success'); loadAdminOrders(); loadOrdersAndCalculateStats();
     } catch (e) { showToast('Güncelleme hatası: ' + e.message, 'error'); }
@@ -2403,7 +2403,7 @@ window.saveEditedProductData = async function(btn) {
     const c = $('ordersList'); if (!c) return;
     c.querySelectorAll('a[href*="araskargo"]:not([data-fixed])').forEach(a => {
       const no = Object.keys(trk).find(n => a.textContent.includes(n));
-      if (!no || !trk[no].url) return;
+      if (!no || !/^https:\/\/[^\s"'<>]+$/.test(trk[no].url)) return;   // YAMA-52: yalnız https takip adresi
       a.setAttribute('data-fixed', '1');
       a.href = trk[no].url; a.target = '_blank'; a.rel = 'noopener noreferrer';
       const lab = a.parentNode.querySelector('span');

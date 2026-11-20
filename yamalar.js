@@ -546,3 +546,114 @@ try {
   };
 })();
 } catch (e) { console.error("yama-23.js hatası:", e); }
+
+/* ---------- yama-70: Hesabım > Kayıtlı Adreslerim (en fazla 3) ---------- */
+try {
+(function () {
+  'use strict';
+  var MAX_EXTRA = 2;            // 1. adres profil formundaki adres; ek olarak en fazla 2 adres
+  var editIdx = -1;             // -1: yeni, >=0: düzenlenen ek adres
+  var extras = [];              // sunucudaki ek adresler (users/{uid}.extraAddresses)
+  var has1 = false;
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return escHtml(s); }
+  function summary(a) { return esc(a.address) + '<br><span class="text-brand-600">' + esc(a.district) + ' / ' + esc(a.city) + '</span>'; }
+
+  function render() {
+    var box = $('addrList'); if (!box) return;
+    var u = (typeof userData !== 'undefined' && userData) || {};
+    has1 = !!(u.address && u.city);
+    var h = '';
+    if (has1) {
+      h += '<div class="bg-white border border-brand-200 rounded-2xl p-4 text-sm"><div class="font-bold text-xs mb-1">Adres 1 <span class="font-normal text-brand-600">· yukarıdaki formdan düzenlenir</span></div>' +
+        summary({ address: u.address, district: u.district || '', city: u.city }) + '</div>';
+    }
+    extras.forEach(function (a, i) {
+      h += '<div class="bg-white border border-brand-200 rounded-2xl p-4 text-sm"><div class="font-bold text-xs mb-1">Adres ' + (i + 2) + (a.title ? ' · ' + esc(a.title) : '') + '</div>' + summary(a) +
+        '<div class="flex flex-wrap gap-2 mt-3"><button type="button" data-addr-edit="' + i + '" class="border border-brand-300 text-brand-700 px-4 py-2 rounded-lg text-xs font-medium">Düzenle</button>' +
+        '<button type="button" data-addr-del="' + i + '" class="border border-red-200 text-red-600 px-4 py-2 rounded-lg text-xs font-medium">Sil</button></div></div>';
+    });
+    box.innerHTML = h;
+    var add = $('addrAddBtn'), hint = $('addrHint'), form = $('addrForm');
+    var total = (has1 ? 1 : 0) + extras.length;
+    if (!has1) { add.classList.add('hidden'); hint.textContent = 'Önce yukarıdaki formdan 1. adresinizi kaydedin; ardından buradan yeni adres ekleyebilirsiniz.'; hint.classList.remove('hidden'); }
+    else if (extras.length >= MAX_EXTRA) { add.classList.add('hidden'); hint.textContent = '3 adres sınırına ulaştınız. Yeni adres eklemek için bir adresi silin.'; hint.classList.remove('hidden'); }
+    else { add.textContent = '+ Adres ' + (total + 1) + ' Ekle'; add.classList.toggle('hidden', !form.classList.contains('hidden')); hint.classList.add('hidden'); }
+  }
+
+  function openForm(i) {
+    editIdx = i;
+    var a = i >= 0 ? extras[i] : { title: '', city: '', district: '', address: '' };
+    var c = $('addrCity');
+    if (!c.options.length) {
+      c.innerHTML = '<option value="">İl Seçiniz</option>' + Object.keys(TURKEY_LOCATIONS).sort(function (x, y) { return x.localeCompare(y, 'tr'); }).map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
+      c.addEventListener('change', function () { populateDistricts('addrCity', 'addrDistrict'); });
+    }
+    $('addrTitle').value = a.title || ''; c.value = a.city || ''; populateDistricts('addrCity', 'addrDistrict');
+    $('addrDistrict').value = a.district || ''; $('addrText').value = a.address || '';
+    $('addrForm').classList.remove('hidden'); $('addrAddBtn').classList.add('hidden');
+    $('addrForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  function closeForm() { $('addrForm').classList.add('hidden'); editIdx = -1; render(); }
+
+  async function persist(list, okMsg) {
+    if (!currentUser || currentUser.isAnonymous) return false;
+    try {
+      await db.collection('users').doc(currentUser.uid).set({ extraAddresses: list }, { merge: true });
+      extras = list; if (userData) userData.extraAddresses = list;
+      if (okMsg) showToast(okMsg, 'success'); return true;
+    } catch (e) { showToast('Adres kaydedilemedi: ' + (e && e.message || e), 'error'); return false; }
+  }
+
+  async function save() {
+    var a = { title: $('addrTitle').value.trim().slice(0, 30), city: $('addrCity').value, district: $('addrDistrict').value, address: $('addrText').value.trim().slice(0, 300) };
+    if (!a.city || !TURKEY_LOCATIONS[a.city]) { showToast('Lütfen il seçin.', 'error'); return; }
+    if (!a.district || TURKEY_LOCATIONS[a.city].indexOf(a.district) < 0) { showToast('Lütfen ilçe seçin.', 'error'); return; }
+    if (a.address.length < 10) { showToast('Açık adres en az 10 karakter olmalıdır.', 'error'); return; }
+    var list = extras.slice();
+    if (editIdx >= 0) list[editIdx] = a; else { if (list.length >= MAX_EXTRA) { showToast('En fazla 3 adres kaydedebilirsiniz.', 'error'); return; } list.push(a); }
+    $('addrSaveBtn').disabled = true;
+    var ok = await persist(list, 'Adres kaydedildi.');
+    $('addrSaveBtn').disabled = false;
+    if (ok) closeForm();
+  }
+
+  function init() {
+    var book = $('addrBook'); if (!book || book.dataset.ready) return; book.dataset.ready = '1';
+    $('addrAddBtn').addEventListener('click', function () { openForm(-1); });
+    $('addrCancelBtn').addEventListener('click', closeForm);
+    $('addrSaveBtn').addEventListener('click', save);
+    $('addrList').addEventListener('click', function (ev) {
+      var b = ev.target.closest('button'); if (!b) return;
+      if (b.hasAttribute('data-addr-edit')) openForm(parseInt(b.getAttribute('data-addr-edit'), 10));
+      else if (b.hasAttribute('data-addr-del')) {
+        var i = parseInt(b.getAttribute('data-addr-del'), 10);
+        if (!confirm('Bu adres silinsin mi?')) return;
+        var list = extras.slice(); list.splice(i, 1); persist(list, 'Adres silindi.').then(render);
+      }
+    });
+  }
+
+  // Profil okunduğunda (loadProfileData → readUserDoc) listeyi güncelle
+  var _read = window.readUserDoc;
+  if (typeof _read === 'function') {
+    window.readUserDoc = function () {
+      return _read.apply(this, arguments).then(function (doc) {
+        try { var d = doc && doc.exists ? doc.data() : {}; extras = Array.isArray(d.extraAddresses) ? d.extraAddresses.slice(0, MAX_EXTRA) : []; init(); setTimeout(render, 0); } catch (e) {}
+        return doc;
+      });
+    };
+  }
+  // 1. adres "Güncelle" ile kaydedilince "Adres 1" kartı ve Ekle düğmesi yenilensin
+  var _save = window.saveProfile;
+  if (typeof _save === 'function') window.saveProfile = async function () {
+    var r = await _save.apply(this, arguments);
+    try { if (currentUser) _read(currentUser.uid).then(function (doc) { if (doc && doc.exists) userData = doc.data(); render(); }).catch(function () {}); } catch (e) {}
+    return r;
+  };
+  // Çıkışta liste ekranda kalmasın
+  var _clr = window.clearAccountUI;
+  if (typeof _clr === 'function') window.clearAccountUI = function () { extras = []; editIdx = -1; try { $('addrForm').classList.add('hidden'); } catch (e) {} var r = _clr.apply(this, arguments); render(); return r; };
+  init();
+})();
+} catch (e) { console.error("yama-70 hatası:", e); }

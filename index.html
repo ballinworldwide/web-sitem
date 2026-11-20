@@ -313,6 +313,25 @@
             <button onclick="logout()" class="border border-red-200 text-red-600 px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors">Çıkış Yap</button>
         </div>
     </div>
+    <div id="addrBook" class="bg-brand-50 rounded-3xl p-8 border border-brand-200 mb-8">
+        <h2 class="font-serif text-xl mb-1">Kayıtlı Adreslerim</h2>
+        <p class="text-xs text-brand-600 mb-4">En fazla 3 adres kaydedebilirsiniz. 1. adres yukarıdaki formdan düzenlenir.</p>
+        <div id="addrList" class="space-y-3 mb-4"></div>
+        <div id="addrForm" class="hidden border border-brand-200 rounded-2xl bg-white p-4 mb-4">
+            <div class="mb-3"><label class="block text-xs font-bold mb-1">Adres Başlığı (isteğe bağlı)</label><input type="text" id="addrTitle" maxlength="30" placeholder="Ev, İş, Annem..." class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <div><label class="block text-xs font-bold mb-1">İl</label><select id="addrCity" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm"></select></div>
+                <div><label class="block text-xs font-bold mb-1">İlçe</label><select id="addrDistrict" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm"></select></div>
+            </div>
+            <div class="mb-3"><label class="block text-xs font-bold mb-1">Açık Adres (Mahalle, Cadde, No)</label><textarea id="addrText" rows="3" maxlength="300" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm"></textarea></div>
+            <div class="flex flex-wrap gap-2">
+                <button type="button" id="addrSaveBtn" class="bg-brand-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium">Kaydet</button>
+                <button type="button" id="addrCancelBtn" class="border border-brand-300 text-brand-700 px-5 py-2.5 rounded-xl text-sm font-medium">Vazgeç</button>
+            </div>
+        </div>
+        <button type="button" id="addrAddBtn" class="hidden bg-brand-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium"></button>
+        <p id="addrHint" class="hidden text-xs text-brand-600"></p>
+    </div>
     <div class="bg-brand-50 rounded-3xl p-8 border border-brand-200 mb-8">
         <h2 class="font-serif text-xl mb-4">Şifre Değiştir</h2>
         <form class="mb-4" onsubmit="return false"><input type="password" id="newPasswordInput" placeholder="Yeni Şifre (En az 8 karakter)" autocomplete="new-password" class="w-full bg-white border border-brand-200 rounded-lg p-2.5 text-sm" /></form>
@@ -457,7 +476,7 @@
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js" integrity="sha384-jxdN9nS+cvQavyzo/bNcMoHfxvk0kWtPAfPDRq3EQ/wvbCVLNheaVIphKWMD4/g0" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-check-compat.js" integrity="sha384-B/AP4FGRp30uqxiGDJ1XO7TvHcPxaZEPR798W+ASc3xztnppTUQe2E0ThTTM2+FH" crossorigin="anonymous"></script>
 <script src="/script.bundle.js?v=63"></script>
-<script src="/yamalar.js?v=63"></script>
+<script src="/yamalar.js?v=64"></script>
 	
 
 <!-- ÜRÜN DÜZENLEME MODALI (DARK MODE) -->

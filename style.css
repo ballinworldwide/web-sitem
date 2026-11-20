@@ -130,3 +130,19 @@ html { scroll-behavior: smooth; }
   /* Dokunma hedefleri */
   #page-admin .btn-ghost, #page-admin .btn-primary { min-height: 40px; }
 }
+
+/* ===================================================================
+   YAMA-69 — Hesabım sayfası telefon görünümü
+   Düğme satırı sığmayınca sayfayı yana genişletiyordu; kart boşlukları daraltıldı.
+   =================================================================== */
+html { overflow-x: clip; }
+@media (max-width: 767px) {
+  #page-profile { padding: 24px 12px 32px; }
+  #page-profile h1 { font-size: 28px; margin-bottom: 20px; }
+  #page-profile > div { padding: 18px; border-radius: 20px; margin-bottom: 16px; }
+  #page-profile > div.flex { gap: 12px; }
+  #page-profile #profilePoints { font-size: 30px; }
+  /* düğmeler sığmazsa alt satıra insin, ekran genişliğini aşmasın */
+  #page-profile .flex.gap-4 { flex-wrap: wrap; gap: 8px; }
+  #page-profile .flex.gap-4 > button { padding: 10px 14px; flex: 1 1 calc(50% - 8px); }
+}

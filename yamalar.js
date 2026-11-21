@@ -840,8 +840,10 @@ try {
   function receiptHTML(orderId, o) {
     var g = {}, order = [], rows = '', sub = 0;
     (o.items || []).forEach(function (it) {
-      var k = String(it.name) + '|' + String(it.size || 'Standart');
-      if (!g[k]) { g[k] = { name: it.name, size: it.size || 'Standart', qty: 0, price: Number(it.price) || 0 }; order.push(k); }
+      var sz = String(it.size || 'Standart'), nm = String(it.name), suf = ' (' + sz + ')';
+      if (nm.toLowerCase().slice(-suf.length) === suf.toLowerCase()) nm = nm.slice(0, -suf.length);   // ürün adı sonuna eklenen "(S)" beden eki tekrar yazılmasın
+      var k = nm + '|' + sz;
+      if (!g[k]) { g[k] = { name: nm, size: sz, qty: 0, price: Number(it.price) || 0 }; order.push(k); }
       g[k].qty++;
     });
     order.forEach(function (k) { var x = g[k], line = x.price * x.qty; sub += line;

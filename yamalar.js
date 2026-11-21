@@ -657,3 +657,39 @@ try {
   init();
 })();
 } catch (e) { console.error("yama-70 hatası:", e); }
+
+/* ---------- yama-71: Ödeme sayfasında kayıtlı adres seçme ---------- */
+try {
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var list = [];   // [{label, city, district, address}]
+  function build() {
+    var u = (typeof userData !== 'undefined' && userData) || {};
+    list = [];
+    if (u.address && u.city) list.push({ title: '', city: u.city, district: u.district || '', address: u.address });
+    (Array.isArray(u.extraAddresses) ? u.extraAddresses : []).forEach(function (a) { if (a && a.address && a.city) list.push(a); });
+    var wrap = $('checkoutAddrPickWrap'), sel = $('checkoutAddrPick'); if (!wrap || !sel) return;
+    var named = typeof currentUser !== 'undefined' && currentUser && !currentUser.isAnonymous;
+    if (!named || list.length < 2) { wrap.classList.add('hidden'); return; }   // tek adres zaten forma doldurulur
+    var prev = sel.value;
+    sel.innerHTML = '<option value="">Adres seçin…</option>' + list.map(function (a, i) {
+      return '<option value="' + i + '">Adres ' + (i + 1) + (a.title ? ' · ' + escHtml(a.title) : '') + ' — ' + escHtml(a.district) + ' / ' + escHtml(a.city) + '</option>';
+    }).join('');
+    sel.value = (prev && list[parseInt(prev, 10)]) ? prev : '0';
+    wrap.classList.remove('hidden');
+  }
+  function apply() {
+    var a = list[parseInt($('checkoutAddrPick').value, 10)]; if (!a) return;
+    $('checkoutCity').value = a.city; populateDistricts('checkoutCity', 'checkoutDistrict');
+    $('checkoutDistrict').value = a.district || ''; $('checkoutAddress').value = a.address;
+  }
+  var sel = $('checkoutAddrPick'); if (sel) sel.addEventListener('change', apply);
+  var _clr = window.clearAccountUI;   // çıkışta başka kullanıcıya adres görünmesin
+  if (typeof _clr === 'function') window.clearAccountUI = function () { list = []; var w = $('checkoutAddrPickWrap'); if (w) w.classList.add('hidden'); return _clr.apply(this, arguments); };
+  var _read = window.readUserDoc;
+  if (typeof _read === 'function') window.readUserDoc = function () {
+    return _read.apply(this, arguments).then(function (doc) { setTimeout(build, 50); return doc; });
+  };
+})();
+} catch (e) { console.error("yama-71 hatası:", e); }

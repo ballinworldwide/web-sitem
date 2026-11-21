@@ -474,7 +474,8 @@ try {
       const g = {};
       cart.forEach(i => { const k = i.dbId + '|' + (i.size || 'Standart'); (g[k] = g[k] || { dbId: i.dbId, size: i.size || 'Standart', qty: 0, price: Number(i.price) || 0 }).qty++; });
       const payload = { items: Object.values(g), shipping: { name, surname, phone, city, district, address }, email,
-        couponCode: named ? appliedCouponCode : '', usePoints: named ? (Math.floor(appliedPointsValue) || 0) : 0, consents: { terms: true, kvkk: true } };
+        couponCode: named ? appliedCouponCode : '', usePoints: named ? (Math.floor(appliedPointsValue) || 0) : 0, consents: { terms: true, kvkk: true },
+        ...(named && window.__payStaff === true ? { payOnline: true } : {}) };   // YAMA-73: yalnız yönetici rolü, test ödeme akışı
       // aynı içerikle yeniden denemede AYNI istek no (çift sipariş olmaz); içerik değişirse yeni no
       const sig = JSON.stringify(payload); if (sig !== lastSig || !reqId) { reqId = newId(); lastSig = sig; }
       payload.requestId = reqId;
@@ -491,10 +492,17 @@ try {
         appliedDiscountRate = 0; appliedCouponCode = ''; const pi = $('promoDiscountInfo'); if (pi) pi.style.display = 'none';
         goToCheckout(); return showToast(j.message, 'error');
       }
+      if (r.status === 400 && j.error === 'payment_disabled' && payload.payOnline) {   // YAMA-73: online ödeme kapalıysa yönetici de normal akışla sipariş verir
+        window.__payStaff = false; reqId = null; lastSig = ''; btn.disabled = false; btn.innerText = 'Ödemeyi Tamamla'; return window.processPayment();
+      }
       if (r.status >= 400 && r.status < 500) { reqId = null; lastSig = ''; }   // YAMA-62: sunucu reddettiyse sipariş oluşmadı; sonraki deneme yeni istek no ile
       if (!r.ok || !j.orderId) throw new Error(j.message || ('Sipariş oluşturulamadı (' + r.status + ')'));
 
       reqId = null; lastSig = '';
+      if (j.pending && typeof window.__testPay === 'function') {   // YAMA-73: ödeme bekleniyor → test ödeme penceresi (sepet ödeme sonucunda temizlenir)
+        btn.disabled = false; btn.innerText = 'Ödemeyi Tamamla';
+        return window.__testPay(j.orderId, j.total, j.holdUntil);
+      }
       // YAMA-61: onay maili yalnız sipariş Worker'ından gider (istemciden ikinci çağrı kaldırıldı)
       showToast('Siparişiniz alındı!', 'success');
       if (!named) alert('Sipariş numaranız:\n' + j.orderId + '\n\nLütfen saklayın.');
@@ -693,3 +701,87 @@ try {
   };
 })();
 } catch (e) { console.error("yama-71 hatası:", e); }
+
+/* ---------- yama-73: test ödeme penceresi (sağlayıcı bağlanana kadar; YALNIZ yönetici rolü) ---------- */
+try {
+(function () {
+  'use strict';
+  var BASE = 'https://ballin-order.ballinworldw.workers.dev';
+  var timer = null;
+  function $(id) { return document.getElementById(id); }
+  window.__payStaff = false;
+  // yönetici mi? (sahip hesap veya staff koleksiyonunda rol = yonetici). Sunucu yine kendi doğrular.
+  firebase.auth().onAuthStateChanged(function (u) {
+    window.__payStaff = false;
+    if (!u || u.isAnonymous || !u.email || !u.emailVerified) return;
+    var em = u.email.toLowerCase();
+    function set(v) { if (v && window.__payStaff !== true) { window.__payStaff = true; try { if (typeof loadUserOrders === 'function') loadUserOrders(); } catch (e) {} } }
+    if (em === String(ADMIN_EMAIL).toLowerCase()) return set(true);
+    db.collection('staff').doc(em).get().then(function (d) { set(d.exists && d.data().role === 'yonetici'); }).catch(function () {});
+  });
+  async function call(path, orderId) {
+    var u = firebase.auth().currentUser; if (!u) throw new Error('Oturum bulunamadı.');
+    var idToken = await u.getIdToken(), ac = ''; try { ac = (await firebase.appCheck().getToken()).token; } catch (e) {}
+    var r = await fetch(BASE + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken, 'X-Firebase-AppCheck': ac }, body: JSON.stringify({ orderId: orderId }) });
+    var j = {}; try { j = await r.json(); } catch (e) {}
+    if (!r.ok) { var er = new Error(j.message || ('İşlem yapılamadı (' + r.status + ')')); er.code = j.error; throw er; }
+    return j;
+  }
+  function clearCartAfterOrder() {
+    try {
+      cart = []; appliedDiscountRate = 0; appliedCouponCode = ''; appliedPointsValue = 0;
+      localStorage.removeItem('ballin_cart'); updateCartBadge(); syncCartToFirebase();
+      var pi = $('promoDiscountInfo'); if (pi) pi.style.display = 'none';
+    } catch (e) {}
+  }
+  function close() { if (timer) { clearInterval(timer); timer = null; } var m = $('testPayModal'); if (m) m.remove(); }
+  function goOrders() { try { switchPage('profile'); loadUserOrders(); loadProfileData(); loadProducts(); } catch (e) {} }
+  function mmss(ms) { var s = Math.max(0, Math.floor(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+  // fromCart: sipariş az önce sepetten verildi (sepet temizlenir); Hesabım'dan açıldıysa sepete dokunulmaz
+  window.__testPay = function (orderId, total, holdUntil, fromHesabim) {
+    close();
+    var fromCart = !fromHesabim;
+    var tl = (Number(total) || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var m = document.createElement('div'); m.id = 'testPayModal';
+    m.className = 'fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm';
+    m.innerHTML = '<div class="bg-white rounded-3xl w-[90%] max-w-md p-6 shadow-2xl">' +
+      '<h3 class="font-serif text-xl font-bold mb-1 text-brand-900"><i class="fa-solid fa-lock mr-2 text-amber-500"></i>Güvenli Ödeme</h3>' +
+      '<p class="text-xs bg-amber-50 rounded-xl p-3 mb-4" style="border:1px solid #fde68a;color:#92400e">TEST MODU: Ödeme sağlayıcısı henüz bağlı değil. Bu ekran yalnız yönetici hesaplarında görünür; kart bilgisi alınmaz.</p>' +
+      '<div class="flex justify-between text-sm mb-1"><span class="text-brand-500">Sipariş no</span><span class="font-bold text-brand-900" style="font-family:monospace" id="tpNo"></span></div>' +
+      '<div class="flex justify-between text-sm mb-1"><span class="text-brand-500">Tutar</span><span class="font-bold text-brand-900">' + tl + ' TL</span></div>' +
+      '<div class="flex justify-between text-sm mb-4"><span class="text-brand-500">Kalan süre</span><span class="font-bold text-amber-600" id="tpLeft">--:--</span></div>' +
+      '<button id="tpOk" class="w-full bg-brand-900 text-white py-3 rounded-xl font-medium hover:bg-brand-800 mb-2">Ödemeyi Onayla (Test)</button>' +
+      '<button id="tpFail" class="w-full border border-red-200 text-red-600 py-3 rounded-xl font-medium hover:bg-red-50 mb-2">Ödeme Başarısız (Test)</button>' +
+      '<button id="tpLater" class="w-full text-xs text-brand-500 underline py-2">Sonra öde (Hesabım\'da bekler)</button></div>';
+    document.body.appendChild(m);
+    $('tpNo').textContent = String(orderId).slice(0, 10).toUpperCase();
+    var busy = false, expired = false;
+    function lock(v) { busy = v; ['tpOk', 'tpFail'].forEach(function (id) { if ($(id)) $(id).disabled = v || expired; }); }
+    function tick() {
+      var left = Number(holdUntil) - Date.now(), el = $('tpLeft'); if (!el) return;
+      if (left <= 0) { expired = true; el.textContent = 'Süre doldu'; lock(busy); } else el.textContent = mmss(left);
+    }
+    tick(); timer = setInterval(tick, 1000);
+    $('tpOk').onclick = async function () {
+      if (busy || expired) return; lock(true);
+      try {
+        await call('/payment/test-complete', orderId);
+        close(); if (fromCart) clearCartAfterOrder();
+        showToast('Ödeme alındı! Siparişiniz hazırlanıyor.', 'success'); goOrders();
+      } catch (e) {
+        showToast(e.message || 'Ödeme onaylanamadı.', 'error');
+        if (e.code === 'expired' || e.code === 'state') { close(); if (fromCart) clearCartAfterOrder(); goOrders(); } else lock(false);
+      }
+    };
+    $('tpFail').onclick = async function () {
+      if (busy) return; lock(true);
+      try {
+        await call('/cancel', orderId);
+        close(); showToast('Ödeme başarısız. Sipariş iptal edildi' + (fromCart ? ', sepetiniz korundu.' : '.'), 'error');
+        if (!fromCart) goOrders();
+      } catch (e) { showToast(e.message || 'İşlem yapılamadı.', 'error'); lock(false); }
+    };
+    $('tpLater').onclick = function () { close(); if (fromCart) clearCartAfterOrder(); showToast('Sipariş ödeme bekliyor. Hesabım sayfasından tamamlayabilirsiniz.', 'success'); goOrders(); };
+  };
+})();
+} catch (e) { console.error("yama-73 hatası:", e); }

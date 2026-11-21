@@ -767,7 +767,9 @@ try {
       try {
         await call('/payment/test-complete', orderId);
         close(); if (fromCart) clearCartAfterOrder();
-        showToast('Ödeme alındı! Siparişiniz hazırlanıyor.', 'success'); goOrders();
+        goOrders();   // arkada Hesabım açılır; fiş pop-up'ı (yama-75) üstüne gelir
+        if (typeof window.__showReceipt === 'function') window.__showReceipt(orderId);
+        else showToast('Ödeme alındı! Siparişiniz hazırlanıyor.', 'success');
       } catch (e) {
         showToast(e.message || 'Ödeme onaylanamadı.', 'error');
         if (e.code === 'expired' || e.code === 'state') { close(); if (fromCart) clearCartAfterOrder(); goOrders(); } else lock(false);
@@ -785,3 +787,175 @@ try {
   };
 })();
 } catch (e) { console.error("yama-73 hatası:", e); }
+
+/* ---------- yama-75: sipariş fişi pop-up (ödeme onaylanınca; fiş yazıcıdan çıkar, koparılır) ---------- */
+try {
+(function () {
+  'use strict';
+  var ac = null, noiseBuf = null, soundOn = true, motor = null;
+  function audio() {
+    if (!soundOn) return null;
+    try {
+      if (!ac) { var C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ac = new C();
+        noiseBuf = ac.createBuffer(1, ac.sampleRate * 0.6, ac.sampleRate); var d = noiseBuf.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+      if (ac.state === 'suspended') ac.resume();
+      return ac;
+    } catch (e) { return null; }
+  }
+  function burst(freq, dur, gain, type, q) {
+    var a = audio(); if (!a) return;
+    try {
+      var s = a.createBufferSource(); s.buffer = noiseBuf;
+      var f = a.createBiquadFilter(); f.type = type || 'bandpass'; f.frequency.value = freq; f.Q.value = q || 1.2;
+      var g = a.createGain(), t = a.currentTime;
+      g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+      s.connect(f); f.connect(g); g.connect(a.destination); s.start(t, Math.random() * 0.2); s.stop(t + dur + 0.02);
+    } catch (e) {}
+  }
+  function motorOn() {
+    var a = audio(); if (!a || motor) return;
+    try {
+      var o = a.createOscillator(), o2 = a.createOscillator(), g = a.createGain(), t = a.currentTime, lp = a.createBiquadFilter();
+      o.type = 'sawtooth'; o.frequency.value = 62; o2.type = 'square'; o2.frequency.value = 124;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.018, t + 0.12); lp.type = 'lowpass'; lp.frequency.value = 420;
+      o.connect(lp); o2.connect(lp); lp.connect(g); g.connect(a.destination); o.start(); o2.start();
+      motor = { o: o, o2: o2, g: g };
+    } catch (e) { motor = null; }
+  }
+  function motorOff() {
+    if (!motor || !ac) { motor = null; return; }
+    try { var t = ac.currentTime; motor.g.gain.cancelScheduledValues(t); motor.g.gain.setValueAtTime(motor.g.gain.value || 0.01, t); motor.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+      motor.o.stop(t + 0.18); motor.o2.stop(t + 0.18); } catch (e) {}
+    motor = null;
+  }
+  function esc(s) { return (typeof escHtml === 'function') ? escHtml(s) : String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function tl(n) { return (Number(n) || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function bars(code) {
+    var h = '', seed = 0, i, w;
+    for (i = 0; i < code.length; i++) seed = (seed * 31 + code.charCodeAt(i)) >>> 0;
+    for (i = 0; i < 46; i++) { seed = (seed * 1103515245 + 12345) >>> 0; w = 1 + ((seed >>> 16) % 3); h += '<i style="width:' + w + 'px;margin-right:' + (1 + ((seed >>> 20) % 2)) + 'px"></i>'; }
+    return '<div class="rp-bars">' + h + '</div>';
+  }
+  // o: Firestore sipariş belgesi (items, subtotal, discountRate, usedPoints, shippingFee, totalAmount)
+  function receiptHTML(orderId, o) {
+    var g = {}, order = [], rows = '', sub = 0;
+    (o.items || []).forEach(function (it) {
+      var k = String(it.name) + '|' + String(it.size || 'Standart');
+      if (!g[k]) { g[k] = { name: it.name, size: it.size || 'Standart', qty: 0, price: Number(it.price) || 0 }; order.push(k); }
+      g[k].qty++;
+    });
+    order.forEach(function (k) { var x = g[k], line = x.price * x.qty; sub += line;
+      rows += '<div class="rp-it"><div class="rp-row"><span>' + x.qty + 'x ' + esc(x.name) + '</span><span>' + tl(line) + '</span></div><div class="rp-sz">Beden: ' + esc(x.size) + '</div></div>'; });
+    var subtotal = Number(o.subtotal) > 0 ? Number(o.subtotal) : sub, rate = Number(o.discountRate), disc = (rate > 0 && rate < 1) ? subtotal * (1 - rate) : subtotal;
+    var d = new Date(), pad = function (x) { return String(x).padStart(2, '0'); };
+    var stamp = pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear() + '  ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    var no = String(orderId).slice(0, 10).toUpperCase();
+    var extra = '';
+    if (rate > 0 && rate < 1) extra += '<div class="rp-row"><span>İndirim</span><span>-' + tl(subtotal - disc) + '</span></div>';
+    if (Number(o.usedPoints) > 0) extra += '<div class="rp-row"><span>Puan</span><span>-' + tl(o.usedPoints) + '</span></div>';
+    return '<div class="rp-rcpt"><div class="rp-logo">BALLIN</div><div class="rp-sub">WORLDWIDE</div>' +
+      '<div class="rp-row"><span>Tarih</span><span>' + stamp + '</span></div><div class="rp-row"><span>Sipariş</span><span>#' + esc(no) + '</span></div><hr>' + rows + '<hr>' +
+      '<div class="rp-row"><span>Ara toplam</span><span>' + tl(subtotal) + '</span></div>' + extra +
+      '<div class="rp-row"><span>Kargo</span><span>' + (Number(o.shippingFee) ? tl(o.shippingFee) : 'ÜCRETSİZ') + '</span></div>' +
+      '<div class="rp-row rp-tot"><span>TOPLAM</span><span>' + tl(o.totalAmount) + ' TL</span></div><hr>' +
+      '<div class="rp-ok">✔ ÖDEME ALINDI</div><div class="rp-thx">Siparişin hazırlanıyor.<br>Teşekkürler!</div>' + bars(no) +
+      '<div class="rp-no">' + esc(no) + '</div><div class="rp-thx">ballinworldwide.net</div></div>';
+  }
+
+  var open = null;   // aynı anda tek pop-up
+  window.__showReceipt = async function (orderId, onGoShop) {
+    if (open) open.close(true);
+    var o = null;
+    try { var d = await db.collection('orders').doc(orderId).get(); if (d.exists) o = d.data(); } catch (e) {}
+    if (!o) o = { items: [], totalAmount: 0 };
+    var root = document.createElement('div'); root.className = 'rp-overlay open'; root.setAttribute('aria-hidden', 'false');
+    root.innerHTML = '<div class="rp-card" role="dialog" aria-modal="true" aria-label="Sipariş fişi">' +
+      '<button class="rp-x" type="button" aria-label="Kapat">✕</button>' +
+      '<div class="rp-head"><div class="rp-ok">✔ Ödeme alındı</div><div class="rp-sub2">Siparişin hazırlanıyor</div></div>' +
+      '<div class="rpstage"><div class="rp-paperLayer"><div class="rp-strip"><div class="rp-sheet"></div></div></div>' +
+      '<div class="rp-body"><div class="rp-brand">BALLIN · RECEIPT</div><div class="rp-slot"></div><div class="rp-led"><b></b><span class="rp-ledTxt">Hazır</span></div>' +
+      '<button class="rp-snd" type="button" aria-label="Ses aç/kapat">🔊</button><div class="rp-vents"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>' +
+      '<button class="rp-print" type="button" aria-label="Fiş yazdır">PRINT<small class="rp-pLabel">YAZDIR</small></button></div><div class="rp-lip"></div></div>' +
+      '<div class="rphint" style="opacity:0">Fişi tutup yukarı çek, kopar ↑</div>' +
+      '<div class="rp-acts"><button class="rp-btn pri" type="button" data-a="orders">Siparişlerime Git</button><button class="rp-btn sec" type="button" data-a="shop">Alışverişe Devam Et</button></div></div><div class="rptoast"></div>';
+    document.body.appendChild(root); document.body.classList.add('rp-lock');
+    var q = function (s) { return root.querySelector(s); };
+    var stage = q('.rpstage'), strip = q('.rp-strip'), sheet = q('.rp-sheet'), layer = q('.rp-paperLayer'), btn = q('.rp-print'), led = q('.rp-led'), ledTxt = q('.rp-ledTxt'),
+      snd = q('.rp-snd'), hint = q('.rphint'), pLabel = q('.rp-pLabel');
+    var STEP = 14, cap = 520, state = 'idle', off = 0, p = 0, H = 0, timer = null, drag = null, TEAR_AT = 72, closed = false;
+    function fit() {
+      var sh = Math.max(470, Math.min(740, window.innerHeight - 170));
+      stage.style.setProperty('--sh', sh + 'px'); cap = Math.max(240, sh - 236 - 18 - 22);
+    }
+    fit(); window.addEventListener('resize', fit);
+    function setState(s) {
+      state = s;
+      led.className = 'rp-led' + (s === 'printing' ? ' busy' : (s === 'stopped' || s === 'full') ? ' stop' : '');
+      ledTxt.textContent = s === 'printing' ? 'Yazdırıyor' : s === 'stopped' ? 'Durdu' : s === 'full' ? 'Kopar' : 'Hazır';
+      pLabel.textContent = s === 'printing' ? 'DURDUR' : (s === 'stopped' || s === 'full') ? 'DEVAM' : 'YAZDIR';
+    }
+    function addReceipt() { var tmp = document.createElement('div'); tmp.innerHTML = receiptHTML(orderId, o); sheet.appendChild(tmp.firstChild); H = sheet.offsetHeight; }
+    function tick() {
+      if (state !== 'printing' || closed) return;
+      if (off + p >= H) { finish(p >= cap - STEP ? 'Kağıt dolu, fişi kopar' : ''); return; }
+      if (p >= cap) { clearTimeout(timer); timer = null; motorOff(); setState('full'); burst(900, 0.08, 0.06, 'lowpass', .8); toast('Fişi kopar, kalan kısmı yazılmaya devam eder'); return; }
+      p = Math.min(p + STEP, cap, H - off); strip.style.height = p + 'px'; burst(2200, 0.03, 0.05, 'bandpass', 2);
+      hint.style.opacity = p > 60 ? 1 : 0; timer = setTimeout(tick, 52 + Math.random() * 22);
+    }
+    function finish(msg) { clearTimeout(timer); timer = null; motorOff(); setState('idle'); burst(900, 0.08, 0.06, 'lowpass', .8); if (msg) toast(msg); }
+    function start() { motorOn(); setState('printing'); clearTimeout(timer); tick(); }
+    var toastEl = q('.rptoast'), toastT = null;
+    function toast(m) { toastEl.textContent = m; toastEl.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { toastEl.classList.remove('show'); }, 2000); }
+    btn.addEventListener('click', function () {
+      audio();
+      if (state === 'printing') { clearTimeout(timer); timer = null; motorOff(); setState('stopped'); burst(700, 0.06, 0.05, 'lowpass', .8); return; }
+      if (state === 'full' && p >= cap) { toast('Önce fişi kopar, kalan kısmı yazılsın'); return; }
+      if (off + p >= H) addReceipt();
+      start();
+    });
+    snd.addEventListener('click', function () { soundOn = !soundOn; snd.textContent = soundOn ? '🔊' : '🔇'; snd.classList.toggle('off', !soundOn); if (!soundOn) motorOff(); else audio(); });
+    strip.addEventListener('pointerdown', function (e) {
+      if (p < 40) return; audio();
+      drag = { y: e.clientY, dy: 0 }; strip.classList.add('dragging'); strip.classList.remove('spring');
+      try { strip.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault();
+    });
+    strip.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      var dy = Math.max(0, drag.y - e.clientY); drag.dy = dy;
+      strip.style.transform = 'translateY(' + (-Math.min(dy, TEAR_AT * 1.6) * 0.6) + 'px) rotate(' + (Math.min(dy, TEAR_AT) / TEAR_AT * -1.2) + 'deg)';
+      if (dy > 8 && Math.random() < .35) burst(3000, 0.02, 0.025, 'highpass', .7);
+      if (dy >= TEAR_AT) { var dd = drag; drag = null; strip.classList.remove('dragging'); tear(dd.dy); }
+    });
+    function endDrag() { if (!drag) return; drag = null; strip.classList.remove('dragging'); strip.classList.add('spring'); strip.style.transform = 'translateY(0) rotate(0)'; }
+    strip.addEventListener('pointerup', endDrag); strip.addEventListener('pointercancel', endDrag);
+    function tear(dy) {
+      var h = p, piece = document.createElement('div'); piece.className = 'rp-torn';
+      var inner = strip.cloneNode(true); inner.style.cssText = 'position:relative;height:' + h + 'px;overflow:hidden;transform:none'; inner.className = 'rp-strip'; piece.appendChild(inner);
+      piece.style.bottom = (Math.min(dy, TEAR_AT * 1.6) * 0.6) + 'px'; piece.style.height = h + 'px';
+      piece.style.setProperty('--tx', (Math.random() * 80 - 20) + 'px'); piece.style.setProperty('--rot', (Math.random() * 16 - 4) + 'deg');
+      layer.appendChild(piece);
+      burst(1800, 0.22, 0.11, 'highpass', .6); setTimeout(function () { burst(1200, 0.12, 0.07, 'highpass', .6); }, 70);
+      requestAnimationFrame(function () { piece.classList.add('go'); }); setTimeout(function () { piece.remove(); }, 1350);
+      off += h; p = 0; strip.style.transition = 'none'; strip.style.height = '0px'; strip.style.transform = 'translateY(0) rotate(0)';
+      sheet.style.transform = 'translateY(' + (-off) + 'px)'; requestAnimationFrame(function () { strip.style.transition = ''; });
+      hint.style.opacity = 0;
+      if (state === 'printing') { clearTimeout(timer); tick(); } else if (state === 'full') { start(); }
+      toast('Fiş koparıldı ✂');
+    }
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    function close(silent) {
+      if (closed) return; closed = true; clearTimeout(timer); motorOff();
+      document.removeEventListener('keydown', onKey); window.removeEventListener('resize', fit);
+      root.remove(); document.body.classList.remove('rp-lock'); open = null;
+    }
+    q('.rp-x').addEventListener('click', function () { close(); });
+    root.addEventListener('pointerdown', function (e) { if (e.target === root) close(); });                // pop-up dışına tıklama
+    root.querySelector('[data-a="orders"]').addEventListener('click', function () { close(); try { switchPage('profile'); loadUserOrders(); } catch (e) {} });
+    root.querySelector('[data-a="shop"]').addEventListener('click', function () { close(); try { switchPage('home'); } catch (e) {} });
+    document.addEventListener('keydown', onKey);
+    open = { close: close };
+    setState('idle'); q('.rp-x').focus();
+    setTimeout(function () { if (!closed && state === 'idle') { addReceipt(); start(); } }, 550);   // fiş kendiliğinden yazılmaya başlar
+  };
+})();
+} catch (e) { console.error("yama-75 hatası:", e); }

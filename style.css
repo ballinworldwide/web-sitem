@@ -146,3 +146,90 @@ html { overflow-x: clip; }
   #page-profile .flex.gap-4 { flex-wrap: wrap; gap: 8px; }
   #page-profile .flex.gap-4 > button { padding: 10px 14px; flex: 1 1 calc(50% - 8px); }
 }
+
+/* ---------- yama-75: sipariş fişi pop-up (yazıcı animasyonu) ---------- */
+.rp-overlay{--paper:#fffdf6;--ink:#1b1b1b;--red:#e11d2e;--amber:#f5a524;--green:#22c55e;--metal1:#3b3d44;--metal2:#202228;--metal3:#4b4e57;font-family:Inter,system-ui,sans-serif;color:#e7e7ea}
+.rp-overlay *{box-sizing:border-box;margin:0;padding:0}
+.rp-overlay button{font-family:inherit}
+body.rp-lock{overflow:hidden}
+.rp-overlay{position:fixed;inset:0;z-index:10050;background:rgba(5,5,7,.9);display:none;align-items:center;justify-content:center;padding:10px}
+.rp-overlay.open{display:flex}
+.rp-overlay .rp-card{position:relative;width:min(420px,100%);max-height:100%;display:flex;flex-direction:column;align-items:center}
+.rp-overlay .rp-x{position:absolute;right:6px;top:4px;z-index:12;width:38px;height:38px;border-radius:50%;border:0;cursor:pointer;
+     background:rgba(255,255,255,.12);color:#fff;font-size:16px;line-height:1}
+.rp-overlay .rp-x:hover{background:rgba(255,255,255,.22)}
+.rp-overlay .rp-head{text-align:center;padding:6px 0 0;min-height:44px}
+.rp-overlay .rp-head .rp-ok{font-weight:600;font-size:15px;color:#4ade80}
+.rp-overlay .rp-head .rp-sub2{font-size:12px;color:#9a9ca6;margin-top:2px}
+.rp-overlay .rp-acts{display:flex;flex-direction:column;gap:8px;width:calc(100% - 24px);margin:2px 12px 10px}
+.rp-overlay .rp-btn{border:0;border-radius:12px;padding:13px;font:600 14px Inter,sans-serif;cursor:pointer}
+.rp-overlay .rp-btn.pri{background:#f4f4f5;color:#111}
+.rp-overlay .rp-btn.sec{background:transparent;color:#d4d4d8;border:1px solid #3a3b42}
+.rp-overlay .rpstage{position:relative;width:min(400px,100%);height:var(--sh,640px);flex:none}
+.rp-overlay /* ---------- yazıcı gövdesi (yukarıdan görünüm) ---------- */
+  .rp-body{position:absolute;left:12px;right:12px;bottom:18px;height:236px;z-index:5;border-radius:26px;
+    background:linear-gradient(160deg,var(--metal3) 0%,var(--metal1) 34%,var(--metal2) 100%);
+    box-shadow:0 30px 60px rgba(0,0,0,.65),0 2px 0 rgba(255,255,255,.12) inset,0 -3px 0 rgba(0,0,0,.45) inset,0 0 0 1px #0a0a0c;}
+.rp-overlay .rp-body::before,.rp-overlay .rp-body::after{/* vidalar */
+    content:'';position:absolute;top:14px;width:9px;height:9px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#8a8d96,#2a2c32 70%);box-shadow:0 1px 0 rgba(255,255,255,.15);}
+.rp-overlay .rp-body::before{left:16px}
+.rp-overlay .rp-body::after{right:16px}
+.rp-overlay .rp-brand{position:absolute;left:0;right:0;top:14px;text-align:center;font-family:'Playfair Display',serif;font-size:11px;letter-spacing:.32em;color:#a7a9b3;opacity:.9}
+.rp-overlay .rp-vents{position:absolute;left:26px;right:26px;bottom:20px;height:16px;display:flex;gap:6px}
+.rp-overlay .rp-vents i{flex:1;border-radius:3px;background:#101114;box-shadow:0 1px 0 rgba(255,255,255,.09)}
+.rp-overlay .rp-slot{position:absolute;left:34px;right:34px;top:42px;height:16px;border-radius:8px;background:#050506;
+    box-shadow:0 1px 0 rgba(255,255,255,.18),inset 0 3px 6px #000,inset 0 -1px 0 rgba(255,255,255,.04);}
+.rp-overlay .rp-led{position:absolute;left:30px;top:96px;display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.12em;color:#9a9ca6;text-transform:uppercase}
+.rp-overlay .rp-led b{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);transition:.2s}
+.rp-overlay .rp-led.busy b{background:var(--amber);box-shadow:0 0 12px var(--amber)}
+.rp-overlay .rp-led.stop b{background:var(--red);box-shadow:0 0 12px var(--red)}
+.rp-overlay .rp-snd{position:absolute;right:30px;top:90px;width:38px;height:28px;border-radius:9px;border:0;cursor:pointer;
+    background:linear-gradient(#34363d,#23252a);color:#c9cad1;font-size:15px;box-shadow:0 2px 0 #0b0b0d,0 1px 0 rgba(255,255,255,.14) inset;}
+.rp-overlay .rp-snd:active{transform:translateY(1px);box-shadow:0 1px 0 #0b0b0d}
+.rp-overlay .rp-snd.off{color:#6b6d76}
+.rp-overlay .rp-print{position:absolute;left:50%;bottom:50px;transform:translateX(-50%);width:112px;height:112px;border-radius:50%;border:0;cursor:pointer;
+    background:radial-gradient(circle at 36% 30%,#ff6b78 0%,var(--red) 42%,#8f0a16 100%);
+    box-shadow:0 10px 0 #5a0610,0 16px 22px rgba(0,0,0,.55),0 0 0 7px #17181c,0 0 0 8px rgba(255,255,255,.1),inset 0 2px 0 rgba(255,255,255,.35);
+    color:#fff;font:700 15px 'Space Mono',monospace;letter-spacing:.2em;text-shadow:0 1px 2px rgba(0,0,0,.5);
+    transition:transform .08s,box-shadow .08s;touch-action:manipulation;}
+.rp-overlay .rp-print:active,.rp-overlay .rp-print.down{transform:translate(-50%,7px);box-shadow:0 3px 0 #5a0610,0 7px 12px rgba(0,0,0,.55),0 0 0 7px #17181c,0 0 0 8px rgba(255,255,255,.1),inset 0 2px 0 rgba(255,255,255,.3)}
+.rp-overlay .rp-print small{display:block;font-size:8.5px;letter-spacing:.14em;opacity:.8;margin-top:5px;font-weight:400}
+.rp-overlay /* ---------- kağıt ---------- */
+  .rp-lip{position:absolute;left:46px;right:46px;bottom:calc(18px + 236px - 60px);height:10px;z-index:7;border-radius:0 0 8px 8px;
+       background:linear-gradient(#2a2c32,#202228);pointer-events:none}
+.rp-overlay .rp-paperLayer{position:absolute;left:50%;width:276px;margin-left:-138px;bottom:calc(18px + 236px - 50px);z-index:6}
+.rp-overlay .rp-strip{position:relative;overflow:hidden;height:0;transition:height .07s linear;cursor:grab;touch-action:none;
+         filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
+.rp-overlay .rp-strip.dragging{cursor:grabbing;transition:none}
+.rp-overlay .rp-strip.spring{transition:height .07s linear,transform .25s cubic-bezier(.3,1.6,.5,1)}
+.rp-overlay .rp-sheet{position:absolute;left:0;top:0;width:100%;transition:none}
+.rp-overlay .rp-rcpt{background:var(--paper);color:var(--ink);font-family:'Space Mono',monospace;font-size:11px;line-height:14px;padding:16px 18px 14px;
+    background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.018) 0 1px,transparent 1px 3px);}
+.rp-overlay .rp-rcpt + .rp-rcpt{border-top:1px dashed #b9b4a4;position:relative}
+.rp-overlay .rp-rcpt .rp-logo{font-family:'Playfair Display',serif;font-size:19px;letter-spacing:.2em;text-align:center;margin:2px 0 0}
+.rp-overlay .rp-rcpt .rp-sub{text-align:center;font-size:9px;letter-spacing:.3em;margin-bottom:10px;color:#555}
+.rp-overlay .rp-rcpt hr{border:0;border-top:1px dashed #999;margin:8px 0}
+.rp-overlay .rp-rcpt .rp-row{display:flex;justify-content:space-between;gap:8px}
+.rp-overlay .rp-rcpt .rp-row span:first-child{min-width:0}
+.rp-overlay .rp-rcpt .rp-it{margin-bottom:5px}
+.rp-overlay .rp-rcpt .rp-it .rp-sz{color:#666;font-size:10px}
+.rp-overlay .rp-rcpt .rp-tot{font-weight:700;font-size:13px;line-height:20px}
+.rp-overlay .rp-rcpt .rp-ok{text-align:center;margin:8px 0 4px;font-weight:700;letter-spacing:.14em}
+.rp-overlay .rp-rcpt .rp-thx{text-align:center;font-size:10px;color:#555;margin-top:6px}
+.rp-overlay .rp-bars{display:flex;justify-content:center;gap:0;height:34px;margin:10px 0 4px}
+.rp-overlay .rp-bars i{display:block;height:100%;background:#111}
+.rp-overlay .rp-rcpt .rp-no{text-align:center;font-size:9.5px;letter-spacing:.22em}
+.rp-overlay .rp-torn{position:absolute;left:0;right:0;pointer-events:none;overflow:visible;
+        filter:drop-shadow(0 8px 12px rgba(0,0,0,.5))}
+.rp-overlay .rp-torn .rp-strip{filter:none;overflow:hidden}
+.rp-overlay .rp-torn::after{content:'';position:absolute;left:0;right:0;bottom:-7px;height:8px;
+    background:
+      linear-gradient(135deg,var(--paper) 50%,transparent 50%) 0 0/12px 8px repeat-x,
+      linear-gradient(225deg,var(--paper) 50%,transparent 50%) 0 0/12px 8px repeat-x;}
+.rp-overlay .rp-torn.go{animation:rpfly 1.25s cubic-bezier(.5,.05,.85,.5) forwards}
+.rp-overlay .rphint{text-align:center;font-size:12px;color:#c9cad1;letter-spacing:.04em;transition:opacity .3s;height:18px;margin:6px 0 0}
+@keyframes rpfly{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(var(--tx,60px),-135vh) rotate(var(--rot,10deg));opacity:0}}
+@media (prefers-reduced-motion:reduce){.rp-overlay .rp-torn.go{animation-duration:.01s}}
+.rp-overlay .rptoast{position:fixed;left:50%;top:18px;transform:translate(-50%,-90px);background:#f4f4f5;color:#111;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.4);transition:transform .35s cubic-bezier(.2,1.2,.4,1);z-index:5;max-width:92vw;text-align:center}
+.rp-overlay .rptoast.show{transform:translate(-50%,0)}

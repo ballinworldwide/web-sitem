@@ -686,7 +686,7 @@ function updateDashboardStats() {
     let productSalesCount = {}; let productRevenueMap = {};
 
     filteredOrders.forEach(o => {
-        if(o.status !== 'İptal Edildi' && o.status !== 'İade Onaylandı' && o.totalAmount) {
+        if(o.status !== 'İptal Edildi' && o.status !== 'İade Onaylandı' && o.status !== 'Ödeme Bekleniyor' && o.totalAmount) {   // YAMA-72
              totalRev += o.totalAmount;
              if(o.items && Array.isArray(o.items)) {
                 o.items.forEach(item => {
@@ -1280,11 +1280,12 @@ function loadUserOrders() {
         let orders = []; snap.forEach((doc) => { let d = doc.data(); d.id = doc.id; orders.push(d); }); 
         orders.sort((a, b) => { let tA = (a.orderDate && typeof a.orderDate.toMillis === 'function') ? a.orderDate.toMillis() : 0; let tB = (b.orderDate && typeof b.orderDate.toMillis === 'function') ? b.orderDate.toMillis() : 0; return tB - tA; });
         let html = ''; 
+        window.__pendOrd = new Set(orders.filter(x => x.status === 'Ödeme Bekleniyor').map(x => x.id));   // YAMA-72: ödemesi beklenen sipariş iptalinde "iptal" maili gitmez
         orders.forEach(order => { 
             let dStr = (order.orderDate && typeof order.orderDate.toDate === 'function') ? order.orderDate.toDate().toLocaleString('tr-TR') : "Tarih Yok"; 
             let itemsStr = (order.items||[]).map(i => `1x ${escHtml(i.name)}`).join(', '); 
             let trackingHTML = order.trackingNumber ? `<div class="mt-3 text-xs bg-brand-50 p-3 rounded-lg border border-brand-100 flex items-center gap-2"><i class="fa-solid fa-truck-fast text-brand-600 text-lg"></i><div><span class="block text-brand-500 font-bold mb-1">Kargo Takip No</span><a href="https://www.araskargo.com.tr" target="_blank" class="text-blue-600 font-bold underline text-sm">${escHtml(order.trackingNumber)}</a></div></div>` : ''; 
-            let cancelHTML = order.status === 'Hazırlanıyor' ? `<button data-v="${escHtml(order.id)}" onclick="cancelMyOrder(this.dataset.v)" class="mt-4 text-xs text-red-600 border border-red-200 px-4 py-2 rounded-xl hover:bg-red-50 font-bold uppercase tracking-wider transition-colors"><i class="fa-solid fa-ban mr-1"></i> Siparişi İptal Et</button>` : '';
+            let cancelHTML = (order.status === 'Hazırlanıyor' || order.status === 'Ödeme Bekleniyor') ? `<button data-v="${escHtml(order.id)}" onclick="cancelMyOrder(this.dataset.v)" class="mt-4 text-xs text-red-600 border border-red-200 px-4 py-2 rounded-xl hover:bg-red-50 font-bold uppercase tracking-wider transition-colors"><i class="fa-solid fa-ban mr-1"></i> Siparişi İptal Et</button>` : '';
             let returnHTML = order.status === 'Tamamlandı' && (!order.orderDate || !order.orderDate.toMillis || Date.now() - order.orderDate.toMillis() < 30 * 864e5) ? `<button data-v="${escHtml(order.id)}" onclick="requestReturn(this.dataset.v)" class="mt-4 text-xs border border-brand-300 text-brand-700 px-4 py-2 rounded-xl hover:bg-red-50 font-bold uppercase tracking-wider transition-colors"><i class="fa-solid fa-arrow-rotate-left mr-1"></i> İade Talebi Oluştur</button>` : '';
             
             let returnNoteHtml = "";
@@ -1296,7 +1297,7 @@ function loadUserOrders() {
             let isCanceled = order.status === 'İptal Edildi' || order.status.includes('İade');
             let progressWidth = order.status === 'Hazırlanıyor' ? '0%' : (order.status === 'Kargoya Verildi' ? '50%' : '100%');
             
-            let timelineHTML = isCanceled ? `<div class="text-center font-bold text-red-600 my-4 text-sm">${escHtml(order.status)}</div>` : `
+            let timelineHTML = order.status === 'Ödeme Bekleniyor' ? `<div class="text-center font-bold text-amber-600 my-4 text-sm">Ödeme Bekleniyor<span class="block font-normal text-xs mt-1">Ödeme tamamlanmazsa sipariş otomatik iptal edilir.</span></div>` : isCanceled ? `<div class="text-center font-bold text-red-600 my-4 text-sm">${escHtml(order.status)}</div>` : `
             <div class="relative flex items-center justify-between w-full mt-8 mb-8 px-4 sm:px-8">
                 <div class="absolute left-4 right-4 sm:left-8 sm:right-8 top-4 transform -translate-y-1/2 h-1.5 bg-brand-100 z-0 rounded-full"></div>
                 <div class="absolute left-4 sm:left-8 top-4 transform -translate-y-1/2 h-1.5 bg-brand-900 z-0 transition-all duration-700 rounded-full" style="width: calc(${progressWidth} - 2rem)"></div>
@@ -1880,7 +1881,7 @@ window.saveEditedProductData = async function(btn) {
       b.innerHTML = h || '<p class="text-xs">Terk edilmiş sepet yok.</p>'; }).catch(() => {});
   };
   window.updateDashboardStats = function () {
-    const live = allOrders.filter(o => !['İptal Edildi', 'İade Onaylandı'].includes(o.status));
+    const live = allOrders.filter(o => !['İptal Edildi', 'İade Onaylandı', 'Ödeme Bekleniyor'].includes(o.status));
     const pend = allOrders.filter(o => o.status === 'Hazırlanıyor').length;
     const set = (id, v) => { if ($(id)) $(id).innerText = v; };
     set('kpiRevenue', '₺' + tl(live.reduce((s, o) => s + (o.totalAmount || 0), 0)));
@@ -2799,7 +2800,7 @@ window.saveEditedProductData = async function(btn) {
     const tab = $('tab-dashboard'); if (!tab) return;
     if (!$('revChart')) { const h = '<div class="card" id="revChart" style="margin-top:14px"><p class="card-title">Günlük Ciro (son 14 gün)</p><div id="revChartBody"></div></div>', k = tab.querySelector('.kpis'); k ? k.insertAdjacentHTML('afterend', h) : tab.insertAdjacentHTML('beforeend', h); }
     const days = [...Array(14)].map((_, i) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 13 + i); return d; });
-    const live = list.filter(o => !['İptal Edildi', 'İade Onaylandı'].includes(o.status));
+    const live = list.filter(o => !['İptal Edildi', 'İade Onaylandı', 'Ödeme Bekleniyor'].includes(o.status));
     const sums = days.map(d => live.filter(o => ms(o) >= d.getTime() && ms(o) < d.getTime() + DAY).reduce((s, o) => s + (o.totalAmount || 0), 0));
     const max = Math.max(...sums, 1), W = 560, H = 150, bw = W / 14;
     $('revChartBody').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + (H + 22) + '" style="width:100%;height:auto">' + sums.map((v, i) => { const h = Math.round(v / max * H);
@@ -2855,7 +2856,7 @@ window.saveEditedProductData = async function(btn) {
   /* İptal ve iade mailleri: işlem bitince Worker güncel durumu okuyup uygun maili gönderir */
   ['cancelMyOrder', 'requestReturn', 'rejectReturn'].forEach(n => {
     const o = window[n]; if (!o) return;
-    window[n] = function (id) { const r = o.apply(this, arguments); Promise.resolve(r).then(() => setTimeout(() => mail('/order-status', { orderId: id }), 1800)); return r; };   // YAMA-56: iptal artık sunucu çağrısı; bitince mail
+    window[n] = function (id) { const wasPend = !!(window.__pendOrd && window.__pendOrd.has(id)); const r = o.apply(this, arguments); Promise.resolve(r).then(() => { if (!wasPend) setTimeout(() => mail('/order-status', { orderId: id }), 1800); }); return r; };   // YAMA-56: iptal artık sunucu çağrısı; bitince mail
   });
   const _u = window.updateAdminOrder;
   window.updateAdminOrder = async function (id) {
@@ -2962,7 +2963,7 @@ window.saveEditedProductData = async function(btn) {
     if (!full()) return; const b = $('adminCustomersContainer'); if (!b) return;
     try {
       const [us, os] = await Promise.all([db.collection('users').get(), db.collection('orders').get()]); agg = {};
-      os.forEach(d => { const o = d.data(); if (['İptal Edildi', 'İade Onaylandı'].includes(o.status)) return; const a = agg[o.userId] = agg[o.userId] || { n: 0, t: 0, list: [] }; a.n++; a.t += o.totalAmount || 0; a.list.push({ id: d.id, ...o }); });
+      os.forEach(d => { const o = d.data(); if (['İptal Edildi', 'İade Onaylandı', 'Ödeme Bekleniyor'].includes(o.status)) return; const a = agg[o.userId] = agg[o.userId] || { n: 0, t: 0, list: [] }; a.n++; a.t += o.totalAmount || 0; a.list.push({ id: d.id, ...o }); });
       b.innerHTML = us.empty ? '<p class="text-xs">Müşteri yok.</p>' : '<table><thead><tr><th>Ad Soyad</th><th>E-posta</th><th>Telefon</th><th>Puan</th><th>Sipariş</th><th>Toplam harcama</th><th></th></tr></thead><tbody>' +
         us.docs.map(d => { const u = d.data(), a = agg[d.id] || { n: 0, t: 0 };
           return '<tr><td>' + E(u.name || '') + ' ' + E(u.surname || '') + '</td><td>' + E(u.email || '-') + '</td><td>' + E(u.phone || '-') + '</td><td>' + tl(u.points) + '</td><td>' + a.n + '</td><td>' + tl(a.t) + ' TL</td><td><button class="btn-ghost" data-v="' + escHtml(d.id) + '" onclick="custHistory(this.dataset.v)">Geçmiş</button> <button class="btn-ghost" data-v="' + escHtml(d.id) + '" onclick="adjustPoints(this.dataset.v)">Puan düzelt</button></td></tr>'; }).join('') + '</tbody></table>';

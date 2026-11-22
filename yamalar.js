@@ -113,7 +113,7 @@ try {
   function ensureThree(cb) {
     if (window.THREE) return cb();
     const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+    s.src = '/vendor/three/three.min.js';   // YAMA-80: projeden servis edilir (three@0.128.0, cdnjs'teki r128 ile aynı dosya)
     s.integrity = 'sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ==';   // YAMA-58: SRI (npm three@0.128.0 ve canlı cdnjs ile doğrulandı)
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';

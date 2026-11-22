@@ -592,7 +592,7 @@ function compressImageForEmail(base64Str) {
             let compressed = canvas.toDataURL('image/jpeg', 0.6); 
             resolve(compressed); 
         }; 
-        img.onerror = () => resolve('https://placehold.co/100x120?text=BALLIN'); 
+        img.onerror = () => resolve('/images/placeholder.svg'); 
         img.src = base64Str; 
     }); 
 }
@@ -604,7 +604,7 @@ async function generateEmailItemsHTML(items) {
     let html = '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden; margin-top: 10px;">';
     for (let item of items) {
         let rawImg = item.image || '';
-        let finalImgSrc = 'https://placehold.co/100x120?text=BALLIN';
+        let finalImgSrc = '/images/placeholder.svg';
         if (rawImg.startsWith('data:image')) {
             finalImgSrc = await compressImageForEmail(rawImg);
         } else if (rawImg.startsWith('http')) {
@@ -880,7 +880,7 @@ function openProductDetail(id) {
     if(others.length > 0) {
         crossSellHtml = `<div class="mt-10 border-t border-brand-100 pt-8"><h3 class="font-serif text-lg font-bold text-brand-900 mb-4"><i class="fa-solid fa-wand-magic-sparkles mr-2 text-amber-500"></i>Kombini Tamamla</h3><div class="grid grid-cols-2 gap-4">`;
         others.forEach(o => {
-            let img = o.images && o.images.length > 0 ? o.images[0] : (o.image || 'https://placehold.co/300');
+            let img = o.images && o.images.length > 0 ? o.images[0] : (o.image || '/images/placeholder.svg');
             crossSellHtml += `<div class="cursor-pointer group bg-brand-50 p-3 rounded-xl border border-brand-100 hover:border-brand-300 transition-colors" data-v="${escHtml(o.id)}" onclick="openProductDetail(this.dataset.v)"><img src="${escHtml(img)}" class="w-full h-32 object-cover rounded-lg mb-3 shadow-sm group-hover:opacity-80 transition-opacity"><h4 class="text-xs font-bold font-serif text-brand-900 line-clamp-1">${escHtml(o.name)}</h4><p class="text-xs text-brand-600 mt-1">${(o.price||0).toLocaleString('tr-TR')} TL</p></div>`;
         });
         crossSellHtml += `</div></div>`;
@@ -2168,7 +2168,7 @@ window.saveEditedProductData = async function(btn) {
   const prodOf = id => allProducts.find(p => p.id === id);
   const limitFor = (p, size) => { const m = parseSS(p.sizeStock); return Object.keys(m).length ? (m[String(size).toUpperCase()] || 0) : (p.stock || 0); };
   const countIn = (id, size) => cart.filter(i => i.dbId === id && i.size === size).length;
-  const cover = p => (p.images && p.images[0]) || p.image || 'https://placehold.co/600x800/f1f3f5/a3a3a3?text=BALLIN';
+  const cover = p => (p.images && p.images[0]) || p.image || '/images/placeholder.svg';
 
   /* Stok sınırını aşan eklemeyi engelle (ürün sayfası dahil) */
   const _add = window.addToCart;

@@ -921,7 +921,7 @@ function shareProduct() {
 function withAlertAuth(fn) { return (firebase.auth().currentUser ? Promise.resolve() : firebase.auth().signInAnonymously()).then(fn); }
 function selectSizeOrNotify(sz, isOut, btnEl, prodId, prodName) { 
     if(isOut) { 
-        let userMail = currentUser && currentUser.email ? currentUser.email : prompt(`${sz} bedeni stoğa girdiğinde haber almak için e-posta adresinizi girin:`); 
+        let userMail = currentUser && currentUser.email ? currentUser.email : prompt(`${sz} bedeni stoğa girdiğinde haber almak için e-posta adresinizi girin:\n\nKişisel verilerin işlenmesi hakkında bilgi: https://ballinworldwide.net/gizlilik-politikasi`); 
         if(userMail && userMail.includes('@')) { 
             withAlertAuth(() => db.collection("stock_alerts").add({
                 email: userMail, productId: prodId || "Bilinmiyor", productName: prodName || "Bilinmiyor", size: sz, status: "bekliyor", requestDate: firebase.firestore.FieldValue.serverTimestamp()
@@ -940,7 +940,7 @@ function selectSizeOrNotify(sz, isOut, btnEl, prodId, prodName) {
 }
 
 function notifyWhenAvailable(prodId, prodName) { 
-    let userMail = currentUser && currentUser.email ? currentUser.email : prompt("Ürün stoğa girdiğinde haber almak için e-posta adresinizi girin:"); 
+    let userMail = currentUser && currentUser.email ? currentUser.email : prompt("Ürün stoğa girdiğinde haber almak için e-posta adresinizi girin:\n\nKişisel verilerin işlenmesi hakkında bilgi: https://ballinworldwide.net/gizlilik-politikasi"); 
     if(userMail && userMail.includes('@')) { 
         withAlertAuth(() => db.collection("stock_alerts").add({
             email: userMail, productId: prodId || "Bilinmiyor", productName: prodName || "Bilinmiyor", size: "Standart / Tümü", status: "bekliyor", requestDate: firebase.firestore.FieldValue.serverTimestamp()
@@ -2128,6 +2128,7 @@ window.saveEditedProductData = async function(btn) {
     /* ---- Çerez politikası ---- */
     setPage('cerez', 'Çerez ve Yerel Depolama Politikası',
       P('Sitemiz, çalışması için zorunlu olan çerez ve tarayıcı yerel depolama alanlarını kullanır: oturum açma, sepetiniz ve tercihleriniz bu sayede hatırlanır. Şu an reklam veya analiz amaçlı çerez kullanılmamaktadır; ileride eklenirse tercihiniz sorulacaktır.') +
+      P('Sitemiz, sayfa yükleme süresi gibi toplu performans ölçümleri için Cloudflare Web Analytics hizmetini kullanır. Cloudflare\'in belgelerine göre bu ölçüm çerez veya yerel depolama kullanmaz ve ziyaretçileri tek tek takip etmez; ölçüm verileri Cloudflare tarafından işlenir.') +
       P('Tarayıcı ayarlarınızdan çerezleri silebilir veya engelleyebilirsiniz, ancak bu durumda giriş ve sepet gibi bölümler çalışmayabilir.'));
 
     /* ---- Künye ---- */

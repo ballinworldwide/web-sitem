@@ -2131,6 +2131,16 @@ window.saveEditedProductData = async function(btn) {
       P('Sitemiz, sayfa yükleme süresi gibi toplu performans ölçümleri için Cloudflare Web Analytics hizmetini kullanır. Cloudflare\'in belgelerine göre bu ölçüm çerez veya yerel depolama kullanmaz ve ziyaretçileri tek tek takip etmez; ölçüm verileri Cloudflare tarafından işlenir.') +
       P('Tarayıcı ayarlarınızdan çerezleri silebilir veya engelleyebilirsiniz, ancak bu durumda giriş ve sepet gibi bölümler çalışmayabilir.'));
 
+    /* ---- İletişim (yama-84) ---- */
+    const IL = (id, t) => '<a onclick="switchPage(\'' + id + '\'); return false;" class="underline cursor-pointer text-brand-900">' + t + '</a>';
+    setPage('iletisim', 'İletişim',
+      P('Sipariş, kargo, iade veya hesabınızla ilgili sorularınız için bize e-posta ile ulaşabilirsiniz:') +
+      P('<a href="mailto:' + e(INFO.mail) + '" class="font-bold underline text-brand-900">' + e(INFO.mail) + '</a>') +
+      P('<b>Dönüş süresi:</b> Mesajlarınıza 2-3 iş günü içinde dönüş yapılır.') +
+      P('<b>Mesajınıza şunları yazarsanız işlem hızlanır:</b><br>• Sipariş numaranız (varsa)<br>• Sorununuzun kısa özeti<br>• Ürünle ilgiliyse bir fotoğraf') +
+      H('Sık başvurulan sayfalar') +
+      P(IL('siparis-sorgula', 'Sipariş Sorgula') + '<br>' + IL('kargo-teslimat', 'Kargo ve Teslimat') + '<br>' + IL('iade-sartlari', 'İade ve Değişim') + '<br>' + IL('gizlilik-politikasi', 'KVKK ve Gizlilik')));
+
     /* ---- Künye ---- */
     const k = document.getElementById('page-destek-merkezi');
     if (k) k.querySelector('div').innerHTML = P(SATICI);
@@ -2141,7 +2151,7 @@ window.saveEditedProductData = async function(btn) {
     const fl = document.querySelector('footer a[onclick*="kargo-teslimat"]');
     if (fl && fl.closest('ul')) {
       const mk = (id, t) => '<li><a onclick="switchPage(\'' + id + '\'); return false;" class="hover:text-white cursor-pointer transition-colors">' + t + '</a></li>';
-      fl.closest('ul').insertAdjacentHTML('beforeend', mk('mesafeli-satis', 'Mesafeli Satış Sözleşmesi') + mk('cerez', 'Çerez Politikası'));
+      fl.closest('ul').insertAdjacentHTML('beforeend', mk('mesafeli-satis', 'Mesafeli Satış Sözleşmesi') + mk('cerez', 'Çerez Politikası') + mk('iletisim', 'İletişim'));
     }
 
     /* ---- Çerez bildirimi ---- */

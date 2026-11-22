@@ -2075,7 +2075,7 @@ window.saveEditedProductData = async function(btn) {
     vergi: '[VERGİ DAİRESİ / VERGİ NO]',
     mersis: '[MERSİS NO - varsa]',
     tel: '[TELEFON]',
-    mail: '[DESTEK E-POSTASI]',
+    mail: 'destek@ballinworldwide.net',
     site: 'ballinworldwide.net'
   };
   const e = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

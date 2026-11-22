@@ -576,59 +576,7 @@ function saveBulkItem(prodId) {
     db.collection("products").doc(prodId).update({ price: newPrice, stock: newStock, sizeStock: newSizeStock }).then(() => { showToast("Stoklar kaydedildi!", 'success'); loadProducts(); }).catch(e => showToast("Kaydedilemedi: " + e.message, 'error'));
 }
 
-function compressImageForEmail(base64Str) { 
-    return new Promise((resolve) => { 
-        if (!base64Str.startsWith('data:image')) { 
-            resolve(base64Str); 
-            return; 
-        } 
-        let img = new Image(); 
-        img.onload = function() { 
-            let canvas = document.createElement('canvas'); 
-            canvas.width = 50; 
-            canvas.height = 65; 
-            let ctx = canvas.getContext('2d'); 
-            ctx.drawImage(img, 0, 0, 50, 65); 
-            let compressed = canvas.toDataURL('image/jpeg', 0.6); 
-            resolve(compressed); 
-        }; 
-        img.onerror = () => resolve('/images/placeholder.svg'); 
-        img.src = base64Str; 
-    }); 
-}
-
-async function generateEmailItemsHTML(items) {
-    if (!items || !Array.isArray(items) || items.length === 0) {
-        return '<p style="font-size:12px;color:#868e96;">Ürün detayı bulunamadı.</p>';
-    }
-    let html = '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden; margin-top: 10px;">';
-    for (let item of items) {
-        let rawImg = item.image || '';
-        let finalImgSrc = '/images/placeholder.svg';
-        if (rawImg.startsWith('data:image')) {
-            finalImgSrc = await compressImageForEmail(rawImg);
-        } else if (rawImg.startsWith('http')) {
-            finalImgSrc = rawImg;
-        }
-        let price = (item.price || 0).toLocaleString('tr-TR') + ' TL';
-        let size = item.size && item.size !== "Standart" ? `<span style="font-size: 11px; color: #868e96; display: block; margin-top: 3px;">Beden: <strong>${escHtml(item.size)}</strong></span>` : '';
-        html += `
-        <tr style="border-bottom: 1px solid #f1f3f5; background-color: #ffffff;">
-            <td style="padding: 10px; width: 60px; vertical-align: middle;">
-                <img src="${escHtml(finalImgSrc)}" alt="${escHtml(item.name)}" width="50" height="65" style="width: 50px; height: 65px; object-fit: cover; border-radius: 6px; display: block; border: 1px solid #eee;">
-            </td>
-            <td style="padding: 10px; vertical-align: middle;">
-                <span style="font-size: 13px; font-weight: bold; color: #212529; display: block;">${escHtml(item.baseName || item.name)}</span>
-                ${size}
-            </td>
-            <td align="right" style="padding: 10px; vertical-align: middle; font-weight: bold; font-size: 13px; color: #212529; white-space: nowrap;">
-                ${price}
-            </td>
-        </tr>`;
-    }
-    html += '</table>';
-    return html;
-}
+/* YAMA-86: ölü kod kaldırıldı: generateEmailItemsHTML, compressImageForEmail (hiçbir yerden çağrılmıyordu) */
 
 /* sendOrderConfirmationEmail yama-1 ile Worker üzerinden çalışır */
 

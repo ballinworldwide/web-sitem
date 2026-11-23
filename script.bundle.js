@@ -259,6 +259,14 @@ function toggleSizeGuide() {
     if(m) m.classList.toggle('hidden'); 
 }
 
+/* YAMA-92: ürün kartlarına gerçek bağlantı. Kartın üstünü kaplayan boş bir <a href="/urun/..."> eklenir; böylece orta tık, Ctrl/Cmd+tık ve sağ tık > "yeni sekmede aç" çalışır.
+   Düz soldan tıklamada bağlantı engellenir ve eskisi gibi openProductDetail (sayfa yenilemeden) çalışır; düğmeler (z-10) bağlantının üstünde kalır. */
+function productHref(prod) { return '/urun/' + (createSlug(String(prod.name || '')) || prod.id); }
+function cardLink(prod) { return '<a href="' + escHtml(productHref(prod)) + '" class="product-card-link" aria-label="' + escHtml(prod.name || 'Ürün') + '" onclick="cardLinkClick(event)"></a>'; }
+function cardLinkClick(e) {
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || (e.button && e.button !== 0)) { e.stopPropagation(); return; }   // yeni sekme/pencere: tarayıcıya bırak, kart tıklaması çalışmasın
+    e.preventDefault();   // düz tık: adrese gitme, olay karta çıkıp openProductDetail'i çalıştırır
+}
 function createSlug(text) {
     const trMap = { 'çÇ':'c', 'ğĞ':'g', 'şŞ':'s', 'üÜ':'u', 'ıİ':'i', 'öÖ':'o' };
     for (let key in trMap) {
@@ -829,7 +837,7 @@ function openProductDetail(id) {
         crossSellHtml = `<div class="mt-10 border-t border-brand-100 pt-8"><h3 class="font-serif text-lg font-bold text-brand-900 mb-4"><i class="fa-solid fa-wand-magic-sparkles mr-2 text-amber-500"></i>Kombini Tamamla</h3><div class="grid grid-cols-2 gap-4">`;
         others.forEach(o => {
             let img = o.images && o.images.length > 0 ? o.images[0] : (o.image || '/images/placeholder.svg');
-            crossSellHtml += `<div class="cursor-pointer group bg-brand-50 p-3 rounded-xl border border-brand-100 hover:border-brand-300 transition-colors" data-v="${escHtml(o.id)}" onclick="openProductDetail(this.dataset.v)"><img src="${escHtml(img)}" class="w-full h-32 object-cover rounded-lg mb-3 shadow-sm group-hover:opacity-80 transition-opacity"><h4 class="text-xs font-bold font-serif text-brand-900 line-clamp-1">${escHtml(o.name)}</h4><p class="text-xs text-brand-600 mt-1">${(o.price||0).toLocaleString('tr-TR')} TL</p></div>`;
+            crossSellHtml += `<div class="relative cursor-pointer group bg-brand-50 p-3 rounded-xl border border-brand-100 hover:border-brand-300 transition-colors" data-v="${escHtml(o.id)}" onclick="openProductDetail(this.dataset.v)">${cardLink(o)}<img src="${escHtml(img)}" class="w-full h-32 object-cover rounded-lg mb-3 shadow-sm group-hover:opacity-80 transition-opacity"><h4 class="text-xs font-bold font-serif text-brand-900 line-clamp-1">${escHtml(o.name)}</h4><p class="text-xs text-brand-600 mt-1">${(o.price||0).toLocaleString('tr-TR')} TL</p></div>`;
         });
         crossSellHtml += `</div></div>`;
     }
@@ -2140,7 +2148,7 @@ window.saveEditedProductData = async function(btn) {
     const out = prod.stock <= 0, fav = wishlist.includes(prod.id);
     const badge = out ? '<span class="absolute top-3 right-3 bg-red-600 text-white px-2.5 py-1 text-[10px] font-bold rounded shadow-md z-10 uppercase tracking-widest">Tükendi</span>'
       : (prod.stock <= 5 ? '<span class="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 text-[10px] font-bold rounded shadow-md z-10 uppercase tracking-widest">Son ' + prod.stock + ' Ürün</span>' : '');
-    return '<div class="group relative flex flex-col cursor-pointer bg-brand-50 rounded-2xl p-4 overflow-hidden border border-brand-100 hover:border-brand-300 transition-all hover:shadow-xl" data-v="' + escHtml(prod.id) + '" onclick="openProductDetail(this.dataset.v)">' + badge +
+    return '<div class="group relative flex flex-col cursor-pointer bg-brand-50 rounded-2xl p-4 overflow-hidden border border-brand-100 hover:border-brand-300 transition-all hover:shadow-xl" data-v="' + escHtml(prod.id) + '" onclick="openProductDetail(this.dataset.v)">' + cardLink(prod) + badge +
       '<div class="absolute top-3 left-3 z-10"><button data-v="' + escHtml(prod.id) + '" onclick="toggleWishlist(this.dataset.v, event)" aria-label="Favorilere ekle" class="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center transition-colors ' + (fav ? 'text-red-500' : 'text-brand-400 hover:text-red-500') + '"><i class="fa-solid fa-heart"></i></button></div>' +
       '<div class="relative w-full aspect-[4/5] rounded-xl overflow-hidden mb-4 bg-white">' + (prod.oldPrice > prod.price ? '<span class="absolute top-12 left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded z-10">%' + Math.round((1 - prod.price / prod.oldPrice) * 100) + ' İNDİRİM</span>' : '') + '<img loading="lazy" alt="' + E(prod.name) + '" src="' + E(cover(prod)) + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ' + (out ? 'grayscale brightness-50' : '') + '">' +
       '<button ' + (out ? 'disabled' : 'data-v="' + escHtml(prod.id) + '" onclick="quickAdd(this.dataset.v, event)"') + ' class="absolute bottom-2 left-2 right-2 ' + (out ? 'bg-brand-300 cursor-not-allowed' : 'bg-brand-900 hover:bg-black') + ' text-white text-xs font-bold py-2.5 rounded-lg shadow-lg z-10">' + (out ? 'Tükendi' : '<i class="fa-solid fa-bag-shopping mr-1"></i> Sepete Ekle') + '</button></div>' +
@@ -2306,7 +2314,7 @@ window.saveEditedProductData = async function(btn) {
     const img = p => (p.images && p.images[0]) || p.image || '';
     const cats = [...new Set(list.map(p => p.category).filter(Boolean))].slice(0, 4), tile = 'relative rounded-2xl overflow-hidden cursor-pointer group bg-brand-100';
     w.innerHTML = '<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16"><h2 class="font-serif text-3xl md:text-4xl text-brand-900 mb-8 text-center">Yeni Gelenler</h2><div class="grid grid-cols-2 lg:grid-cols-4 gap-4">' +
-      list.slice(0, 4).map(p => '<div class="' + tile + ' aspect-[4/5]" data-v="' + escHtml(p.id) + '" onclick="openProductDetail(this.dataset.v)"><img loading="lazy" alt="' + E(p.name) + '" src="' + E(img(p)) + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"><div class="absolute inset-x-0 bottom-0 p-3 text-white" style="background:linear-gradient(transparent,rgba(0,0,0,.7))"><div class="text-sm font-serif line-clamp-1">' + E(p.name) + '</div><div class="text-xs font-bold">' + tl(p.price) + ' TL</div></div></div>').join('') + '</div>' +
+      list.slice(0, 4).map(p => '<div class="' + tile + ' aspect-[4/5]" data-v="' + escHtml(p.id) + '" onclick="openProductDetail(this.dataset.v)">' + cardLink(p) + '<img loading="lazy" alt="' + E(p.name) + '" src="' + E(img(p)) + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"><div class="absolute inset-x-0 bottom-0 p-3 text-white" style="background:linear-gradient(transparent,rgba(0,0,0,.7))"><div class="text-sm font-serif line-clamp-1">' + E(p.name) + '</div><div class="text-xs font-bold">' + tl(p.price) + ' TL</div></div></div>').join('') + '</div>' +
       (cats.length > 1 ? '<h2 class="font-serif text-3xl md:text-4xl text-brand-900 mt-16 mb-8 text-center">Kategoriler</h2><div class="grid grid-cols-2 lg:grid-cols-4 gap-4">' + cats.map((c, i) => '<div class="' + tile + ' aspect-[16/10]" data-cat="' + i + '"><img loading="lazy" alt="' + E(c) + '" src="' + E(img(list.find(x => x.category === c))) + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"><div class="absolute inset-0 flex items-center justify-center text-white font-serif text-xl" style="background:rgba(0,0,0,.35)">' + E(c) + '</div></div>').join('') + '</div>' : '') + '</div>';
     w.querySelectorAll('[data-cat]').forEach(el => el.onclick = () => goCat(cats[el.dataset.cat]));
   }

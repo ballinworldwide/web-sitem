@@ -281,3 +281,7 @@ body.rp-lock{overflow:hidden}
 .ct-ok button:hover { border-color: #212529; }
 @media (max-width: 640px) { .ct-form { padding: 20px; } .ct-field input, .ct-field textarea { font-size: 16px; } }
 @media (prefers-reduced-motion: no-preference) { .ct-wrap > * { animation: ctUp .6s cubic-bezier(.16,1,.3,1) both; } .ct-wrap > .ct-grid { animation-delay: .1s; } @keyframes ctUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } } }
+
+/* ===== yama-92: ürün kartı bağlantısı (orta tık / yeni sekmede aç) ===== */
+.product-card-link { position: absolute; inset: 0; z-index: 2; border-radius: inherit; display: block; }
+.product-card-link:focus-visible { outline: 2px solid #212529; outline-offset: -2px; }

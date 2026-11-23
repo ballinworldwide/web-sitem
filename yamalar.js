@@ -108,7 +108,7 @@ try {
    =================================================================== */
 (function () {
   'use strict';
-  console.log('[hero-globe] SÜRÜM v14 (noktalı küre, 21st.dev orijinal renkleri, yama-94) çalışıyor.');
+  console.log('[hero-globe] SÜRÜM v15 (noktalı küre, 21st.dev orijinal renkleri, yama-94, yazı gölgesi yama-97) çalışıyor.');
 
   // yama-90: three.js yerine noktalı tel kafes küre (vendor/globe/globe.js: d3-geo + Natural Earth, harici istek yok).
   // Aynı kütüphaneyi iletişim sayfası da kullanır (yama-91), bu yüzden window.__loadGlobe olarak paylaşılır.
@@ -136,19 +136,19 @@ try {
     const st = document.createElement('style');
     st.id = 'heroGlobeStyles';
     st.textContent = `
-      .hero-kicker{font-family:Inter,sans-serif;display:inline-block;color:rgba(255,255,255,.8);font-size:12px;letter-spacing:.3em;text-transform:uppercase;margin-bottom:12px;opacity:0;animation:heroFadeIn .7s ease forwards;animation-delay:.1s}
+      .hero-kicker{font-family:Inter,sans-serif;display:inline-block;color:rgba(255,255,255,.92);text-shadow:0 0 10px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.9);font-size:12px;letter-spacing:.3em;text-transform:uppercase;margin-bottom:12px;opacity:0;animation:heroFadeIn .7s ease forwards;animation-delay:.1s}
       .hero-fillbar-wrap{width:140px;height:2px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;margin:0 auto 32px}
       .hero-fillbar{height:100%;width:0;background:linear-gradient(90deg,#fff,rgba(255,255,255,.3));border-radius:2px;animation:heroFillBar 1.3s cubic-bezier(.16,1,.3,1) forwards;animation-delay:.35s}
-      #homeHeroTitle{color:#fff !important;opacity:0;transform:translateY(24px);animation:heroRiseIn .8s cubic-bezier(.16,1,.3,1) forwards;animation-delay:.25s}
-      #homeHeroDesc{color:rgba(255,255,255,.55) !important;opacity:0;animation:heroFadeIn .9s ease forwards;animation-delay:.55s}
+      #homeHeroTitle{color:#fff !important;text-shadow:0 2px 26px rgba(0,0,0,.9),0 0 5px rgba(0,0,0,.65);opacity:0;transform:translateY(24px);animation:heroRiseIn .8s cubic-bezier(.16,1,.3,1) forwards;animation-delay:.25s}
+      #homeHeroDesc{color:rgba(255,255,255,.86) !important;text-shadow:0 0 14px rgba(0,0,0,.95),0 0 4px rgba(0,0,0,.9);opacity:0;animation:heroFadeIn .9s ease forwards;animation-delay:.55s}
       .hero-btns{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:10px;opacity:0;animation:heroFadeIn .9s ease forwards;animation-delay:.8s}
       .hero-btn-primary{font-family:Inter,sans-serif;font-weight:600;font-size:14px;letter-spacing:.05em;text-transform:uppercase;padding:16px 34px;border-radius:999px;background:#fff;color:#05050a;border:0;cursor:pointer;transition:transform .25s}
       .hero-btn-primary:hover{transform:scale(1.04)}
-      .hero-btn-ghost{font-family:Inter,sans-serif;font-weight:600;font-size:14px;letter-spacing:.05em;text-transform:uppercase;padding:16px 34px;border-radius:999px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);cursor:pointer;transition:.25s}
+      .hero-btn-ghost{font-family:Inter,sans-serif;font-weight:600;font-size:14px;letter-spacing:.05em;text-transform:uppercase;padding:16px 34px;border-radius:999px;background:rgba(5,5,10,.62);color:#fff;border:1px solid rgba(255,255,255,.45);cursor:pointer;transition:.25s}
       .hero-btn-ghost:hover{border-color:#fff;background:rgba(255,255,255,.06)}
       #page-home > div:first-child{user-select:none;-webkit-user-select:none}
-      #heroGlobe + .relative.z-10::before{content:'';position:absolute;inset:-60px -140px;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at center,rgba(5,5,10,.8) 0%,rgba(5,5,10,.5) 45%,transparent 72%)}
-      @media (max-width:640px){#heroGlobe + .relative.z-10::before{inset:-30px -20px;background:radial-gradient(ellipse at center,rgba(5,5,10,.6) 0%,rgba(5,5,10,.3) 50%,transparent 75%)}}
+      #heroGlobe + .relative.z-10::before{content:'';position:absolute;inset:-60px -140px;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at center,rgba(5,5,10,.9) 0%,rgba(5,5,10,.68) 48%,transparent 76%)}
+      @media (max-width:640px){#heroGlobe + .relative.z-10::before{inset:-30px -20px;background:radial-gradient(ellipse at center,rgba(5,5,10,.82) 0%,rgba(5,5,10,.55) 52%,transparent 78%)}}
       @keyframes heroRiseIn{to{opacity:1;transform:translateY(0)}}
       @keyframes heroFadeIn{to{opacity:1}}
       @keyframes heroFillBar{to{width:100%}}

@@ -329,8 +329,12 @@ body.rp-lock{overflow:hidden}
 /* Üst şerit + header + hero + footer aynı koyu tonda tek blok */
 #topAnnouncementContainer { background-color: var(--b-dark) !important; border-bottom: 1px solid var(--b-dark-line); }
 #header { background-color: rgba(5,5,10,.98) !important; border-color: var(--b-dark-line) !important; }
-#header nav a, #header > div button { color: #A1A1AA; }
-#header nav a:hover, #header > div button:hover { color: #fff; }
+#header nav a { color: #A1A1AA; }
+#header nav a:hover { color: #fff; }
+/* yama-99: header ikonları parlak beyaz; üzerine gelince kalp kırmızı, diğerleri beyaz + hafif büyüme */
+#header > div button { color: #F4F4F5; transition: color .2s ease, transform .2s ease; }
+#header > div button:hover { color: #fff; transform: scale(1.1); }
+#header > div button[title="Favoriler"]:hover { color: #FF5C7A; }
 #header #adminButton { color: #fff; }
 #header img { mix-blend-mode: screen !important; filter: invert(1) brightness(1.6) !important; }
 #mobile-menu { background-color: var(--b-dark) !important; border-color: var(--b-dark-line) !important; }

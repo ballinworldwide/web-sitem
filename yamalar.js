@@ -108,19 +108,21 @@ try {
    =================================================================== */
 (function () {
   'use strict';
-  console.log('[hero-globe] SÜRÜM v12 (hareket azaltma desteği) çalışıyor.');
+  console.log('[hero-globe] SÜRÜM v13 (noktalı tel kafes küre, yama-90) çalışıyor.');
 
-  function ensureThree(cb) {
-    if (window.THREE) return cb();
-    const s = document.createElement('script');
-    s.src = '/vendor/three/three.min.js';   // YAMA-80: projeden servis edilir (three@0.128.0, cdnjs'teki r128 ile aynı dosya)
-    s.integrity = 'sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ==';   // YAMA-58: SRI (npm three@0.128.0 ve canlı cdnjs ile doğrulandı)
-    s.crossOrigin = 'anonymous';
-    s.referrerPolicy = 'no-referrer';
+  // yama-90: three.js yerine noktalı tel kafes küre (vendor/globe/globe.js: d3-geo + Natural Earth, harici istek yok).
+  // Aynı kütüphaneyi iletişim sayfası da kullanır (yama-91), bu yüzden window.__loadGlobe olarak paylaşılır.
+  function ensureGlobe(cb) {
+    if (window.BallinGlobe) return cb();
+    let s = document.getElementById('ballinGlobeLib');
+    if (s) { s.addEventListener('load', cb); return; }
+    s = document.createElement('script');
+    s.id = 'ballinGlobeLib'; s.src = '/vendor/globe/globe.js?v=2';
     s.onload = cb;
-    s.onerror = () => console.warn('[hero-globe] three.js yüklenemedi');
+    s.onerror = () => console.warn('[hero-globe] küre kütüphanesi yüklenemedi');
     document.head.appendChild(s);
   }
+  window.__loadGlobe = ensureGlobe;
 
   function findHeroContainer() {
     const home = document.getElementById('page-home'); if (!home) return null;
@@ -144,6 +146,9 @@ try {
       .hero-btn-primary:hover{transform:scale(1.04)}
       .hero-btn-ghost{font-family:Inter,sans-serif;font-weight:600;font-size:14px;letter-spacing:.05em;text-transform:uppercase;padding:16px 34px;border-radius:999px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);cursor:pointer;transition:.25s}
       .hero-btn-ghost:hover{border-color:#fff;background:rgba(255,255,255,.06)}
+      #page-home > div:first-child{user-select:none;-webkit-user-select:none}
+      #heroGlobe + .relative.z-10::before{content:'';position:absolute;inset:-60px -140px;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at center,rgba(5,5,10,.8) 0%,rgba(5,5,10,.5) 45%,transparent 72%)}
+      @media (max-width:640px){#heroGlobe + .relative.z-10::before{inset:-30px -20px;background:radial-gradient(ellipse at center,rgba(5,5,10,.6) 0%,rgba(5,5,10,.3) 50%,transparent 75%)}}
       @keyframes heroRiseIn{to{opacity:1;transform:translateY(0)}}
       @keyframes heroFadeIn{to{opacity:1}}
       @keyframes heroFillBar{to{width:100%}}
@@ -237,47 +242,16 @@ try {
     return c;
   }
 
+  let heroGlobeInst = null;
   function initHeroGlobe() {
     const hero = findHeroContainer(); if (!hero) return;
     const canvas = ensureCanvas(hero);
-    if (canvas.dataset.threeInited) return;
+    if (canvas.dataset.globeInited) return;
     const w = hero.clientWidth, h = hero.clientHeight;
     if (w < 50 || h < 50) { setTimeout(initHeroGlobe, 300); return; }
-    canvas.dataset.threeInited = '1';
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
-    camera.position.z = 3;
-
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.setSize(w, h);
-
-    const group = new THREE.Group(); scene.add(group);
-    const sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(1, 48, 48),
-      new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.15 })
-    );
-    group.add(sphere);
-
-    // Kullanıcı "hareketi azalt" ayarını açtıysa küre dönmez, sabit bir kare çizilir
-    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    function animate() {
-      if (!reduceMotion) requestAnimationFrame(animate);
-      group.rotation.y += reduceMotion ? 0 : 0.0022;
-      group.rotation.x += reduceMotion ? 0 : 0.0006;
-      renderer.render(scene, camera);
-    }
-    if (reduceMotion) group.rotation.set && group.rotation.set(0.4, 0.8, 0);
-    animate();
-
-    const ro = new ResizeObserver(() => {
-      const nw = hero.clientWidth, nh = hero.clientHeight;
-      if (nw < 10 || nh < 10) return;
-      camera.aspect = nw / nh; camera.updateProjectionMatrix();
-      renderer.setSize(nw, nh);
-    });
-    ro.observe(hero);
+    canvas.dataset.globeInited = '1';
+    // Metinler ve küre aynı alanda: küre sürükleyerek döndürülür (düğmelere basınca dönmez); tekerlekle yakınlaştırma yok, sayfa kaydırması bozulmasın.
+    heroGlobeInst = BallinGlobe.create(canvas, { mode: 'dots', color: '255,255,255', alpha: 0.62, scale: (w, h) => w < 640 ? 0.62 : 0.46, speed: 7, tilt: 18, startLon: 30, dragTarget: hero });
   }
 
   // Admin panelindeki "Ana Sayfa Banner" kartına "Üst Etiket" alanını kendimiz ekliyoruz —
@@ -297,14 +271,14 @@ try {
   (window.__adminInits = window.__adminInits || []).push(ensureAdminKickerField);  // yama-23: admin paneli geç yüklenince tekrar çalıştırılır
   function boot() {
     ensureAdminKickerField();
-    // ÖNEMLİ (yama-11 düzeltmesi): içerik (kicker/bar/buton) three.js'in CDN'den
+    // ÖNEMLİ (yama-11 düzeltmesi): içerik (kicker/bar/buton) küre kütüphanesinin
     // yüklenmesini BEKLEMEDEN hemen kuruluyor. Önceki sürümde kicker elemanı
-    // three.js yüklendikten SONRA oluşturuluyordu; script.bundle.js'teki
+    // küre kütüphanesi yüklendikten SONRA oluşturuluyordu; script.bundle.js'teki
     // loadCMSBanner() sayfa açılır açılmaz çalıştığı için o an #homeHeroKicker
     // henüz DOM'da olmadığından admin panelindeki metin hiç uygulanmıyordu.
     const hero = findHeroContainer();
     if (hero) { ensureStyles(); buildHeroContent(hero); }
-    ensureThree(() => initHeroGlobe());
+    ensureGlobe(() => initHeroGlobe());
   }
   const _sw = window.switchPage;
   window.switchPage = function (id) {

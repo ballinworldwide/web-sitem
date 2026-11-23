@@ -2097,7 +2097,7 @@ window.saveEditedProductData = async function(btn) {
     const fl = document.querySelector('footer a[onclick*="kargo-teslimat"]');
     if (fl && fl.closest('ul')) {
       const mk = (id, t) => '<li><a onclick="switchPage(\'' + id + '\'); return false;" class="hover:text-white cursor-pointer transition-colors">' + t + '</a></li>';
-      fl.closest('ul').insertAdjacentHTML('beforeend', mk('mesafeli-satis', 'Mesafeli Satış Sözleşmesi') + mk('cerez', 'Çerez Politikası') + mk('iletisim', 'İletişim'));
+      fl.closest('ul').insertAdjacentHTML('beforeend', mk('mesafeli-satis', 'Mesafeli Satış Sözleşmesi') + mk('cerez', 'Çerez Politikası') + mk('iletisim', 'İletişim') + mk('destek-merkezi', 'Künye'));
     }
 
     /* ---- Çerez bildirimi ---- */

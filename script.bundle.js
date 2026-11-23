@@ -234,6 +234,143 @@ function populateDistricts(citySelectId, districtSelectId) {
     }
 }
 
+/* ===== YAMA-103: özel pencere sistemi (tarayıcının confirm / alert / prompt pencerelerinin yerine) =====
+   bDialog({ title, message, confirmText, cancelText, danger, icon, hideCancel, persistent,
+             input | fields, code, link }) -> Promise
+   Sonuç: onay penceresi true/false · tek giriş alanı varsa metin ya da iptalde null · fields varsa nesne ya da null.
+   PC'de ortada kart, telefonda alttan açılan sayfa (giriş alanı olanlar klavye örtmesin diye ortada açılır). */
+var __bdCount = 0, __bdOpen = 0, __bdPrevOverflow = '';
+function bDialog(o) {
+  o = o || {};
+  return new Promise(function (resolve) {
+    var uid = ++__bdCount;
+    var fields = o.fields || (o.input ? [o.input] : []);
+    var single = !o.fields && !!o.input;
+    var prevFocus = document.activeElement;
+    var done = false;
+    function mk(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+    var ov = mk('div', 'bd-overlay' + (fields.length ? ' bd-has-input' : ''));
+    var box = mk('div', 'bd-box' + (o.danger ? ' bd-danger' : ''));
+    box.setAttribute('role', o.hideCancel ? 'alertdialog' : 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-labelledby', 'bdT' + uid);
+    var form = mk('form', 'bd-form'); form.setAttribute('novalidate', '');
+    form.setAttribute('autocomplete', 'off');
+
+    var handle = mk('div', 'bd-handle'); handle.setAttribute('aria-hidden', 'true'); form.appendChild(handle);
+    var ic = mk('div', 'bd-ic'); ic.setAttribute('aria-hidden', 'true');
+    var icons = { danger: 'fa-trash', warn: 'fa-triangle-exclamation', info: 'fa-circle-info', logout: 'fa-right-from-bracket', mail: 'fa-envelope', lock: 'fa-lock', ok: 'fa-circle-check', note: 'fa-pen' };
+    var i = mk('i', 'fa-solid ' + (icons[o.icon] || (o.danger ? icons.danger : icons.info))); ic.appendChild(i); form.appendChild(ic);
+    var h = mk('h3', 'bd-title', o.title || ''); h.id = 'bdT' + uid; form.appendChild(h);
+    if (o.message) { var p = mk('p', 'bd-msg', o.message); p.id = 'bdM' + uid; box.setAttribute('aria-describedby', p.id); form.appendChild(p); }
+
+    if (o.code) {
+      var cw = mk('div', 'bd-codewrap'); var cb = mk('div', 'bd-code', o.code); cw.appendChild(cb); form.appendChild(cw);
+    }
+
+    var inputs = [];
+    fields.forEach(function (f, idx) {
+      var wrap = mk('div', 'bd-field');
+      var id = 'bdF' + uid + '_' + idx;
+      if (f.label) { var lb = mk('label', 'bd-label', f.label); lb.setAttribute('for', id); wrap.appendChild(lb); }
+      var inp = f.multiline ? mk('textarea', 'bd-input') : mk('input', 'bd-input');
+      inp.id = id; if (f.multiline) inp.rows = 3; else inp.type = f.type || 'text';
+      if (f.placeholder) inp.placeholder = f.placeholder;
+      if (f.inputMode) inp.setAttribute('inputmode', f.inputMode);
+      if (f.autocomplete) inp.setAttribute('autocomplete', f.autocomplete); else inp.setAttribute('autocomplete', 'off');
+      if (f.maxLength) inp.maxLength = f.maxLength;
+      if (f.value != null) inp.value = f.value;
+      wrap.appendChild(inp);
+      var er = mk('div', 'bd-err'); er.setAttribute('role', 'alert'); wrap.appendChild(er);
+      inp.addEventListener('input', function () { er.textContent = ''; inp.classList.remove('bd-bad'); });
+      form.appendChild(wrap); inputs.push({ f: f, inp: inp, er: er });
+    });
+
+    if (o.link && o.link.href) {
+      var lk = mk('a', 'bd-link', o.link.text || o.link.href); lk.href = o.link.href; lk.target = '_blank'; lk.rel = 'noopener noreferrer'; form.appendChild(lk);
+    }
+
+    var row = mk('div', 'bd-row');
+    var cancelBtn = null;
+    if (!o.hideCancel) { cancelBtn = mk('button', 'bd-btn bd-ghost', o.cancelText || 'Vazgeç'); cancelBtn.type = 'button'; row.appendChild(cancelBtn); }
+    if (o.code) {
+      var cp = mk('button', 'bd-btn bd-ghost', 'Kopyala'); cp.type = 'button';
+      cp.addEventListener('click', function () {
+        var txt = o.code;
+        function ok() { cp.textContent = 'Kopyalandı'; setTimeout(function () { cp.textContent = 'Kopyala'; }, 1800); }
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, function () { });
+        else { var ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); ok(); } catch (e) { } ta.remove(); }
+      });
+      row.appendChild(cp);
+    }
+    var okBtn = mk('button', 'bd-btn ' + (o.danger ? 'bd-red' : 'bd-white'), o.confirmText || 'Tamam'); okBtn.type = 'submit'; row.appendChild(okBtn);
+    form.appendChild(row);
+    box.appendChild(form); ov.appendChild(box);
+
+    function finish(result) {
+      if (done) return; done = true;
+      document.removeEventListener('keydown', onKey, true);
+      resolve(result);
+      ov.classList.add('bd-out'); ov.style.pointerEvents = 'none';
+      setTimeout(function () { ov.remove(); }, 260);
+      __bdOpen--; if (__bdOpen <= 0) { __bdOpen = 0; document.body.style.overflow = __bdPrevOverflow; }
+      if (prevFocus && prevFocus.focus && document.contains(prevFocus)) { try { prevFocus.focus({ preventScroll: true }); } catch (e) { } }
+    }
+    function cancel() { finish(fields.length ? null : false); }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var vals = {}, firstBad = null;
+      inputs.forEach(function (x) {
+        var raw = x.inp.value, v = (x.f.type === 'password') ? raw : raw.trim(), msg = '';
+        if (!v && x.f.required) msg = x.f.requiredMsg || 'Bu alan boş bırakılamaz.';
+        else if (v && x.f.validate) msg = x.f.validate(v) || '';
+        x.er.textContent = msg; x.inp.classList.toggle('bd-bad', !!msg);
+        if (msg && !firstBad) firstBad = x.inp;
+        vals[x.f.name || 'value'] = v;
+      });
+      if (firstBad) { firstBad.focus(); box.classList.remove('bd-shake'); void box.offsetWidth; box.classList.add('bd-shake'); return; }
+      finish(fields.length ? (single ? vals[inputs[0].f.name || 'value'] : vals) : true);
+    });
+    if (cancelBtn) cancelBtn.addEventListener('click', cancel);
+    ov.addEventListener('mousedown', function (e) { if (e.target === ov && !o.persistent && !o.hideCancel) cancel(); });
+    function onKey(e) {
+      if (!document.contains(ov) || ov.classList.contains('bd-out')) return;
+      var last = document.querySelectorAll('.bd-overlay:not(.bd-out)'); if (last[last.length - 1] !== ov) return;
+      if (e.key === 'Escape') { if (!o.persistent) { e.preventDefault(); e.stopPropagation(); (o.hideCancel ? finish(true) : cancel()); } return; }
+      if (e.key === 'Tab') {
+        var f = Array.prototype.filter.call(box.querySelectorAll('input,textarea,button,a[href]'), function (x) { return !x.disabled && x.offsetParent !== null; });
+        if (!f.length) return; var a = f[0], z = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); }
+        else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+        else if (!box.contains(document.activeElement)) { e.preventDefault(); a.focus(); }
+      }
+    }
+    document.addEventListener('keydown', onKey, true);
+
+    // telefonda tutamaçtan aşağı sürükleyerek kapatma
+    var sy = null, dy = 0;
+    handle.addEventListener('touchstart', function (e) { sy = e.touches[0].clientY; dy = 0; box.style.transition = 'none'; }, { passive: true });
+    handle.addEventListener('touchmove', function (e) { if (sy == null) return; dy = Math.max(0, e.touches[0].clientY - sy); box.style.transform = 'translateY(' + dy + 'px)'; }, { passive: true });
+    handle.addEventListener('touchend', function () {
+      if (sy == null) return; sy = null; box.style.transition = '';
+      if (dy > 90 && !o.persistent && !o.hideCancel) { cancel(); } else { box.style.transform = ''; }
+    });
+
+    if (__bdOpen === 0) { __bdPrevOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden'; }
+    __bdOpen++;
+    document.body.appendChild(ov);
+    setTimeout(function () {
+      var target = inputs.length ? inputs[0].inp : ((o.danger && cancelBtn) ? cancelBtn : okBtn);
+      try { target.focus({ preventScroll: true }); } catch (e) { target.focus(); }
+    }, 30);
+  });
+}
+function bConfirm(o) { return bDialog(o).then(function (r) { return !!r; }); }
+function bAlert(o) { o = o || {}; o.hideCancel = true; return bDialog(o); }
+function bEmailCheck(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? '' : 'Geçerli bir e-posta adresi yaz.'; }
+
 let toastTimeout;
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
@@ -875,9 +1012,13 @@ function shareProduct() {
 // --- YENİ: Haber Ver Veritabanı Kaydı ---
 // YAMA-55: stok talebi için oturum gerekir; giriş yapılmamışsa misafir (anonim) oturum açılır
 function withAlertAuth(fn) { return (firebase.auth().currentUser ? Promise.resolve() : firebase.auth().signInAnonymously()).then(fn); }
-function selectSizeOrNotify(sz, isOut, btnEl, prodId, prodName) { 
+function askStockMail(sizeText) {
+    if (currentUser && currentUser.email) return Promise.resolve(currentUser.email);
+    return bDialog({ title: 'Stoğa girince haber verelim', message: (sizeText ? sizeText + ' bedeni' : 'Bu ürün') + ' stoğa girdiğinde e-posta ile haber vereceğiz.', confirmText: 'Haber ver', icon: 'mail', input: { type: 'email', inputMode: 'email', autocomplete: 'email', placeholder: 'ornek@mail.com', required: true, validate: bEmailCheck }, link: { text: 'Kişisel verilerin işlenmesi hakkında bilgi', href: 'https://ballinworldwide.net/gizlilik-politikasi' } });
+}
+async function selectSizeOrNotify(sz, isOut, btnEl, prodId, prodName) { 
     if(isOut) { 
-        let userMail = currentUser && currentUser.email ? currentUser.email : prompt(`${sz} bedeni stoğa girdiğinde haber almak için e-posta adresinizi girin:\n\nKişisel verilerin işlenmesi hakkında bilgi: https://ballinworldwide.net/gizlilik-politikasi`); 
+        let userMail = await askStockMail(sz); 
         if(userMail && userMail.includes('@')) { 
             withAlertAuth(() => db.collection("stock_alerts").add({
                 email: userMail, productId: prodId || "Bilinmiyor", productName: prodName || "Bilinmiyor", size: sz, status: "bekliyor", requestDate: firebase.firestore.FieldValue.serverTimestamp()
@@ -895,8 +1036,8 @@ function selectSizeOrNotify(sz, isOut, btnEl, prodId, prodName) {
     btnEl.classList.add('border-brand-900', 'bg-brand-900', 'text-white', 'shadow-md', 'transform', 'scale-105'); 
 }
 
-function notifyWhenAvailable(prodId, prodName) { 
-    let userMail = currentUser && currentUser.email ? currentUser.email : prompt("Ürün stoğa girdiğinde haber almak için e-posta adresinizi girin:\n\nKişisel verilerin işlenmesi hakkında bilgi: https://ballinworldwide.net/gizlilik-politikasi"); 
+async function notifyWhenAvailable(prodId, prodName) { 
+    let userMail = await askStockMail(''); 
     if(userMail && userMail.includes('@')) { 
         withAlertAuth(() => db.collection("stock_alerts").add({
             email: userMail, productId: prodId || "Bilinmiyor", productName: prodName || "Bilinmiyor", size: "Standart / Tümü", status: "bekliyor", requestDate: firebase.firestore.FieldValue.serverTimestamp()
@@ -1186,8 +1327,8 @@ function clearAccountUI() {
     const pi = document.getElementById('promoDiscountInfo'); if(pi) pi.style.display = 'none';
     const vb = document.getElementById('verifyBanner'); if(vb) vb.remove();
 }
-function logout() {
-    if(!confirm("Çıkış yapmak istediğinize emin misiniz?")) return;
+async function logout() {
+    if(!(await bDialog({ title: 'Çıkış yapılsın mı?', message: 'Hesabından çıkış yapacaksın.', confirmText: 'Çıkış yap', icon: 'logout' }))) return;
     switchPage('home');      // önce ana sayfaya al: profil bilgileri bir an bile ekranda kalmasın
     clearAccountUI();
     firebase.auth().signOut().then(() => {
@@ -1587,7 +1728,7 @@ window.saveEditedProductData = async function(btn) {
         
     } catch (error) {
         console.error("Güncelleme hatası: ", error);
-        alert("Ürün güncellenirken hata oluştu.");
+        bDialog({ title: 'Ürün güncellenemedi', message: 'Ürün güncellenirken bir hata oluştu. Tekrar dene.', hideCancel: true, danger: true, icon: 'warn' });
     } finally {
         btn.innerText = originalText;
         btn.disabled = false;
@@ -1670,7 +1811,7 @@ window.saveEditedProductData = async function(btn) {
   }
   // Müşteri iptali: durum değişikliği, stok/puan/kupon iadesi aynı anda sunucuda yapılır
   window.cancelMyOrder = async function (id) {
-    if (!confirm('Siparişi iptal etmek istediğinize emin misiniz?')) return;
+    if (!(await bDialog({ title: 'Sipariş iptal edilsin mi?', message: 'Siparişin iptal edilecek.', confirmText: 'Siparişi iptal et', cancelText: 'Vazgeç', danger: true, icon: 'warn' }))) return;
     try { await orderApi('/cancel', id); showToast('Sipariş iptal edildi.', 'success'); loadUserOrders(); }
     catch (e) { showToast(e.message || 'Bu sipariş artık iptal edilemez.', 'error'); }
   };
@@ -2431,9 +2572,9 @@ window.saveEditedProductData = async function(btn) {
   };
   window.deleteMyAccount = async function () {
     const u = firebase.auth().currentUser; if (!u || u.isAnonymous) return;
-    if (!confirm('Hesabınız ve profil verileriniz kalıcı olarak silinecek. Siparişler yasal saklama yükümlülüğü nedeniyle korunur. Devam edilsin mi?')) return;
+    if (!(await bDialog({ title: 'Hesabın silinsin mi?', message: 'Hesabın ve profil verilerin kalıcı olarak silinecek. Siparişler yasal saklama yükümlülüğü nedeniyle korunur.', confirmText: 'Devam et', danger: true }))) return;
     try {
-      if (u.providerData.some(p => p.providerId === 'password')) { const pw = prompt('Doğrulama için şifrenizi girin:'); if (!pw) return; await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email, pw)); }
+      if (u.providerData.some(p => p.providerId === 'password')) { const pw = await bDialog({ title: 'Şifreni doğrula', message: 'Hesabını silmek için mevcut şifreni gir.', confirmText: 'Hesabı sil', danger: true, icon: 'lock', input: { type: 'password', autocomplete: 'current-password', placeholder: 'Şifre', required: true } }); if (!pw) return; await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email, pw)); }
       else await u.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
       await db.collection('users').doc(u.uid).delete(); await u.delete();
       localStorage.removeItem('ballin_cart'); localStorage.removeItem('ballin_wishlist'); showToast('Hesabınız silindi.', 'success'); setTimeout(() => { location.href = '/'; }, 1200);

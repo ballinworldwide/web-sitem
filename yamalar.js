@@ -479,7 +479,7 @@ try {
       }
       // YAMA-61: onay maili yalnız sipariş Worker'ından gider (istemciden ikinci çağrı kaldırıldı)
       showToast('Siparişiniz alındı!', 'success');
-      if (!named) alert('Sipariş numaranız:\n' + j.orderId + '\n\nLütfen saklayın.');
+      if (!named) bDialog({ title: 'Siparişin alındı', message: 'Sipariş numaranı lütfen sakla.', code: String(j.orderId), confirmText: 'Tamam', hideCancel: true, persistent: true, icon: 'ok' });
       cart = []; appliedDiscountRate = 0; appliedCouponCode = ''; appliedPointsValue = 0;
       localStorage.removeItem('ballin_cart'); updateCartBadge(); syncCartToFirebase();
       const pi = $('promoDiscountInfo'); if (pi) pi.style.display = 'none';
@@ -610,8 +610,10 @@ try {
       if (b.hasAttribute('data-addr-edit')) openForm(parseInt(b.getAttribute('data-addr-edit'), 10));
       else if (b.hasAttribute('data-addr-del')) {
         var i = parseInt(b.getAttribute('data-addr-del'), 10);
-        if (!confirm('Bu adres silinsin mi?')) return;
-        var list = extras.slice(); list.splice(i, 1); persist(list, 'Adres silindi.').then(render);
+        bDialog({ title: 'Adres silinsin mi?', message: 'Kayıtlı adresin hesabından kaldırılacak.', confirmText: 'Adresi sil', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var list = extras.slice(); list.splice(i, 1); persist(list, 'Adres silindi.').then(render);
+        });
       }
     });
   }

@@ -353,3 +353,63 @@ body { overscroll-behavior-y: none; }
    modal/sepet gibi diğer çocuklar fixed ve kendi zeminleriyle. Böylece esneme (overscroll) bölgesi hiçbir yerde beyaz görünmez. */
 body { background-color: var(--b-dark, #05050A) !important; }
 main { background-color: #fff; }
+
+/* ===================================================================
+   YAMA-103 — özel pencere sistemi (confirm / alert / prompt yerine)
+   PC: ortada kart · Telefon: alttan açılan sayfa (giriş alanı olanlar klavye örtmesin diye ortada)
+   =================================================================== */
+.bd-overlay { position: fixed; inset: 0; z-index: 100000; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(2,2,6,.64); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); overscroll-behavior: contain;
+  animation: bdFade .22s ease both; font-family: Inter, system-ui, sans-serif; }
+.bd-overlay.bd-out { animation: bdFadeOut .22s ease both; }
+.bd-box { position: relative; width: min(420px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: #0d0d14; color: #F4F4F5;
+  border: 1px solid rgba(255,255,255,.14); border-radius: 22px; padding: 26px 24px 22px; box-shadow: 0 28px 90px rgba(0,0,0,.65);
+  animation: bdPop .3s cubic-bezier(.2,.9,.3,1.12) both; }
+.bd-out .bd-box { animation: bdPopOut .2s ease both; }
+.bd-box.bd-shake { animation: bdShake .38s ease; }
+.bd-handle { display: none; }
+.bd-ic { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+  font-size: 18px; background: rgba(255,255,255,.08); color: #F4F4F5; }
+.bd-danger .bd-ic { background: rgba(226,75,74,.16); color: #F09595; }
+.bd-title { font-size: 19px; font-weight: 500; margin: 0 0 6px; color: #fff; line-height: 1.3; }
+.bd-msg { font-size: 14.5px; line-height: 1.6; margin: 0 0 18px; color: #A1A1AA; white-space: pre-line; }
+.bd-field { margin: 0 0 14px; }
+.bd-label { display: block; font-size: 12.5px; color: #A1A1AA; margin: 0 0 6px; }
+.bd-input { width: 100%; background: #05050A; border: 1px solid #3a3a44; color: #fff; border-radius: 14px; padding: 13px 14px; font: inherit; font-size: 16px; outline: none; transition: border-color .2s, box-shadow .2s; resize: none; }
+.bd-input::placeholder { color: #6b6b76; }
+.bd-input:focus { border-color: #8b8b97; box-shadow: 0 0 0 3px rgba(255,255,255,.08); }
+.bd-input.bd-bad { border-color: #E24B4A; }
+.bd-err { font-size: 12.5px; color: #FF8A80; min-height: 0; margin-top: 6px; }
+.bd-err:empty { display: none; }
+.bd-link { display: inline-block; font-size: 12.5px; color: #9A9AA6; text-decoration: underline; margin: 0 0 16px; }
+.bd-link:hover { color: #fff; }
+.bd-codewrap { margin: 0 0 16px; }
+.bd-code { font: 500 22px 'Space Mono', ui-monospace, monospace; letter-spacing: .06em; text-align: center; background: #05050A; border: 1px solid #23232B; border-radius: 14px; padding: 16px 12px; word-break: break-all; user-select: all; }
+.bd-row { display: flex; gap: 10px; margin-top: 4px; }
+.bd-btn { flex: 1; min-height: 48px; border-radius: 99px; font: inherit; font-size: 14.5px; font-weight: 500; cursor: pointer; transition: transform .12s ease, background .2s, border-color .2s, opacity .2s; padding: 0 14px; }
+.bd-btn:active { transform: scale(.97); }
+.bd-btn:focus-visible { outline: 2px solid rgba(255,255,255,.45); outline-offset: 2px; }
+.bd-ghost { background: transparent; border: 1px solid #3a3a44; color: #E4E4E7; }
+.bd-ghost:hover { border-color: #8b8b97; }
+.bd-white { background: #fff; border: 1px solid #fff; color: #000; }
+.bd-white:hover { background: #e9e9ee; }
+.bd-red { background: #E24B4A; border: 1px solid #E24B4A; color: #fff; }
+.bd-red:hover { background: #cf3f3e; }
+@keyframes bdFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bdFadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes bdPop { from { opacity: 0; transform: translateY(14px) scale(.93); } to { opacity: 1; transform: none; } }
+@keyframes bdPopOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px) scale(.96); } }
+@keyframes bdSheet { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes bdSheetOut { from { transform: none; } to { transform: translateY(100%); } }
+@keyframes bdShake { 0%,100% { transform: none; } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+@media (max-width: 639px) {
+  .bd-overlay:not(.bd-has-input) { align-items: flex-end; padding: 0; }
+  .bd-overlay:not(.bd-has-input) .bd-box { width: 100%; max-height: 92dvh; border-radius: 24px 24px 0 0; border-bottom: 0;
+    padding: 12px 20px calc(20px + env(safe-area-inset-bottom)); animation: bdSheet .38s cubic-bezier(.32,.72,0,1) both; transition: transform .25s ease; }
+  .bd-overlay:not(.bd-has-input).bd-out .bd-box { animation: bdSheetOut .26s cubic-bezier(.4,0,1,1) both; }
+  .bd-overlay:not(.bd-has-input) .bd-handle { display: block; width: 40px; height: 5px; border-radius: 99px; background: #3a3a44; margin: 0 auto 18px; position: relative; }
+  .bd-overlay:not(.bd-has-input) .bd-handle::after { content: ''; position: absolute; left: -24px; right: -24px; top: -14px; bottom: -14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bd-overlay, .bd-box, .bd-overlay.bd-out, .bd-out .bd-box, .bd-overlay .bd-box { animation-duration: .01ms !important; transition: none !important; }
+}

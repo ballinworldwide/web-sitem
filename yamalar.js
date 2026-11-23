@@ -108,7 +108,7 @@ try {
    =================================================================== */
 (function () {
   'use strict';
-  console.log('[hero-globe] SÜRÜM v13 (noktalı tel kafes küre, yama-90) çalışıyor.');
+  console.log('[hero-globe] SÜRÜM v14 (noktalı küre, 21st.dev orijinal renkleri, yama-94) çalışıyor.');
 
   // yama-90: three.js yerine noktalı tel kafes küre (vendor/globe/globe.js: d3-geo + Natural Earth, harici istek yok).
   // Aynı kütüphaneyi iletişim sayfası da kullanır (yama-91), bu yüzden window.__loadGlobe olarak paylaşılır.
@@ -117,7 +117,7 @@ try {
     let s = document.getElementById('ballinGlobeLib');
     if (s) { s.addEventListener('load', cb); return; }
     s = document.createElement('script');
-    s.id = 'ballinGlobeLib'; s.src = '/vendor/globe/globe.js?v=2';
+    s.id = 'ballinGlobeLib'; s.src = '/vendor/globe/globe.js?v=3';
     s.onload = cb;
     s.onerror = () => console.warn('[hero-globe] küre kütüphanesi yüklenemedi');
     document.head.appendChild(s);
@@ -251,7 +251,7 @@ try {
     if (w < 50 || h < 50) { setTimeout(initHeroGlobe, 300); return; }
     canvas.dataset.globeInited = '1';
     // Metinler ve küre aynı alanda: küre sürükleyerek döndürülür (düğmelere basınca dönmez); tekerlekle yakınlaştırma yok, sayfa kaydırması bozulmasın.
-    heroGlobeInst = BallinGlobe.create(canvas, { mode: 'dots', color: '255,255,255', alpha: 0.62, scale: (w, h) => w < 640 ? 0.62 : 0.46, speed: 7, tilt: 18, startLon: 30, dragTarget: hero });
+    heroGlobeInst = BallinGlobe.create(canvas, { mode: 'dots', scale: (w, h) => w < 640 ? 0.62 : 0.46, speed: 7, tilt: 18, startLon: 30, dragTarget: hero });
   }
 
   // Admin panelindeki "Ana Sayfa Banner" kartına "Üst Etiket" alanını kendimiz ekliyoruz —

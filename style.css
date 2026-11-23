@@ -343,3 +343,9 @@ body.rp-lock{overflow:hidden}
 /* Ana sayfadaki açık alanlar tek tonda: vitrin kutuları ve ürün kartları */
 #page-home .bg-brand-100, #page-home .bg-brand-50 { background-color: var(--b-light) !important; }
 #page-home .border-brand-100 { border-color: var(--b-light-line) !important; }
+
+/* ---------- yama-101: sayfa sonunda (footer'dan sonra) beyaz alan görünmesin ----------
+   iOS'ta sayfa sonuna/başına çekilince esneme (lastik) yapıp arkadaki beyaz zemini gösteriyordu.
+   1) esneme kapatıldı  2) zemin footer/header ile aynı koyu tona çekildi (esneme çalışan tarayıcıda da beyaz görünmez) */
+html { background-color: var(--b-dark, #05050A); overscroll-behavior-y: none; }
+body { overscroll-behavior-y: none; }

@@ -2018,19 +2018,17 @@ window.saveEditedProductData = async function(btn) {
 (function () {
   'use strict';
   const INFO = {
-    unvan: '[TİCARİ UNVAN / AD SOYAD]',
-    adres: '[ADRES]',
-    vergi: '[VERGİ DAİRESİ / VERGİ NO]',
-    mersis: '[MERSİS NO - varsa]',
-    tel: '[TELEFON]',
+    unvan: 'BALLIN WORLDWIDE (Adi Ortaklık)',
+    adres: 'Sinandede Mah. 8. Gazi Sok. N:1 K:6 D:9 Kılınçlar Özçeltikçiler Ap. Yıldırım / BURSA',
+    vergi: 'Vergi No: 1390895846',
     mail: 'destek@ballinworldwide.net',
     site: 'ballinworldwide.net'
   };
   const e = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const P = (...a) => a.map(x => '<p>' + x + '</p>').join('');
   const H = t => '<h2 class="font-bold text-brand-900 text-base mt-6">' + t + '</h2>';
-  const SATICI = '<strong>' + e(INFO.unvan) + '</strong><br>Adres: ' + e(INFO.adres) + '<br>Vergi: ' + e(INFO.vergi) +
-    '<br>MERSİS: ' + e(INFO.mersis) + '<br>Telefon: ' + e(INFO.tel) + '<br>E-posta: ' + e(INFO.mail) + '<br>Web: ' + e(INFO.site);
+  const SATICI = '<strong>' + e(INFO.unvan) + '</strong><br>Adres: ' + e(INFO.adres) + '<br>' + e(INFO.vergi) +
+    '<br>E-posta: ' + e(INFO.mail) + '<br>Web: ' + e(INFO.site);
 
   function setPage(id, title, body) {
     let el = document.getElementById('page-' + id);

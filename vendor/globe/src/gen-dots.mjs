@@ -1,13 +1,17 @@
-// Kara noktalarını derleme zamanında üretir: eşit yoğunluklu (enleme göre boylam adımı) ızgara, geoContains ile karada kalanlar.
+// Kara noktalarını derleme zamanında üretir. yama-94: 21st.dev "wireframe-dotted-globe" orijinaliyle aynı ızgara:
+// boylam ve enlemde düzgün 1.28° adım (orijinal: dotSpacing 16 x 0.08). Satır başına boylam indeksleri, ilki mutlak, kalanı fark (delta) olarak saklanır.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { geoContains } from 'd3-geo';
 import { feature } from 'topojson-client';
 const topo = JSON.parse(readFileSync('node_modules/world-atlas/land-110m.json', 'utf8'));
 const land = feature(topo, topo.objects.land);
-const STEP = 1.8, out = [];
-for (let lat = -84; lat <= 84; lat += STEP) {
-  const k = Math.max(0.12, Math.cos(lat * Math.PI / 180)), dl = STEP / k;
-  for (let lon = -180; lon < 180; lon += dl) if (geoContains(land, [lon, lat])) out.push(Math.round(lon * 10), Math.round(lat * 10));
+const STEP = 1.28, rows = [];
+let n = 0;
+for (let j = 0, lat = -90; lat <= 90; j++, lat = -90 + j * STEP) {
+  const idx = [];
+  for (let i = 0, lon = -180; lon < 180; i++, lon = -180 + i * STEP) if (geoContains(land, [lon, lat])) idx.push(i);
+  n += idx.length;
+  rows.push(idx.map((v, k) => k ? v - idx[k - 1] : v));
 }
-writeFileSync('src/dots.json', JSON.stringify(out));
-console.log('nokta sayısı:', out.length / 2, 'bayt:', JSON.stringify(out).length);
+writeFileSync('src/dots.json', JSON.stringify({ step: STEP, rows }));
+console.log('nokta sayısı:', n, 'satır:', rows.length, 'bayt:', JSON.stringify({ step: STEP, rows }).length);

@@ -11,19 +11,26 @@ import dotsFlat from './dots.json';
 const land = feature(landTopo, landTopo.objects.land);
 const graticule = geoGraticule10();
 const RAD = Math.PI / 180;
-const N = dotsFlat.length / 2;
+// kara noktaları: dots.json = { step, rows } (gen-dots.mjs). Satır j -> enlem -90 + j*step; satırdaki sayılar boylam indeksi (ilki mutlak, kalanı fark)
+const pts = [];
+dotsFlat.rows.forEach((row, j) => { let i = 0; row.forEach((d, k) => { i = k ? i + d : d; pts.push([-180 + i * dotsFlat.step, -90 + j * dotsFlat.step]); }); });
+const N = pts.length;
 const dLon = new Float32Array(N), dSinLat = new Float32Array(N), dCosLat = new Float32Array(N), dLat = new Float32Array(N);
 for (let i = 0; i < N; i++) {
-  dLon[i] = dotsFlat[2 * i] / 10 * RAD;
-  dLat[i] = dotsFlat[2 * i + 1] / 10 * RAD;
+  dLon[i] = pts[i][0] * RAD;
+  dLat[i] = pts[i][1] * RAD;
   dSinLat[i] = Math.sin(dLat[i]); dCosLat[i] = Math.cos(dLat[i]);
 }
 
 function create(canvas, opts) {
   opts = Object.assign({
-    mode: 'dots',          // 'dots' = noktalı + tel kafes (hero), 'wireframe' = yalnız tel kafes (iletişim)
+    mode: 'dots',          // 'dots' = 21st.dev orijinali gibi noktalı küre (hero), 'wireframe' = yalnız tel kafes (iletişim)
     color: '255,255,255',  // çizgi/nokta rengi (r,g,b)
     fill: null,            // küre dolgusu, ör. 'rgba(255,255,255,.04)'
+    ocean: '#000000',      // 'dots' modu: küre (okyanus) dolgusu (21st.dev orijinali: siyah)
+    ink: '#ffffff',        // 'dots' modu: küre çerçevesi, enlem/boylam ve kıta kenarı rengi (orijinal: beyaz)
+    dot: '#999999',        // 'dots' modu: kara noktası rengi (orijinal: #999999)
+    refR: 240,             // 'dots' modu: çizgi kalınlığı/nokta boyu bu yarıçapta orijinaldeki gibi (2px / 1px / 1.2px); daha büyük küre orantılı kalınlaşır
     alpha: 1,              // tüm nokta/çizgi saydamlıklarının çarpanı (metin okunabilirliği için kısılabilir)
     scale: 0.46,           // yarıçap = min(genişlik, yükseklik) * scale (ya da (w,h) => oran)
     cx: 0.5, cy: 0.5,      // merkez (alanın oranı)
@@ -57,35 +64,28 @@ function create(canvas, opts) {
     const R = Math.min(W, H) * sc(), cx = W * opts.cx, cy = H * opts.cy;
     proj.scale(R).translate([cx, cy]).rotate([yaw, pitch, 0]);
     const c = opts.color;
-    // küre
+    if (opts.mode === 'dots') {
+      // 21st.dev "wireframe-dotted-globe" orijinaliyle aynı çizim: siyah küre + 2px beyaz çerçeve, %25 beyaz enlem/boylam, 1px beyaz kıta kenarı, #999 noktalar (r=1.2)
+      const k = Math.max(0.9, Math.min(1.6, R / opts.refR));
+      ctx.beginPath(); path({ type: 'Sphere' }); ctx.fillStyle = opts.ocean; ctx.fill(); ctx.strokeStyle = opts.ink; ctx.lineWidth = 2 * k; ctx.stroke();
+      ctx.globalAlpha = 0.25; ctx.beginPath(); path(graticule); ctx.strokeStyle = opts.ink; ctx.lineWidth = 1 * k; ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.beginPath(); path(land); ctx.strokeStyle = opts.ink; ctx.lineWidth = 1 * k; ctx.stroke();
+      const cl = -yaw * RAD, cp = -pitch * RAD, sp = Math.sin(cp), cpp = Math.cos(cp), rad = 1.2 * k;
+      ctx.beginPath();
+      for (let i = 0; i < N; i++) {
+        if (dSinLat[i] * sp + dCosLat[i] * cpp * Math.cos(dLon[i] - cl) <= 0.02) continue;   // arka yüzey
+        const p = proj([dLon[i] / RAD, dLat[i] / RAD]); if (!p) continue;
+        ctx.moveTo(p[0] + rad, p[1]); ctx.arc(p[0], p[1], rad, 0, 6.2832);
+      }
+      ctx.fillStyle = opts.dot; ctx.fill();
+      return;
+    }
+    // 'wireframe' modu (iletişim sayfası)
     ctx.beginPath(); path({ type: 'Sphere' });
     if (opts.fill) { ctx.fillStyle = opts.fill; ctx.fill(); }
     ctx.strokeStyle = 'rgba(' + c + ',' + (.35 * opts.alpha) + ')'; ctx.lineWidth = 1; ctx.stroke();
-    // enlem/boylam çizgileri
-    ctx.beginPath(); path(graticule); ctx.strokeStyle = 'rgba(' + c + ',' + ((opts.mode === 'dots' ? .09 : .16) * opts.alpha) + ')'; ctx.lineWidth = 0.6; ctx.stroke();
-    // kıta kenarları
-    ctx.beginPath(); path(land); ctx.strokeStyle = 'rgba(' + c + ',' + ((opts.mode === 'dots' ? .28 : .55) * opts.alpha) + ')'; ctx.lineWidth = opts.mode === 'dots' ? 0.7 : 0.9; ctx.stroke();
-    // kara noktaları (ekranın ortasına yakın olanlar daha parlak)
-    if (opts.mode === 'dots') {
-      const cl = -yaw * RAD, cp = -pitch * RAD, sp = Math.sin(cp), cpp = Math.cos(cp);
-      const rad = Math.max(0.9, R / 260);
-      const buckets = [[], [], [], []];
-      for (let i = 0; i < N; i++) {
-        const v = dSinLat[i] * sp + dCosLat[i] * cpp * Math.cos(dLon[i] - cl);
-        if (v <= 0.02) continue;
-        buckets[v > 0.75 ? 3 : v > 0.5 ? 2 : v > 0.25 ? 1 : 0].push(i);
-      }
-      const alpha = [0.18, 0.34, 0.55, 0.85];
-      for (let b = 0; b < 4; b++) {
-        if (!buckets[b].length) continue;
-        ctx.beginPath();
-        for (const i of buckets[b]) {
-          const p = proj([dLon[i] / RAD, dLat[i] / RAD]); if (!p) continue;
-          ctx.moveTo(p[0] + rad, p[1]); ctx.arc(p[0], p[1], rad, 0, 6.2832);
-        }
-        ctx.fillStyle = 'rgba(' + c + ',' + (alpha[b] * opts.alpha) + ')'; ctx.fill();
-      }
-    }
+    ctx.beginPath(); path(graticule); ctx.strokeStyle = 'rgba(' + c + ',' + (.16 * opts.alpha) + ')'; ctx.lineWidth = 0.6; ctx.stroke();
+    ctx.beginPath(); path(land); ctx.strokeStyle = 'rgba(' + c + ',' + (.55 * opts.alpha) + ')'; ctx.lineWidth = 0.9; ctx.stroke();
   }
 
   function frame(t) {

@@ -349,3 +349,7 @@ body.rp-lock{overflow:hidden}
    1) esneme kapatıldı  2) zemin footer/header ile aynı koyu tona çekildi (esneme çalışan tarayıcıda da beyaz görünmez) */
 html { background-color: var(--b-dark, #05050A); overscroll-behavior-y: none; }
 body { overscroll-behavior-y: none; }
+/* yama-102: body de koyu ton; beyaz zemin yalnız ana içerik alanında (main). Header, üst şerit ve footer zaten koyu;
+   modal/sepet gibi diğer çocuklar fixed ve kendi zeminleriyle. Böylece esneme (overscroll) bölgesi hiçbir yerde beyaz görünmez. */
+body { background-color: var(--b-dark, #05050A) !important; }
+main { background-color: #fff; }

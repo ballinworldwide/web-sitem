@@ -947,7 +947,7 @@ try {
           '<form id="contactForm" novalidate>' +
             '<h2>Mesaj Gönderin</h2><p class="ct-sub">Formu doldurun, mesajınız doğrudan destek ekibimize ulaşsın.</p>' +
             '<div class="ct-field"><label for="ctName">Ad Soyad</label><input id="ctName" name="name" type="text" maxlength="80" autocomplete="name" required></div>' +
-            '<div class="ct-field"><label for="ctCompany">Firma <small>(isteğe bağlı)</small></label><input id="ctCompany" name="company" type="text" maxlength="80" autocomplete="organization"></div>' +
+            '<div class="ct-field"><label for="ctOrder">Sipariş Numarası <small>(isteğe bağlı)</small></label><input id="ctOrder" name="orderNo" type="text" maxlength="40" autocomplete="off"></div>' +
             '<div class="ct-field"><label for="ctEmail">E-posta</label><input id="ctEmail" name="email" type="email" maxlength="254" autocomplete="email" inputmode="email" required></div>' +
             '<div class="ct-field"><label for="ctMsg">Mesajınız</label><textarea id="ctMsg" name="message" maxlength="2000" required></textarea></div>' +
             '<div class="ct-hp" aria-hidden="true"><label>Web sitesi<input id="ctWebsite" name="website" type="text" tabindex="-1" autocomplete="off"></label></div>' +
@@ -1001,7 +1001,7 @@ try {
 
     form.addEventListener('submit', async ev => {
       ev.preventDefault(); if (busy) return;
-      const f = form.elements, v = { name: f.name.value.trim(), company: f.company.value.trim(), email: f.email.value.trim(), message: f.message.value.trim(), website: f.website.value };
+      const f = form.elements, v = { name: f.name.value.trim(), orderNo: f.orderNo.value.trim(), email: f.email.value.trim(), message: f.message.value.trim(), website: f.website.value };
       const checks = [[f.name, v.name.length >= 2, 'Lütfen adınızı ve soyadınızı yazın.'], [f.email, /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email), 'Lütfen geçerli bir e-posta adresi yazın.'], [f.message, v.message.length >= 10, 'Mesajınız en az 10 karakter olmalı.']];
       let first = null; checks.forEach(([el, ok, msg]) => { bad(el, !ok); if (!ok && !first) first = [el, msg]; });
       if (first) { say(first[1], true); first[0].focus(); return; }

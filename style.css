@@ -290,7 +290,7 @@ body.rp-lock{overflow:hidden}
    YAMA-95 — footer görünümü (yerel "Konsept A — Chrome" sitesindeki footer'a göre).
    Bağlantılar aynı kaldı; yalnız görünüm değişti. Bülten formu ve "Konsept demo" yazısı alınmadı.
    =================================================================== */
-.ft { --ft-bg: #060608; --ft-line: #23232B; --ft-mut: #9A9AA6; background: var(--ft-bg); color: #F4F4F5; padding: 64px 0 36px; font-family: Inter, system-ui, sans-serif; line-height: 1.6; }
+.ft { --ft-bg: #05050A; --ft-line: #23232B; --ft-mut: #9A9AA6; background: var(--ft-bg); color: #F4F4F5; padding: 64px 0 36px; font-family: Inter, system-ui, sans-serif; line-height: 1.6; }
 .ft-wrap { width: min(1280px, 100% - 40px); margin-inline: auto; }
 .ft-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; padding-bottom: 48px; border-bottom: 1px solid var(--ft-line); }
 .ft-logo { height: 44px; width: auto; filter: invert(1) brightness(1.6); mix-blend-mode: screen; display: block; }
@@ -322,3 +322,20 @@ body.rp-lock{overflow:hidden}
 .ft-nl-note { margin: 12px 0 0; font-size: .75rem; line-height: 1.5; color: #6b6b76; max-width: 380px; }
 .ft-nl-note a { color: var(--ft-mut); text-decoration: underline; cursor: pointer; }
 .ft-nl-note a:hover { color: #fff; }
+
+/* ---------- yama-98: ana renk uyumu (tek koyu ton #05050A, tek açık ton #F5F5F8) ---------- */
+:root { --b-dark: #05050A; --b-dark-line: rgba(255,255,255,.09); --b-light: #F5F5F8; --b-light-line: #E7E7EE; }
+
+/* Üst şerit + header + hero + footer aynı koyu tonda tek blok */
+#topAnnouncementContainer { background-color: var(--b-dark) !important; border-bottom: 1px solid var(--b-dark-line); }
+#header { background-color: rgba(5,5,10,.98) !important; border-color: var(--b-dark-line) !important; }
+#header nav a, #header > div button { color: #A1A1AA; }
+#header nav a:hover, #header > div button:hover { color: #fff; }
+#header #adminButton { color: #fff; }
+#header img { mix-blend-mode: screen !important; filter: invert(1) brightness(1.6) !important; }
+#mobile-menu { background-color: var(--b-dark) !important; border-color: var(--b-dark-line) !important; }
+#mobile-menu a { color: #E4E4E7 !important; border-color: rgba(255,255,255,.07) !important; }
+
+/* Ana sayfadaki açık alanlar tek tonda: vitrin kutuları ve ürün kartları */
+#page-home .bg-brand-100, #page-home .bg-brand-50 { background-color: var(--b-light) !important; }
+#page-home .border-brand-100 { border-color: var(--b-light-line) !important; }

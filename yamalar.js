@@ -935,3 +935,93 @@ try {
   };
 })();
 } catch (e) { console.error("yama-75 hatası:", e); }
+
+/* ---------- yama-91: İletişim sayfası (küre + form; mesaj destek@ adresine gider) ---------- */
+try {
+(function () {
+  'use strict';
+  const MAIL = 'destek@ballinworldwide.net', MAIL_URL = 'https://ballin-mail.ballinworldw.workers.dev';
+  const IL = (id, t) => '<a onclick="switchPage(\'' + id + '\'); return false;">' + t + '</a>';
+
+  const FORM_HTML =
+          '<form id="contactForm" novalidate>' +
+            '<h2>Mesaj Gönderin</h2><p class="ct-sub">Formu doldurun, mesajınız doğrudan destek ekibimize ulaşsın.</p>' +
+            '<div class="ct-field"><label for="ctName">Ad Soyad</label><input id="ctName" name="name" type="text" maxlength="80" autocomplete="name" required></div>' +
+            '<div class="ct-field"><label for="ctCompany">Firma <small>(isteğe bağlı)</small></label><input id="ctCompany" name="company" type="text" maxlength="80" autocomplete="organization"></div>' +
+            '<div class="ct-field"><label for="ctEmail">E-posta</label><input id="ctEmail" name="email" type="email" maxlength="254" autocomplete="email" inputmode="email" required></div>' +
+            '<div class="ct-field"><label for="ctMsg">Mesajınız</label><textarea id="ctMsg" name="message" maxlength="2000" required></textarea></div>' +
+            '<div class="ct-hp" aria-hidden="true"><label>Web sitesi<input id="ctWebsite" name="website" type="text" tabindex="-1" autocomplete="off"></label></div>' +
+            '<hr class="ct-dots">' +
+            '<button type="submit" class="ct-send" id="ctSend"><i class="fa-solid fa-paper-plane"></i><span>Gönder</span></button>' +
+            '<p class="ct-status" id="ctStatus" role="status" aria-live="polite"></p>' +
+            '<p class="ct-note">Gönderdiğiniz bilgiler yalnızca mesajınızı yanıtlamak için kullanılır. Ayrıntılar için ' + IL('gizlilik-politikasi', 'KVKK Aydınlatma Metni') + '.</p>' +
+          '</form>';
+
+  const HTML =
+    '<div class="ct-wrap">' +
+      '<header class="ct-head"><span class="ct-pill">İletişim</span><h1 class="ct-title">Bize Ulaşın</h1>' +
+      '<p class="ct-desc">Sipariş, kargo, iade veya hesabınızla ilgili sorularınız için bize yazabilirsiniz.</p></header>' +
+      '<div class="ct-grid">' +
+        '<div class="ct-info">' +
+          '<h2>İletişime Geçin</h2>' +
+          '<p>Sipariş, kargo, iade veya hesabınızla ilgili sorularınız için bize e-posta ile ulaşabilirsiniz:</p>' +
+          '<p><a class="ct-mail" href="mailto:' + MAIL + '"><span class="ct-ico"><i class="fa-solid fa-envelope"></i></span><span>' + MAIL + '</span></a></p>' +
+          '<p class="ct-row"><span class="ct-ico"><i class="fa-regular fa-clock"></i></span><span><b>Dönüş süresi:</b> Mesajlarınıza 2-3 iş günü içinde dönüş yapılır.</span></p>' +
+          '<p><b>Mesajınıza şunları yazarsanız işlem hızlanır:</b></p>' +
+          '<ul><li>Sipariş numaranız (varsa)</li><li>Sorununuzun kısa özeti</li><li>Ürünle ilgiliyse bir fotoğraf</li></ul>' +
+          '<div class="ct-pages"><b style="width:100%;font-size:14px;color:#212529;margin-top:6px">Sık başvurulan sayfalar</b>' +
+            IL('siparis-sorgula', 'Sipariş Sorgula') + IL('kargo-teslimat', 'Kargo ve Teslimat') + IL('iade-sartlari', 'İade ve Değişim') + IL('gizlilik-politikasi', 'KVKK ve Gizlilik') + '</div>' +
+        '</div>' +
+        '<div class="ct-globe-box" aria-hidden="true"><canvas id="contactGlobe"></canvas></div>' +
+        '<div class="ct-form" id="contactBox">' + FORM_HTML + '</div>' +
+      '</div>' +
+    '</div>';
+
+  function build() {
+    let el = document.getElementById('page-iletisim');
+    if (!el) {
+      el = document.createElement('section'); el.id = 'page-iletisim'; el.className = 'page-section hidden max-w-4xl mx-auto px-4 py-16';
+      const ref = document.getElementById('page-destek-merkezi'); if (!ref) return;
+      ref.parentNode.insertBefore(el, ref);
+    }
+    el.innerHTML = HTML;
+    wireForm(el);
+    if (window.__loadGlobe) window.__loadGlobe(() => {
+      const c = document.getElementById('contactGlobe');
+      if (c && window.BallinGlobe && !c.dataset.globeInited) { c.dataset.globeInited = '1'; BallinGlobe.create(c, { mode: 'wireframe', color: '33,37,41', alpha: 1, scale: 0.47, speed: 8, tilt: 15, startLon: 30 }); }
+    });
+  }
+
+  function wireForm(root) {
+    const form = root.querySelector('#contactForm'), box = root.querySelector('#contactBox'), st = root.querySelector('#ctStatus'), btn = root.querySelector('#ctSend');
+    let busy = false;
+    const say = (t, err) => { st.textContent = t || ''; st.className = 'ct-status' + (err ? ' err' : ''); };
+    const bad = (f, on) => { f.classList.toggle('ct-bad', !!on); if (on) f.setAttribute('aria-invalid', 'true'); else f.removeAttribute('aria-invalid'); };
+    form.querySelectorAll('input,textarea').forEach(f => f.addEventListener('input', () => { bad(f, false); if (st.classList.contains('err')) say(''); }));
+
+    form.addEventListener('submit', async ev => {
+      ev.preventDefault(); if (busy) return;
+      const f = form.elements, v = { name: f.name.value.trim(), company: f.company.value.trim(), email: f.email.value.trim(), message: f.message.value.trim(), website: f.website.value };
+      const checks = [[f.name, v.name.length >= 2, 'Lütfen adınızı ve soyadınızı yazın.'], [f.email, /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email), 'Lütfen geçerli bir e-posta adresi yazın.'], [f.message, v.message.length >= 10, 'Mesajınız en az 10 karakter olmalı.']];
+      let first = null; checks.forEach(([el, ok, msg]) => { bad(el, !ok); if (!ok && !first) first = [el, msg]; });
+      if (first) { say(first[1], true); first[0].focus(); return; }
+      busy = true; btn.disabled = true; btn.querySelector('span').textContent = 'Gönderiliyor…'; say('');
+      try {
+        let ac = ''; try { ac = (await firebase.appCheck().getToken()).token; } catch (e) {}
+        const r = await fetch(MAIL_URL + '/contact', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Firebase-AppCheck': ac }, body: JSON.stringify(v) });
+        if (r.ok) {
+          box.innerHTML = '<div class="ct-ok"><span class="ct-ico"><i class="fa-solid fa-check"></i></span><h2>Mesajınız alındı</h2><p>Teşekkürler. Mesajınıza 2-3 iş günü içinde dönüş yapacağız.</p><button type="button" id="ctAgain">Yeni mesaj yaz</button></div>';
+          box.querySelector('#ctAgain').onclick = () => { box.innerHTML = FORM_HTML; wireForm(root); box.querySelector('#ctName').focus(); };
+          if (typeof showToast === 'function') showToast('Mesajınız gönderildi.', 'success');
+          return;
+        }
+        if (r.status === 429) say('Kısa sürede çok fazla mesaj gönderildi. Lütfen biraz bekleyip tekrar deneyin.', true);
+        else if (r.status === 400) say('Lütfen alanları kontrol edip tekrar deneyin.', true);
+        else say('Mesajınız şu an gönderilemedi. Lütfen biraz sonra tekrar deneyin ya da ' + MAIL + ' adresine yazın.', true);
+      } catch (e) { say('Bağlantı kurulamadı. Lütfen biraz sonra tekrar deneyin ya da ' + MAIL + ' adresine yazın.', true); }
+      finally { busy = false; btn.disabled = false; btn.querySelector('span').textContent = 'Gönder'; }
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build); else build();
+})();
+} catch (e) { console.error("yama-91 hatası:", e); }

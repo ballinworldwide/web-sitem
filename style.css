@@ -294,7 +294,6 @@ body.rp-lock{overflow:hidden}
 .ft-wrap { width: min(1280px, 100% - 40px); margin-inline: auto; }
 .ft-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; padding-bottom: 48px; border-bottom: 1px solid var(--ft-line); }
 .ft-logo { height: 44px; width: auto; filter: invert(1) brightness(1.6); mix-blend-mode: screen; display: block; }
-.ft-brand p { color: var(--ft-mut); margin-top: 12px; max-width: 34ch; font-size: 1rem; }
 .ft-col h4 { font: 400 .72rem 'Space Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ft-mut); margin: 0 0 14px; }
 .ft-col ul { list-style: none; margin: 0; padding: 0; }
 .ft-col li { margin: 0; }
@@ -304,3 +303,22 @@ body.rp-lock{overflow:hidden}
 @media (max-width: 1000px) { .ft-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .ft-grid { grid-template-columns: 1fr; } }
 @media (max-width: 767px) { .ft-col a { padding: 8px 0; } }   /* dokunma hedefi (yama-32 ile aynı) */
+
+/* ===================================================================
+   YAMA-96 — footer bülten formu (yerel Konsept A "nl" stili). Kayıt: Worker /newsletter → onay e-postası → Resend "Bülten" listesi.
+   =================================================================== */
+.ft-nl-txt { color: var(--ft-mut); margin: 12px 0 0; max-width: 34ch; font-size: 1rem; }
+.ft-nl { position: relative; display: flex; margin-top: 18px; border: 1px solid #3a3a44; border-radius: 99px; overflow: hidden; max-width: 380px; transition: border-color .2s; }
+.ft-nl:focus-within { border-color: #8b8b97; }
+.ft-nl input[type=email] { flex: 1; min-width: 0; background: none; border: 0; color: #fff; padding: 0 20px; min-height: 50px; outline: none; font: inherit; font-size: 1rem; }
+.ft-nl input[type=email]::placeholder { color: #6b6b76; }
+.ft-nl button { border: 0; background: #fff; color: #000; padding: 0 22px; font-weight: 600; cursor: pointer; font: inherit; font-weight: 600; }
+.ft-nl button:disabled { opacity: .6; cursor: default; }
+.ft-sr { position: absolute; left: -9999px; }
+.ft-hp { position: absolute !important; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.ft-nl-msg { margin: 12px 0 0; font-size: .85rem; line-height: 1.5; color: #7bd88f; max-width: 380px; min-height: 0; }
+.ft-nl-msg:empty { display: none; }
+.ft-nl-msg.err { color: #ff8a80; }
+.ft-nl-note { margin: 12px 0 0; font-size: .75rem; line-height: 1.5; color: #6b6b76; max-width: 380px; }
+.ft-nl-note a { color: var(--ft-mut); text-decoration: underline; cursor: pointer; }
+.ft-nl-note a:hover { color: #fff; }

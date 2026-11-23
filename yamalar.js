@@ -1025,3 +1025,33 @@ try {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build); else build();
 })();
 } catch (e) { console.error("yama-91 hatası:", e); }
+
+/* ===== YAMA-96: footer bülten formu → Worker /newsletter (onay e-postası gider; kayıt, e-postadaki onayla tamamlanır) ===== */
+try {
+(function () {
+  'use strict';
+  const MAIL_URL = 'https://ballin-mail.ballinworldw.workers.dev';
+  function wire() {
+    const form = document.getElementById('ftNewsForm'); if (!form || form.dataset.wired) return; form.dataset.wired = '1';
+    const msg = document.getElementById('ftNewsMsg'), btn = form.querySelector('button'), inp = form.elements.email; let busy = false;
+    const say = (t, err) => { msg.textContent = t || ''; msg.className = 'ft-nl-msg' + (err ? ' err' : ''); };
+    inp.addEventListener('input', () => { if (msg.classList.contains('err')) say(''); });
+    form.addEventListener('submit', async ev => {
+      ev.preventDefault(); if (busy) return;
+      const email = inp.value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { say('Lütfen geçerli bir e-posta adresi yaz.', true); inp.focus(); return; }
+      busy = true; btn.disabled = true; btn.textContent = '…'; say('');
+      try {
+        let ac = ''; try { ac = (await firebase.appCheck().getToken()).token; } catch (e) {}
+        const r = await fetch(MAIL_URL + '/newsletter', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Firebase-AppCheck': ac }, body: JSON.stringify({ email, website: form.elements.website.value }) });
+        if (r.ok) { form.reset(); say('Teşekkürler! E-postana bir onay bağlantısı gönderdik. Aboneliği o bağlantıdan onaylaman gerekiyor.'); if (typeof showToast === 'function') showToast('Onay bağlantısı e-postana gönderildi.', 'success'); }
+        else if (r.status === 429) say('Kısa sürede çok fazla deneme yapıldı. Lütfen biraz sonra tekrar dene.', true);
+        else if (r.status === 400) say('Lütfen e-posta adresini kontrol edip tekrar dene.', true);
+        else say('Şu an kaydedilemedi. Lütfen biraz sonra tekrar dene.', true);
+      } catch (e) { say('Bağlantı kurulamadı. Lütfen biraz sonra tekrar dene.', true); }
+      finally { busy = false; btn.disabled = false; btn.textContent = 'Katıl'; }
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
+})();
+} catch (e) { console.error('yama-96 hatası:', e); }

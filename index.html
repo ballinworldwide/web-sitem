@@ -461,7 +461,17 @@
 <footer class="ft mt-auto">
     <div class="ft-wrap">
         <div class="ft-grid">
-            <div class="ft-brand"><img src="/images/ballin.png" alt="BALLIN" height="44" class="ft-logo"></div>
+            <div class="ft-brand"><img src="/images/ballin.png" alt="BALLIN" height="44" class="ft-logo">
+                <p class="ft-nl-txt">Yeni koleksiyonlardan ilk sen haberdar ol.</p>
+                <form class="ft-nl" id="ftNewsForm" novalidate>
+                    <label class="ft-sr" for="ftNewsEmail">E-posta</label>
+                    <input id="ftNewsEmail" name="email" type="email" maxlength="254" placeholder="E-posta adresin" autocomplete="email" inputmode="email" required>
+                    <input class="ft-hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+                    <button type="submit">Katıl</button>
+                </form>
+                <p class="ft-nl-msg" id="ftNewsMsg" role="status" aria-live="polite"></p>
+                <p class="ft-nl-note">Onay bağlantısı e-postana gönderilir. İstediğin zaman listeden çıkabilirsin. <a onclick="switchPage('gizlilik-politikasi'); return false;">KVKK Aydınlatma Metni</a></p>
+            </div>
             <div class="ft-col">
                 <h4>Hızlı Linkler</h4>
                 <ul><li><a onclick="switchPage('home'); return false;" class="hover:text-white cursor-pointer transition-colors">Ana Sayfa</a></li><li><a onclick="switchPage('collection'); return false;" class="hover:text-white cursor-pointer transition-colors">Koleksiyon</a></li></ul>

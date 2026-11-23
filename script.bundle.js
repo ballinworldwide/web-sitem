@@ -95,8 +95,8 @@ function addCategory() {
     });
 }
 
-function deleteCategory(index) {
-    if(!confirm(`"${allCategories[index]}" kategorisini silmek istediğinize emin misiniz?`)) return;
+async function deleteCategory(index) {
+    if(!(await bDialog({ title: 'Kategori silinsin mi?', message: `"${allCategories[index]}" kategorisi silinecek.`, confirmText: 'Kategoriyi sil', danger: true }))) return;
     allCategories.splice(index, 1);
     db.collection("settings").doc("categories").set({ list: allCategories }).then(() => {
         showToast("Kategori silindi.", "success");
@@ -690,10 +690,10 @@ function renderBulkTable() {
 
 function toggleSelectAll(master) { document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = master.checked); }
 
-function bulkDeleteProducts() {
+async function bulkDeleteProducts() {
     let checked = document.querySelectorAll('.product-checkbox:checked');
     if(checked.length === 0) { showToast("Ürün seçilmedi.", 'error'); return; }
-    if(!confirm(`Seçilen ${checked.length} ürünü silmek istiyor musunuz?`)) return;
+    if(!(await bDialog({ title: 'Ürünler silinsin mi?', message: `Seçilen ${checked.length} ürün kalıcı olarak silinecek.`, confirmText: 'Ürünleri sil', danger: true }))) return;
     let batch = db.batch();
     checked.forEach(cb => { batch.delete(db.collection("products").doc(cb.value)); });
     batch.commit().then(() => { showToast("Ürünler silindi.", 'success'); loadProducts(); }).catch(e=>{});
@@ -743,11 +743,11 @@ function setOrderFilter(status, btnEl) {
 
 function toggleSelectAllOrders(master) { document.querySelectorAll('.order-checkbox').forEach(cb => cb.checked = master.checked); }
 
-function bulkUpdateOrderStatus(targetStatus) {
+async function bulkUpdateOrderStatus(targetStatus) {
     if(!isStaffNow(currentUser)) return;
     let checked = document.querySelectorAll('.order-checkbox:checked');
     if(checked.length === 0) { showToast("En az bir sipariş seçin.", 'error'); return; }
-    if(!confirm(`Seçilen ${checked.length} sipariş '${targetStatus}' yapılacak. Onaylıyor musunuz?`)) return;
+    if(!(await bDialog({ title: 'Sipariş durumu güncellensin mi?', message: `Seçilen ${checked.length} sipariş '${targetStatus}' yapılacak.`, confirmText: 'Güncelle', icon: 'info' }))) return;
 
     let batch = db.batch();
     checked.forEach(cb => { batch.update(db.collection("orders").doc(cb.value), { status: targetStatus }); });
@@ -1426,8 +1426,8 @@ function loadUserOrders() {
 function requestReturn(orderId) { db.collection("orders").doc(orderId).update({ status: "İade Talebi Alındı" }).then(() => { showToast("İade talebiniz iletildi.", 'success'); loadUserOrders(); }).catch(e=>{}); }
 
 // --- YENİ: İade Reddetme ve Müşteriye Not Eklenmesi ---
-function rejectReturn(orderId) {
-    let note = prompt("İade reddedilme nedenini yazınız (Bu notu müşteri de görecektir):");
+async function rejectReturn(orderId) {
+    let note = await bDialog({ title: 'İade talebi reddedilsin mi?', message: 'Reddetme nedenini yaz. Müşteri bu notu görecek.', confirmText: 'Reddet', danger: true, icon: 'note', input: { multiline: true, placeholder: 'Örn: Ürün kullanılmış görünüyor.', required: true } });
     if (note !== null && note.trim() !== "") {
         db.collection("orders").doc(orderId).update({
             status: "İade Onaylanmadı",
@@ -2511,7 +2511,8 @@ window.saveEditedProductData = async function(btn) {
         s.docs.map(d => { const u = d.data(); return '<tr><td>' + E(u.name || '') + ' ' + E(u.surname || '') + '</td><td>' + E(u.email || '-') + '</td><td>' + E(u.phone || '-') + '</td><td>' + tl(u.points) + '</td><td>' + E(u.city ? u.city + '/' + (u.district || '') : '-') + '</td><td><button class="btn-ghost" data-v="' + escHtml(d.id) + '" onclick="adjustPoints(this.dataset.v)">Puan düzelt</button></td></tr>'; }).join('') + '</tbody></table>'; }).catch(() => {});
   };
   window.adjustPoints = async function (uid) {
-    const n = parseInt(prompt('Puan değişimi (ör. 50 veya -50):')); if (!n) return; const why = prompt('Gerekçe:') || '';
+    const pr = await bDialog({ title: 'Puan düzelt', message: 'Eklemek için 50, düşmek için -50 yaz.', confirmText: 'Kaydet', icon: 'note', fields: [{ name: 'n', label: 'Puan değişimi', placeholder: '50 veya -50', required: true, validate: function (v) { return /^[+-]?\d+$/.test(v) && parseInt(v, 10) !== 0 ? '' : 'Geçerli bir sayı yaz (ör. 50 veya -50).'; } }, { name: 'why', label: 'Gerekçe (isteğe bağlı)', placeholder: 'Örn: Telafi puanı' }] });
+    if (!pr) return; const n = parseInt(pr.n, 10); const why = pr.why || '';
     try { await db.collection('users').doc(uid).update({ points: FV.increment(n) }); log('puan düzeltme', uid + ' ' + n + ' (' + why + ')'); showToast('Puan güncellendi.', 'success'); loadCustomersCRM(); } catch (e) { showToast(e.message, 'error'); }
   };
 
@@ -2789,7 +2790,7 @@ window.saveEditedProductData = async function(btn) {
     catch (e) { showToast(e.message, 'error'); }
   };
   async function delStaff(m) {
-    if (!confirm(m + ' yetkisi kaldırılsın mı?')) return;
+    if (!(await bDialog({ title: 'Yetki kaldırılsın mı?', message: m + ' yetkisi kaldırılacak.', confirmText: 'Yetkiyi kaldır', danger: true, icon: 'warn' }))) return;
     try { await db.collection('staff').doc(m).delete(); log('yönetici kaldırıldı', m); showToast('Kaldırıldı.', 'success'); loadStaff(); } catch (e) { showToast(e.message, 'error'); }
   }
   (window.__adminInits = window.__adminInits || []).push(ui);  // yama-23: admin paneli geç yüklenince tekrar çalıştırılır
@@ -2984,7 +2985,7 @@ window.saveEditedProductData = async function(btn) {
     });
   }
   window.notifyAlert = async function (id) {
-    if (!confirm('Müşteriye "ürün stokta" maili gönderilsin ve talep silinsin mi?')) return;
+    if (!(await bDialog({ title: 'Stok maili gönderilsin mi?', message: 'Müşteriye "ürün stokta" maili gidecek ve talep silinecek.', confirmText: 'Maili gönder', icon: 'mail' }))) return;
     if (await mail('/stock-back', { alertId: id })) { showToast('Mail gönderildi.', 'success'); delAlert(id); } else showToast('Mail gönderilemedi.', 'error');
   };
 

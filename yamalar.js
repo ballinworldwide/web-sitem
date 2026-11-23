@@ -560,7 +560,7 @@ try {
     var total = (has1 ? 1 : 0) + extras.length;
     if (!has1) { add.classList.add('hidden'); hint.textContent = 'Önce yukarıdaki formdan 1. adresinizi kaydedin; ardından buradan yeni adres ekleyebilirsiniz.'; hint.classList.remove('hidden'); }
     else if (extras.length >= MAX_EXTRA) { add.classList.add('hidden'); hint.textContent = '3 adres sınırına ulaştınız. Yeni adres eklemek için bir adresi silin.'; hint.classList.remove('hidden'); }
-    else { add.textContent = '+ Adres ' + (total + 1) + ' Ekle'; add.classList.toggle('hidden', !form.classList.contains('hidden')); hint.classList.add('hidden'); }
+    else { add.textContent = 'Yeni Adres Ekle'; add.classList.toggle('hidden', !form.classList.contains('hidden')); hint.classList.add('hidden'); }
   }
 
   function openForm(i) {

@@ -285,3 +285,22 @@ body.rp-lock{overflow:hidden}
 /* ===== yama-92: ürün kartı bağlantısı (orta tık / yeni sekmede aç) ===== */
 .product-card-link { position: absolute; inset: 0; z-index: 2; border-radius: inherit; display: block; }
 .product-card-link:focus-visible { outline: 2px solid #212529; outline-offset: -2px; }
+
+/* ===================================================================
+   YAMA-95 — footer görünümü (yerel "Konsept A — Chrome" sitesindeki footer'a göre).
+   Bağlantılar aynı kaldı; yalnız görünüm değişti. Bülten formu ve "Konsept demo" yazısı alınmadı.
+   =================================================================== */
+.ft { --ft-bg: #060608; --ft-line: #23232B; --ft-mut: #9A9AA6; background: var(--ft-bg); color: #F4F4F5; padding: 64px 0 36px; font-family: Inter, system-ui, sans-serif; line-height: 1.6; }
+.ft-wrap { width: min(1280px, 100% - 40px); margin-inline: auto; }
+.ft-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; padding-bottom: 48px; border-bottom: 1px solid var(--ft-line); }
+.ft-logo { height: 44px; width: auto; filter: invert(1) brightness(1.6); mix-blend-mode: screen; display: block; }
+.ft-brand p { color: var(--ft-mut); margin-top: 12px; max-width: 34ch; font-size: 1rem; }
+.ft-col h4 { font: 400 .72rem 'Space Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ft-mut); margin: 0 0 14px; }
+.ft-col ul { list-style: none; margin: 0; padding: 0; }
+.ft-col li { margin: 0; }
+.ft-col a { display: block; color: var(--ft-mut); padding: 5px 0; font-size: .92rem; text-decoration: none; cursor: pointer; transition: color .2s; }
+.ft-col a:hover, .ft-col a:focus-visible { color: #fff; }
+.ft-bottom { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 24px; font: 400 .72rem 'Space Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ft-mut); }
+@media (max-width: 1000px) { .ft-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .ft-grid { grid-template-columns: 1fr; } }
+@media (max-width: 767px) { .ft-col a { padding: 8px 0; } }   /* dokunma hedefi (yama-32 ile aynı) */

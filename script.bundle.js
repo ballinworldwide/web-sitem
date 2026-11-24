@@ -2243,11 +2243,7 @@ window.saveEditedProductData = async function(btn) {
     /* ---- Ödeme sayfası linki + footer ---- */
     const ct = document.getElementById('checkTerms');
     if (ct && ct.parentNode.querySelector('a')) ct.parentNode.querySelector('a').setAttribute('onclick', "switchPage('mesafeli-satis')");
-    const fl = document.querySelector('footer a[onclick*="kargo-teslimat"]');
-    if (fl && fl.closest('ul')) {
-      const mk = (id, t) => '<li><a onclick="switchPage(\'' + id + '\'); return false;" class="hover:text-white cursor-pointer transition-colors">' + t + '</a></li>';
-      fl.closest('ul').insertAdjacentHTML('beforeend', mk('mesafeli-satis', 'Mesafeli Satış Sözleşmesi') + mk('cerez', 'Çerez Politikası') + mk('iletisim', 'İletişim') + mk('destek-merkezi', 'Künye'));
-    }
+    /* yama-108: footer linkleri artık index.html'de sabit (gruplu); burada dinamik ekleme yapılmaz */
 
     /* ---- Çerez bildirimi ---- */
     try { if (localStorage.getItem('ballin_cookie')) return; } catch (x) {}
@@ -2421,8 +2417,6 @@ window.saveEditedProductData = async function(btn) {
       '<input id="lkId" ' + inp + ' placeholder="Sipariş numarası"><input id="lkMail" type="email" ' + inp + ' placeholder="E-posta">' +
       '<button onclick="lookupOrder()" class="bg-brand-900 text-white px-6 py-3 rounded-xl text-sm font-bold">Sorgula</button><div id="lkResult"></div></div>';
     ref.parentNode.insertBefore(el, ref);
-    const fl = document.querySelector('footer a[onclick*="kargo-teslimat"]');
-    if (fl && fl.closest('ul')) fl.closest('ul').insertAdjacentHTML('beforeend', '<li><a onclick="switchPage(\'siparis-sorgula\'); return false;" class="hover:text-white cursor-pointer transition-colors">Sipariş Sorgula</a></li>');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

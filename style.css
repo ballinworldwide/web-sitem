@@ -352,7 +352,7 @@ html { background-color: var(--b-dark, #05050A); overscroll-behavior-y: none; }
 /* yama-102: body de koyu ton; beyaz zemin yalnız ana içerik alanında (main). Header, üst şerit ve footer zaten koyu;
    modal/sepet gibi diğer çocuklar fixed ve kendi zeminleriyle. Böylece esneme (overscroll) bölgesi hiçbir yerde beyaz görünmez. */
 body { background-color: var(--b-dark, #05050A) !important; }
-main { background-color: #fff; }
+body > main { background-color: #fff; }   /* yama-106: yalnız site ana alanı; admin panelindeki <main class="admin-main"> koyu kalsın */
 
 /* ===================================================================
    YAMA-103 — özel pencere sistemi (confirm / alert / prompt yerine)

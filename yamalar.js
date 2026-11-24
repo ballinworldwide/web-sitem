@@ -968,6 +968,7 @@ try {
           '<h2>İletişime Geçin</h2>' +
           '<p>Sipariş, kargo, iade veya hesabınızla ilgili sorularınız için bize e-posta ile ulaşabilirsiniz:</p>' +
           '<p><a class="ct-mail" href="mailto:' + MAIL + '"><span class="ct-ico"><i class="fa-solid fa-envelope"></i></span><span>' + MAIL + '</span></a></p>' +
+          '<p><a class="ct-mail" href="https://www.instagram.com/ballinworldwide.co/" target="_blank" rel="noopener noreferrer"><span class="ct-ico"><i class="fa-brands fa-instagram"></i></span><span>@ballinworldwide.co</span></a></p>' +
           '<p class="ct-row"><span class="ct-ico"><i class="fa-regular fa-clock"></i></span><span><b>Dönüş süresi:</b> Mesajlarınıza 2-3 iş günü içinde dönüş yapılır.</span></p>' +
           '<p><b>Mesajınıza şunları yazarsanız işlem hızlanır:</b></p>' +
           '<ul><li>Sipariş numaranız (varsa)</li><li>Sorununuzun kısa özeti</li><li>Ürünle ilgiliyse bir fotoğraf</li></ul>' +

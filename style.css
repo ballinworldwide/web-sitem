@@ -413,3 +413,8 @@ body > main { background-color: #fff; }   /* yama-106: yalnız site ana alanı; 
 @media (prefers-reduced-motion: reduce) {
   .bd-overlay, .bd-box, .bd-overlay.bd-out, .bd-out .bd-box, .bd-overlay .bd-box { animation-duration: .01ms !important; transition: none !important; }
 }
+
+/* yama-107: footer Instagram bağlantısı */
+.ft-bottom .ft-ig { display: inline-flex; align-items: center; gap: 8px; color: var(--ft-mut); text-decoration: none; text-transform: none; letter-spacing: .04em; transition: color .2s; }
+.ft-bottom .ft-ig i { font-size: 1.05rem; }
+.ft-bottom .ft-ig:hover, .ft-bottom .ft-ig:focus-visible { color: #fff; }

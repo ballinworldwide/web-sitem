@@ -418,3 +418,6 @@ body > main { background-color: #fff; }   /* yama-106: yalnız site ana alanı; 
 .ft-bottom .ft-ig { display: inline-flex; align-items: center; gap: 8px; color: var(--ft-mut); text-decoration: none; text-transform: none; letter-spacing: .04em; transition: color .2s; }
 .ft-bottom .ft-ig i { font-size: 1.05rem; }
 .ft-bottom .ft-ig:hover, .ft-bottom .ft-ig:focus-visible { color: #fff; }
+
+/* yama-109: ödeme sayfasındaki onay kutuları — metin iki satıra sarınca ilk kutu daralıyordu; ikisi aynı boyutta kalsın */
+#checkTerms, #checkKvkk { flex-shrink: 0; }
